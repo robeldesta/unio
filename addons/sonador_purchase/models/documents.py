@@ -98,7 +98,7 @@ class SbVoucher(models.Model):
     sb_purchase_id = fields.Many2one(
         'purchase.order', 'Purchase order', check_company=True, index='btree_not_null',
         domain="[('state', '=', 'purchase'), ('partner_id', '=', partner_id)]",
-        help='Bill or payment for this purchase order. A payment before the goods arrive is an advance on the order.')
+        help='Purchase voucher or payment for this purchase order. A payment before the goods arrive is an advance on the order.')
 
     def action_sb_view_purchase(self):
         return self._sb_open(self.sb_purchase_id, self.sb_purchase_id.name)
@@ -109,7 +109,7 @@ class SbVoucher(models.Model):
         if po and self.partner_id and po.partner_id.commercial_partner_id != self.partner_id.commercial_partner_id:
             raise ValidationError(self.env._('%(po)s is for %(v)s.', po=po.name, v=po.partner_id.name))
         if self.voucher_type == 'bill' and self.sb_grn_ids.filtered(lambda g: g.billed):
-            raise ValidationError(self.env._('Already billed: %s', ', '.join(self.sb_grn_ids.filtered('billed').mapped('name'))))
+            raise ValidationError(self.env._('Already on a purchase voucher: %s', ', '.join(self.sb_grn_ids.filtered('billed').mapped('name'))))
         return res
 
 

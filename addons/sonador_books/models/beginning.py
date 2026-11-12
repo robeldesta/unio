@@ -49,7 +49,7 @@ class SbVoucherLine(models.Model):
 
     # customer / vendor items kept as lines of the one opening voucher
     sb_ob_kind = fields.Selection([('customer', 'Customer'), ('vendor', 'Vendor')], string='Beginning balance of', copy=False)
-    sb_doc_date = fields.Date('Document date', copy=False, help='Date of the open invoice / bill / advance.')
+    sb_doc_date = fields.Date('Document date', copy=False, help='Date of the open invoice / purchase voucher / advance.')
     sb_doc_ref = fields.Char('Customer PO / reference', copy=False)
 
 

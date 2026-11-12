@@ -274,7 +274,7 @@ class SbVoucher(models.Model):
     sb_setoff = fields.Boolean(
         'Set off receivable against payable', copy=False, tracking=True,
         help='Accountant and up: settle what this customer / vendor owes us against what we owe them on one voucher '
-             '(e.g. a customer receipt that also clears the same company\'s bill). Logged on the voucher.')
+             '(e.g. a customer receipt that also clears the same company\'s purchase voucher). Logged on the voucher.')
 
     def _sb_check_apply_parties(self):
         """A receipt / payment settles its own customer's / vendor's open items only, on the right side. Receivables
@@ -456,7 +456,7 @@ class SbVoucher(models.Model):
         """A credit / debit note against no document: Accountant and up, and no more than the customer (vendor) was
         invoiced (billed) in the last 12 months less the notes already given."""
         self._sb_require('group_sb_accountant', self.env._('issue a credit / debit note that is not against a document '
-                                                          '(choose the invoice or bill in "Against")'))
+                                                          '(choose the invoice or purchase voucher in "Against")'))
         side = 'customer' if self.voucher_type == 'sale_return' else 'vendor'
         if not self.partner_id:
             return
@@ -827,7 +827,7 @@ def _refuse_native_payment(env):
     system administrators only: everyone else receives and pays on the vouchers."""
     if env.su or env.user.has_group('base.group_system'):
         return
-    raise UserError(env._('Payments are entered on a Receipt (Receive Payment) or a Payment (Pay Bills) voucher, which apply '
+    raise UserError(env._('Payments are entered on a Receipt (Receive Payment) or a Payment (Pay Purchase Vouchers) voucher, which apply '
                           'withholding, discounts and their limits. Odoo\'s own Register Payment is not used.'))
 
 

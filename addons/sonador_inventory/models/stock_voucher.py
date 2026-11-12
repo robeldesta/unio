@@ -799,7 +799,7 @@ class SbStockVoucher(models.Model):
             if not self.env.su and not self.env.user.has_group('sonador_books.group_sb_accountant'):
                 raise UserError(self.env._('Only accountants can void inventory vouchers.'))
             if v._sb_has_posted_bill():
-                raise UserError(self.env._('%s is already billed. Void the bill first.', v.name))
+                raise UserError(self.env._('%s is already on a purchase voucher. Void the purchase voucher first.', v.name))
             v._sb_require_void_reason()
             v._sb_check_own_entry()
             v.env['sb.stock']._lock_items(v.company_id, v._sb_items())
@@ -932,7 +932,7 @@ class SbStockVoucher(models.Model):
             if v.sb_migrated:
                 raise UserError(self.env._('%s was brought over from the previous system: correct it with a new voucher.', v.name))
             if v._sb_has_posted_bill():
-                raise UserError(self.env._('%s is already billed. Void the bill first.', v.name))
+                raise UserError(self.env._('%s is already on a purchase voucher. Void the purchase voucher first.', v.name))
             v._sb_check_own_entry()
             company = v.company_id
             lock = company._get_user_fiscal_lock_date(company.account_stock_journal_id)
@@ -1029,10 +1029,10 @@ class SbStockVoucher(models.Model):
                 'name': self.env._('Journal Entry')}
 
     def action_create_bill(self):
-        """Enter the vendor bill for this GRN: the lines clear what the GRN credited (goods received not invoiced)."""
+        """Enter the purchase voucher for this GRN: the lines clear what the GRN credited (goods received not invoiced)."""
         self.ensure_one()
         if self.voucher_type != 'grn' or self.state != 'posted':
-            raise UserError(self.env._('Only a posted GRN can be billed.'))
+            raise UserError(self.env._('Only a posted GRN can go on a purchase voucher.'))
         account = self.account_id or self.company_id.sb_grni_account_id  # clear what the GRN credited
         lines = [Command.create(dict(part, product_id=l.product_id.id, account_id=account.id,
                                      tax_ids=[Command.set(l.product_id.supplier_taxes_id.filtered(lambda t: t.company_id == self.company_id).ids)]))
@@ -1042,7 +1042,7 @@ class SbStockVoucher(models.Model):
                                               'sb_warehouse_id': self.warehouse_id.id,
                                               'memo': self.env._('Bill for %s', self.name), 'line_ids': lines})
         return {'type': 'ir.actions.act_window', 'res_model': 'sb.voucher', 'res_id': bill.id, 'view_mode': 'form',
-                'name': self.env._('Purchase Bill')}
+                'name': self.env._('Purchase Voucher')}
 
     def unlink(self):
         if any(v.state != 'draft' for v in self):

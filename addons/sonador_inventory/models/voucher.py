@@ -28,11 +28,11 @@ class SbVoucher(models.Model):
     sb_has_stock = fields.Boolean('Moves stock', compute='_compute_sb_has_stock')
     sb_grn_id = fields.Many2one('sb.stock.voucher', 'From GRN', check_company=True,
                                 domain="[('voucher_type', '=', 'grn'), ('state', '=', 'posted'), ('partner_id', '=', partner_id)]",
-                                help='Bill for goods already received: the lines clear goods received not invoiced.')
+                                help='Purchase voucher for goods already received: the lines clear goods received not invoiced.')
     sb_grn_ids = fields.Many2many('sb.stock.voucher', 'sb_voucher_grn_rel', 'voucher_id', 'grn_id', string='From GRNs',
                                   check_company=True, copy=False,
                                   domain="[('voucher_type', '=', 'grn'), ('state', '=', 'posted'), ('partner_id', '=', partner_id)]",
-                                  help='Bill for several deliveries (GRNs) at once, e.g. a purchase order received in batches.')
+                                  help='Purchase voucher for several deliveries (GRNs) at once, e.g. a purchase order received in batches.')
     sb_cost_move_ids = fields.Many2many('account.move', 'sb_voucher_cost_move_rel', 'voucher_id', 'move_id',
                                         string='Cost entries', copy=False, readonly=True)
     sb_cogs = fields.Monetary('Cost of sales', compute='_compute_sb_cogs')
@@ -257,7 +257,7 @@ class SbVoucher(models.Model):
         ppv = company.sb_cost_difference_account_id
         grn_names = ', '.join(grns.mapped('name'))
         name = self.env._('Price difference %(bill)s / %(grn)s', bill=self.name, grn=grn_names)
-        cost_name = self.env._('Cost from bill %(bill)s / %(grn)s', bill=self.name, grn=grn_names)
+        cost_name = self.env._('Cost from purchase voucher %(bill)s / %(grn)s', bill=self.name, grn=grn_names)
         entry, pairs, per_day, notes = [], {}, defaultdict(list), []
         R = self.env['sb.stock.revaluation'].sudo()
         revals, receipts, recost = [], [], {}
@@ -293,7 +293,7 @@ class SbVoucher(models.Model):
                         per_day[first_open] += [(account, -kept, cost_name, None), (inv, kept, cost_name, {'product_id': product.id})]
                         revals.append({'company_id': company.id, 'product_id': product.id, 'date': first_open, 'value': kept,
                                        'reference': self.name, 'voucher_id': self.id,
-                                       'description': self.env._('Bill price (%s)', move.sb_stock_voucher_id.name or '')})
+                                       'description': self.env._('Purchase voucher price (%s)', move.sb_stock_voucher_id.name or '')})
                         recost[product] = min(recost.get(product, first_open), first_open)
                 fmt = '{:,.2f}'.format
                 note = self.env._('%(item)s: %(amount)s %(more)s than the GRN cost%(vat)s, part of its cost from the GRN date: the '

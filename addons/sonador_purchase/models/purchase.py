@@ -8,7 +8,7 @@ from odoo.exceptions import UserError
 from odoo.tools import float_compare, float_is_zero
 
 RECEIPT = [('none', 'Not received'), ('partial', 'Partly received'), ('full', 'Fully received'), ('na', 'Services only')]
-BILLING = [('none', 'Not billed'), ('partial', 'Partly billed'), ('full', 'Fully billed')]
+BILLING = [('none', 'Not invoiced'), ('partial', 'Partly invoiced'), ('full', 'Fully invoiced')]
 PAYMENT = [('none', 'Not paid'), ('advance', 'Paid in advance'), ('partial', 'Partly paid'), ('paid', 'Paid')]
 
 
@@ -16,14 +16,14 @@ class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
     sb_grn_line_ids = fields.One2many('sb.stock.voucher.line', 'sb_po_line_id', string='Received on')
-    sb_bill_line_ids = fields.One2many('sb.voucher.line', 'sb_po_line_id', string='Billed on')
+    sb_bill_line_ids = fields.One2many('sb.voucher.line', 'sb_po_line_id', string='Invoiced on')
     sb_is_goods = fields.Boolean(compute='_compute_sb_is_goods')
     sb_qty_received = fields.Float('Received', compute='_compute_sb_qty', store=True, digits='Product Unit',
                                    help='On posted GRNs, in the unit of the order line.')
     sb_qty_to_receive = fields.Float('To receive', compute='_compute_sb_qty', store=True, digits='Product Unit')
-    sb_qty_billed = fields.Float('Billed', compute='_compute_sb_qty', store=True, digits='Product Unit')
+    sb_qty_billed = fields.Float('Invoiced', compute='_compute_sb_qty', store=True, digits='Product Unit')
     sb_qty_to_bill = fields.Float('To bill', compute='_compute_sb_qty', store=True, digits='Product Unit',
-                                  help='Goods: received and not billed. Services: ordered and not billed.')
+                                  help='Goods: received and not invoiced. Services: ordered and not invoiced.')
 
     @api.depends('product_id')
     def _compute_sb_is_goods(self):
@@ -74,17 +74,17 @@ class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
     sb_grn_ids = fields.One2many('sb.stock.voucher', 'sb_purchase_id', string='GRNs')
-    sb_voucher_ids = fields.One2many('sb.voucher', 'sb_purchase_id', string='Bills and payments')
+    sb_voucher_ids = fields.One2many('sb.voucher', 'sb_purchase_id', string='Purchase vouchers and payments')
     sb_receipt_status = fields.Selection(RECEIPT, string='Receipt', compute='_compute_sb_status', store=True)
     sb_bill_status = fields.Selection(BILLING, string='Billing', compute='_compute_sb_status', store=True)
     sb_grn_count = fields.Integer(compute='_compute_sb_counts')
     sb_bill_count = fields.Integer(compute='_compute_sb_counts')
     sb_payment_count = fields.Integer(compute='_compute_sb_counts')
-    sb_amount_billed = fields.Monetary('Billed', compute='_compute_sb_money', currency_field='company_currency_id', compute_sudo=True)
+    sb_amount_billed = fields.Monetary('Invoiced', compute='_compute_sb_money', currency_field='company_currency_id', compute_sudo=True)
     sb_amount_paid = fields.Monetary('Paid', compute='_compute_sb_money', currency_field='company_currency_id', compute_sudo=True,
-                                     help='Cash paid for this order: payments made against it (advances included) and payments of its bills.')
-    sb_amount_advance = fields.Monetary('Advance not yet billed', compute='_compute_sb_money', currency_field='company_currency_id',
-                                        compute_sudo=True, help='Paid ahead of the bills: the supplier owes goods for it.')
+                                     help='Cash paid for this order: payments made against it (advances included) and payments of its purchase vouchers.')
+    sb_amount_advance = fields.Monetary('Advance not yet invoiced', compute='_compute_sb_money', currency_field='company_currency_id',
+                                        compute_sudo=True, help='Paid ahead of the purchase vouchers: the supplier owes goods for it.')
     sb_amount_due = fields.Monetary('Still to pay', compute='_compute_sb_money', currency_field='company_currency_id', compute_sudo=True)
     sb_payment_status = fields.Selection(PAYMENT, string='Payment', compute='_compute_sb_money', compute_sudo=True)
     sb_late = fields.Boolean('Delivery late', compute='_compute_sb_late')
@@ -185,7 +185,7 @@ class PurchaseOrder(models.Model):
         return True
 
     def action_create_invoice(self):
-        raise UserError(self.env._('Bills are vouchers here: use "Bill" on the order (it clears the GRNs received).'))
+        raise UserError(self.env._('Use "Purchase Voucher" on the order (it clears the GRNs received).'))
 
     # ------------------------------------------------------------------ receive
     def _sb_grn_lines_vals(self, day=None):
@@ -224,7 +224,7 @@ class PurchaseOrder(models.Model):
         grns = self.sb_grn_ids.filtered(lambda g: g.state == 'posted' and not g.billed)
         bill = self.env['sb.voucher'].create(self._sb_bill_vals(grns))
         return {'type': 'ir.actions.act_window', 'res_model': 'sb.voucher', 'res_id': bill.id, 'view_mode': 'form',
-                'name': self.env._('Purchase Bill')}
+                'name': self.env._('Purchase Voucher')}
 
     def _sb_bill_vals(self, grns, services=True):
         """The bill of these GRNs at the order's prices and taxes (and of the services ordered and not billed)."""
@@ -249,11 +249,11 @@ class PurchaseOrder(models.Model):
                           'account_id': (l.product_id.product_tmpl_id.get_product_accounts()['expense']).id,
                           'tax_ids': [Command.set(l.tax_ids.ids)]})
         if not lines:
-            raise UserError(self.env._('Nothing to bill on %s: goods are billed after they are received (GRN).', self.name))
+            raise UserError(self.env._('Nothing to put on a purchase voucher for %s: goods go on one after they are received (GRN).', self.name))
         return {
             'voucher_type': 'bill', 'partner_id': self.partner_id.id, 'sb_purchase_id': self.id,
             'doc_currency_id': self.currency_id.id, 'reference': self.partner_ref or False,
-            'memo': self.env._('Bill for %(po)s%(grns)s', po=self.name,
+            'memo': self.env._('Purchase voucher for %(po)s%(grns)s', po=self.name,
                                grns=(' (%s)' % ', '.join(grns.mapped('name'))) if grns else ''),
             'sb_grn_ids': [Command.set(grns.ids)], 'line_ids': [Command.create(v) for v in lines]}
 

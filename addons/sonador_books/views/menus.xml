@@ -65,9 +65,9 @@
     <menuitem id="menu_sb_vendors" name="Vendors &amp; Purchases" parent="menu_sb_root" sequence="20"/>
     <menuitem id="menu_sb_vendors_list" name="Vendors" parent="menu_sb_vendors" action="action_sb_vendors" sequence="1"/>
     <menuitem id="menu_sb_cash_purchase" name="Cash Purchases" parent="menu_sb_vendors" action="action_sb_cash_purchase" sequence="5"/>
-    <menuitem id="menu_sb_bill" name="Purchase Bills (on account)" parent="menu_sb_vendors" action="action_sb_bill" sequence="10"/>
+    <menuitem id="menu_sb_bill" name="Purchase Vouchers (on account)" parent="menu_sb_vendors" action="action_sb_bill" sequence="10"/>
     <menuitem id="menu_sb_payment" name="Payments (CPV)" parent="menu_sb_vendors" action="action_sb_payment" sequence="20"/>
-    <menuitem id="menu_sb_batch_payment" groups="sonador_books.group_sb_accountant" name="Pay Several Bills" parent="menu_sb_vendors" action="action_sb_batch_payment" sequence="25"/>
+    <menuitem id="menu_sb_batch_payment" groups="sonador_books.group_sb_accountant" name="Pay Several Purchase Vouchers" parent="menu_sb_vendors" action="action_sb_batch_payment" sequence="25"/>
     <menuitem id="menu_sb_purchase_return" name="Purchase Returns / Debit Notes" parent="menu_sb_vendors" action="action_sb_purchase_return" sequence="30"/>
 
     <menuitem id="menu_sb_banking" name="Banking" parent="menu_sb_root" sequence="25"/>

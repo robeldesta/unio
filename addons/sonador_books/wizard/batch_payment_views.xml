@@ -4,14 +4,14 @@
         <field name="name">sb.batch.payment.form</field>
         <field name="model">sb.batch.payment</field>
         <field name="arch" type="xml">
-            <form string="Pay Several Bills">
+            <form string="Pay Several Purchase Vouchers">
                 <header>
-                    <button name="action_load" type="object" string="Load bills due" class="btn-secondary"/>
+                    <button name="action_load" type="object" string="Load purchase vouchers due" class="btn-secondary"/>
                     <button name="action_pay" type="object" string="Post the payments" class="btn-primary" invisible="not line_ids"
-                            confirm="Post one payment voucher per vendor for the ticked bills?" confirm-label="Post the payments"/>
+                            confirm="Post one payment voucher per vendor for the ticked purchase vouchers?" confirm-label="Post the payments"/>
                 </header>
                 <sheet>
-                    <div class="oe_title"><h1>Pay Several Bills</h1></div>
+                    <div class="oe_title"><h1>Pay Several Purchase Vouchers</h1></div>
                     <p class="text-muted">Load the bills due by a date, tick what to pay (change the amount for a part payment)
                         and post. One payment voucher (CPV) is created per vendor (and per goods / services) and applied to its bills. Each bill
                         is withheld on as a single payment of it would be: its value before VAT against the goods or services threshold.</p>
@@ -60,7 +60,7 @@
         </field>
     </record>
     <record id="action_sb_batch_payment" model="ir.actions.act_window">
-        <field name="name">Pay Several Bills</field>
+        <field name="name">Pay Several Purchase Vouchers</field>
         <field name="res_model">sb.batch.payment</field>
         <field name="view_mode">form</field>
         <field name="target">current</field>

@@ -49,10 +49,10 @@ T.add("receipt", {
 });
 
 T.add("bill", {
-    name: "Record a supplier bill", app: "Accounting", minutes: 2, sequence: 12,
+    name: "Record a purchase voucher", app: "Accounting", minutes: 2, sequence: 12,
     steps: [
-        { action: "sonador_books.action_sb_bill", clear: true, title: "Bills", body: "What you owe suppliers. Record a bill when it arrives." },
-        { ...NEW, title: "New bill", body: "Click New." },
+        { action: "sonador_books.action_sb_bill", clear: true, title: "Bills", body: "What you owe suppliers. Enter a purchase voucher when the supplier's invoice arrives." },
+        { ...NEW, title: "New purchase voucher", body: "Click New." },
         { sel: f("partner_id"), advance: "input", title: "The supplier", body: "Pick the supplier." },
         { ...addLine("line_ids"), title: "What you bought", body: "One line per item or expense, with the amount. Withholding is worked out where it applies." },
         { sel: "button[name='action_post_close']", advance: "click", title: "Post it", body: "The supplier's balance goes up. Pay it later with a Payment." },
@@ -89,7 +89,7 @@ T.add("purchase", {
         { sel: f("partner_id"), advance: "input", title: "The supplier", body: "Pick the supplier." },
         { ...addLine("order_line"), title: "What you need", body: "Add the products and quantities." },
         { sel: "button[name='action_rfq_send']", title: "Send it", body: "Email it to the supplier." },
-        { sel: "button[name='button_confirm']", advance: "click", title: "Confirm the order", body: "It becomes a purchase order. Receive the goods in Inventory (a GRN), then record the bill." },
+        { sel: "button[name='button_confirm']", advance: "click", title: "Confirm the order", body: "It becomes a purchase order. Receive the goods in Inventory (a GRN), then finance enters the purchase voucher." },
     ],
 });
 
@@ -100,7 +100,7 @@ T.add("grn", {
         { ...NEW, title: "New GRN", body: "Click New, or open one made from a purchase order." },
         { sel: f("partner_id"), advance: "input", title: "From whom", body: "Pick the supplier." },
         { ...addLine("line_ids"), title: "What arrived", body: "The items and quantities you actually received." },
-        { sel: "button[name='action_post']", title: "Post it", body: "Stock and its value go up. Then \"Create bill\" makes the supplier bill from it." },
+        { sel: "button[name='action_post']", title: "Post it", body: "Stock and its value go up. Then \"Enter Purchase Voucher\" makes the purchase voucher from it." },
     ],
 });
 

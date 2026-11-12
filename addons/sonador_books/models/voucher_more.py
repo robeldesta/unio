@@ -529,7 +529,7 @@ class SbVoucherLine(models.Model):
 class SbDocSeries(models.Model):
     _inherit = 'sb.doc.series'
 
-    doc_type = fields.Selection(selection_add=[('bill', 'Purchase Bill'), ('purchase_return', 'Purchase Return / Debit Note'),
+    doc_type = fields.Selection(selection_add=[('bill', 'Purchase Voucher'), ('purchase_return', 'Purchase Return / Debit Note'),
                                                ('bank_transfer', 'Bank Transfer')],
                                 ondelete={'bill': 'cascade', 'purchase_return': 'cascade', 'bank_transfer': 'cascade'})
     sb_cash_account_id = fields.Many2one(

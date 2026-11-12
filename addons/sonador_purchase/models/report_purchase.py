@@ -3,9 +3,9 @@ from odoo import fields, models
 from odoo.addons.sonador_books.models.report_catalog import E
 
 EXTRA = [
-    E('po_status', 'ap', 'Purchase Orders: Ordered, Received, Billed', 'Every open purchase order line: ordered, received on GRNs, '
-      'billed and still to come, with the GRNs.', 1),
-    E('po_payments', 'ap', 'Purchase Orders: Paid and Owed', 'Per order: total, billed, paid (advances included), '
+    E('po_status', 'ap', 'Purchase Orders: Ordered, Received, Invoiced', 'Every open purchase order line: ordered, received on GRNs, '
+      'invoiced and still to come, with the GRNs.', 1),
+    E('po_payments', 'ap', 'Purchase Orders: Paid and Owed', 'Per order: total, invoiced, paid (advances included), '
       'paid ahead of the goods and still to pay.', 1),
 ]
 BLURBS = {
@@ -56,9 +56,9 @@ class SbReportPurchase(models.AbstractModel):
                 {'key': 'date', 'label': 'Ordered', 'type': 'date'}, {'key': 'due', 'label': 'Expected', 'type': 'date'},
                 {'key': 'late', 'label': 'Days late', 'type': 'number_int'}, {'key': 'status', 'label': 'Receipt', 'type': 'text'},
                 {'key': 'ordered', 'label': 'Ordered', 'type': 'number'}, {'key': 'received', 'label': 'Received', 'type': 'number'},
-                {'key': 'to_receive', 'label': 'Still to come', 'type': 'number'}, {'key': 'billed', 'label': 'Billed', 'type': 'number'},
+                {'key': 'to_receive', 'label': 'Still to come', 'type': 'number'}, {'key': 'billed', 'label': 'Invoiced', 'type': 'number'},
                 {'key': 'uom', 'label': 'Unit', 'type': 'text'}, {'key': 'grns', 'label': 'GRNs', 'type': 'text'}]
-        return self._doc('po_status', opts, cols, rows, 'Open purchase orders today', 'Purchase Orders: Ordered, Received, Billed')
+        return self._doc('po_status', opts, cols, rows, 'Open purchase orders today', 'Purchase Orders: Ordered, Received, Invoiced')
 
     def _report_po_payments(self, opts):
         rows = []
@@ -83,8 +83,8 @@ class SbReportPurchase(models.AbstractModel):
         rows.append({'id': 'total', 'parent': None, 'level': 0, 'kind': 'total', 'label': 'Total', 'values': dict(grand, ref='Total')})
         cols = [{'key': 'ref', 'label': 'Order', 'type': 'text'}, {'key': 'who', 'label': 'Supplier', 'type': 'text'},
                 {'key': 'receipt', 'label': 'Goods', 'type': 'text'}, {'key': 'payment', 'label': 'Payment', 'type': 'text'},
-                {'key': 'total', 'label': 'Order total', 'type': 'monetary'}, {'key': 'billed', 'label': 'Billed', 'type': 'monetary'},
-                {'key': 'paid', 'label': 'Paid', 'type': 'monetary'}, {'key': 'advance', 'label': 'Paid ahead of bills', 'type': 'monetary'},
+                {'key': 'total', 'label': 'Order total', 'type': 'monetary'}, {'key': 'billed', 'label': 'Invoiced', 'type': 'monetary'},
+                {'key': 'paid', 'label': 'Paid', 'type': 'monetary'}, {'key': 'advance', 'label': 'Paid ahead of purchase vouchers', 'type': 'monetary'},
                 {'key': 'due', 'label': 'Still to pay', 'type': 'monetary'}]
         return self._doc('po_payments', opts, cols, rows, 'Open purchase orders today', 'Purchase Orders: Paid and Owed')
 
@@ -108,7 +108,7 @@ class SbReportPurchase(models.AbstractModel):
         rows.append({'id': 'total', 'parent': None, 'level': 0, 'kind': 'total', 'label': 'Total', 'values': dict(grand, ref='Total')})
         cols = [{'key': 'date', 'label': 'Date', 'type': 'date'}, {'key': 'ref', 'label': 'Order', 'type': 'text'}, {'key': 'who', 'label': 'Supplier', 'type': 'text'},
                 {'key': 'their', 'label': 'Their ref.', 'type': 'text'}, {'key': 'cur', 'label': 'Currency', 'type': 'text'}, {'key': 'state', 'label': 'Status', 'type': 'text'},
-                {'key': 'receipt', 'label': 'Received', 'type': 'text'}, {'key': 'billing', 'label': 'Billed', 'type': 'text'},
+                {'key': 'receipt', 'label': 'Received', 'type': 'text'}, {'key': 'billing', 'label': 'Invoiced', 'type': 'text'},
                 {'key': 'untaxed', 'label': 'Before tax', 'type': 'monetary'}, {'key': 'total', 'label': 'Total', 'type': 'monetary'}]
         return self._doc('po_register', opts, cols, rows, self._period_name(df, dt), 'Purchase Order Register')
 

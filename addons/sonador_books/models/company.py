@@ -65,7 +65,7 @@ class ResCompany(models.Model):
         help='Money received before an invoice (or more than the invoices paid). Applied to invoices on later receipts.')
     sb_vendor_advance_account_id = fields.Many2one(
         'account.account', string='Vendor Advances Account',
-        help='Money paid before a bill (or more than the bills paid). Applied to bills on later payments.')
+        help='Money paid before a purchase voucher (or more than the purchase vouchers paid). Applied to purchase vouchers on later payments.')
 
     sb_cheque_on_hand_account_id = fields.Many2one(
         'account.account', string='Cheques on Hand Account', help='Received cheques (incl. post-dated) until deposited.')

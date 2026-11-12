@@ -26,7 +26,7 @@
                         <div class="o_pp_kpi"><span>Carrying amount</span><b t-esc="money(T.book_value)"/></div>
                         <div class="o_pp_kpi"><span>Depreciation a month</span><b t-esc="money(T.monthly)"/><small t-if="ctx.last_run">last run <t t-esc="ctx.last_run"/></small><small t-else=""><t t-esc="ctx.frequencies.find((f) => f.id === ctx.frequency).name.toLowerCase()"/></small></div>
                         <div t-if="T.expensed" class="o_pp_kpi"><span>Expensed when bought</span><b t-esc="money(T.expensed)"/><small>on the register, not in the books</small></div>
-                        <div class="o_pp_kpi"><span>To confirm</span><b t-att-class="T.to_confirm ? 'o_pp_badtxt' : ''" t-esc="T.to_confirm"/><small>from bills and projects</small></div>
+                        <div class="o_pp_kpi"><span>To confirm</span><b t-att-class="T.to_confirm ? 'o_pp_badtxt' : ''" t-esc="T.to_confirm"/><small>from purchase vouchers and projects</small></div>
                     </div>
                     <div class="o_pp_toolbar">
                         <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setF('state', ev.target.value)"><option value="">All</option>
@@ -50,7 +50,7 @@
                                 <td class="text-end" t-esc="money(r.cost)"/><td class="text-end" t-esc="money(r.depreciated)"/><td class="text-end"><b t-esc="money(r.book_value)"/></td>
                                 <td class="text-end small" t-esc="r.monthly ? money(r.monthly) : ''"/>
                             </tr>
-                            <tr t-if="!state.data.rows.length"><td colspan="8" class="o_pp_empty">No assets. They appear when a bill is posted to a fixed-asset account, or add one.</td></tr>
+                            <tr t-if="!state.data.rows.length"><td colspan="8" class="o_pp_empty">No assets. They appear when a purchase voucher is posted to a fixed-asset account, or add one.</td></tr>
                         </tbody>
                     </table></div>
                 </t>
@@ -169,7 +169,7 @@
                         <label>Capitalise items from (cost)<input type="number" class="form-control" t-att-value="state.settings.threshold" t-on-change="(ev) => this.state.settings.threshold = ev.target.value"/></label></div>
                         <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveSettings">Save</button>
                             <span class="small text-muted ms-auto">Automatic: every month posts the period just ended; once a year posts the whole year at year end. Items under the threshold are expensed and kept on the register.</span></div></div>
-                    <div class="o_pp_toolbar"><span class="small text-muted">Each class has its own cost and accumulated-depreciation accounts and the country's rate. A bill line on a class's cost account becomes an asset to confirm; one on its expensed items account goes on the register as expensed.</span>
+                    <div class="o_pp_toolbar"><span class="small text-muted">Each class has its own cost and accumulated-depreciation accounts and the country's rate. A purchase voucher line on a class's cost account becomes an asset to confirm; one on its expensed items account goes on the register as expensed.</span>
                         <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.editCat()"><i class="fa fa-plus me-1"/>Class</button></div>
                     <div t-if="state.catEdit" class="o_pp_card o_pp_panel mb-3"><t t-set="C" t-value="state.catEdit"/><div class="o_pp_formgrid">
                         <label>Name<input class="form-control" t-att-value="C.name" t-on-change="(ev) => C.name = ev.target.value"/></label>
@@ -227,7 +227,7 @@
             </div>
             <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveAsset">Save</button>
                 <button class="btn btn-light border btn-sm" t-on-click="() => E.id ? (this.state.edit = null) : this.back()">Cancel</button>
-                <span class="small text-muted ms-auto">Saving does not post anything: the cost is already in the books from the bill or the opening balance.</span></div>
+                <span class="small text-muted ms-auto">Saving does not post anything: the cost is already in the books from the purchase voucher or the opening balance.</span></div>
         </div>
     </t>
 </templates>
