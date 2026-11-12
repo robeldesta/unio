@@ -231,6 +231,19 @@
         <field name="context">{'search_default_to_pay': 1}</field>
     </record>
 
+
+    <!-- the voucher shows the request it pays -->
+    <record id="view_voucher_form_request" model="ir.ui.view">
+        <field name="name">sb.voucher.form.request</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="(//field[@name='reference'])[1]" position="after">
+                <field name="sb_request_id" invisible="not sb_request_id"/>
+            </xpath>
+        </field>
+    </record>
+
     <!-- layout: the documents a voucher pays (request, purchase order) sit with its number and date, on the right -->
     <record id="view_voucher_form_links_layout" model="ir.ui.view">
         <field name="name">sb.voucher.form.links.layout</field>
@@ -241,18 +254,6 @@
             <xpath expr="//field[@name='payment_state']" position="before">
                 <xpath expr="//group/field[@name='sb_request_id']" position="move"/>
                 <xpath expr="//group/field[@name='sb_purchase_id']" position="move"/>
-            </xpath>
-        </field>
-    </record>
-
-    <!-- the voucher shows the request it pays -->
-    <record id="view_voucher_form_request" model="ir.ui.view">
-        <field name="name">sb.voucher.form.request</field>
-        <field name="model">sb.voucher</field>
-        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="(//field[@name='reference'])[1]" position="after">
-                <field name="sb_request_id" invisible="not sb_request_id"/>
             </xpath>
         </field>
     </record>

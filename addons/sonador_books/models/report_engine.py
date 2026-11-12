@@ -461,7 +461,8 @@ class SbReport(models.AbstractModel):
         return keys
 
     @api.model
-    def _report_allowed(self, key):
+    def _report_allowed(self, key, opts=None):
+        """May the user open report `key` with these options? Apps narrow it for their own roles (Sales: the customer side)."""
         if self.env.su:
             return True
         user = self.env.user
@@ -471,11 +472,11 @@ class SbReport(models.AbstractModel):
         return self.env['account.move.line'].has_access('read')
 
     @api.model
-    def _check_report_access(self, key):
+    def _check_report_access(self, key, opts=None):
         """The one access rule for a report, on screen, in packs and on the export route."""
         if not hasattr(self, '_report_%s' % key) and key not in self.PAYROLL_REPORTS:
             raise UserError(self.env._('Unknown report %s', key))
-        if not self._report_allowed(key):
+        if not self._report_allowed(key, opts):
             if key in self._payroll_report_keys():
                 raise AccessError(self.env._(
                     'This is a payroll report: it needs the HR Officer role (or payroll manager). The accounting roles '
@@ -585,7 +586,7 @@ class SbReport(models.AbstractModel):
     @api.model
     def get_report(self, key, options=None, expanded=None):
         opts = self._options(options)
-        self._check_report_access(key)
+        self._check_report_access(key, opts)
         return self._with_draft_vouchers(opts, lambda R: R._get_report_built(key, opts, expanded))
 
     def _get_report_built(self, key, opts, expanded):
@@ -615,7 +616,16 @@ class SbReport(models.AbstractModel):
     def get_children(self, lazy, options=None):
         """Rows for a lazily expanded row (e.g. GL lines of one account)."""
         opts = self._options(options)
+        self._check_lazy_access(lazy, opts)
         return self._with_draft_vouchers(opts, lambda R: getattr(R, '_lazy_%s' % lazy['kind'])(opts, lazy))
+
+    @api.model
+    def _check_lazy_access(self, lazy, opts):
+        """The rows under an expanded row come from the ledger: the same rule as the reports (apps narrow it)."""
+        if not hasattr(self, '_lazy_%s' % (lazy or {}).get('kind', '')):
+            raise UserError(self.env._('Unknown report rows.'))
+        if not self.env.su and not self.env['account.move.line'].has_access('read'):
+            raise AccessError(self.env._('This is an accounting report: it needs an accounting role.'))
 
     def _resolve_expanded(self, doc, expanded):
         out = []

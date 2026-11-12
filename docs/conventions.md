@@ -37,7 +37,7 @@ Telegram, email, the Me inbox, digests and reminders: greet by first name, say i
 ## Payroll (Ethiopia)
 
 - Income tax: monthly brackets 0 / 15 / 20 / 25 / 30 / 35 % (Proclamation 979/2016 as amended). Payments on leaving are taxed month by month (Regulation 410).
-- Pension: employee 7 %, employer 11 %, on the full basic; on days paid in the month someone leaves; no pension in a joining month that is not a full month.
+- Pension: employee 7 %, employer 11 %, on the full basic; on the salary for the days worked in the month someone joins or leaves; none while on probation (pension exempted on the person).
 - Allowances: transport and taxable allowances on days paid; house and position in full when any day is paid. Transport is tax-free up to 600 (commute) or ¼ of salary capped at 2,200 (field).
 - Overtime: hourly rate = basic ÷ 240; 1.5 day, 1.75 night (22:00–06:00), 2 rest day, 2.5 public holiday. Only approved overtime is paid.
 - Staff loans: no interest; all loans together at most one third of the monthly wage (Labour Proclamation 1156/2019, art. 59); repayable by payroll or by receipt (CRV).

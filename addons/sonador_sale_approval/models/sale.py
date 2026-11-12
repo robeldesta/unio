@@ -8,6 +8,8 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.fields import Domain
 
+from odoo.addons.sonador_books.models.client_guard import refuse_client_write
+
 STEPS = ('finance', 'commercial')
 APPR = [('none', 'Not submitted'), ('finance', 'Finance check'), ('commercial', 'Commercial approval'),
         ('approved', 'Approved'), ('sent_back', 'Sent back')]
@@ -43,6 +45,20 @@ class SaleOrder(models.Model):
     sb_appr_user_id = fields.Many2one('res.users', 'Step decided by (instead of the role)', copy=False, readonly=True, index=True,
                                       help='When the salesperson holds the role of the step and self-approval is not allowed, '
                                            'the step goes to this person one level up.')
+
+    # kept by Confirm / Approve / Send back: a client never writes them
+    _SB_APPR_FIELDS = ('sb_appr_state', 'sb_submitted_at', 'sb_finance_by', 'sb_finance_at', 'sb_commercial_by',
+                       'sb_commercial_at', 'sb_appr_user_id', 'sb_sent_back_reason')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            refuse_client_write(self.browse(), vals, self._SB_APPR_FIELDS, self.env._('Sales order'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        refuse_client_write(self, vals, self._SB_APPR_FIELDS, self.env._('Sales order'))
+        return super().write(vals)
 
     @api.depends('sb_appr_state')
     @api.depends_context('uid')

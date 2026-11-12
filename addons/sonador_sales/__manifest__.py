@@ -9,8 +9,9 @@
     'data': [
         'security/groups.xml',
         'security/ir.model.access.csv',
+        'security/books_side.xml',
         'views/delivery_views.xml',
-        'views/pricing_views.xml',  # before sale_views: its layout moves sb_channel, which this file adds
+        'views/pricing_views.xml',
         'views/sale_views.xml',
         'report/delivery_note.xml',
         'views/sales_app.xml',

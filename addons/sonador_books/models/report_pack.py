@@ -124,7 +124,7 @@ class SbReportPack(models.Model):
         docs = []
         for line in self.line_ids:
             entry = CATALOG_BY_KEY.get(line.report_key)
-            if not entry or entry['priority'] != 1 or not R._report_allowed(entry['report']):
+            if not entry or entry['priority'] != 1 or not R._report_allowed(entry['report'], entry.get('options')):
                 continue  # a pack leaves out what the user may not see (payroll without the HR role)
             if not payroll_ok and entry['report'] in R._payroll_report_keys():
                 continue  # nor sends payroll to a reader without the HR role

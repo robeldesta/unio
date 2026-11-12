@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Salespeople: the customer side of the books only (models/books_side.py). Global rules, so they hold whatever other
+         rule a group gives; true for everyone who is not a sales-only user. -->
+    <record id="rule_books_side_move" model="ir.rule">
+        <field name="name">Salespeople: customer-side journal entries only</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else ['|', '|', '|', ('move_type', 'in', ('out_invoice', 'out_refund', 'out_receipt')), ('journal_id.type', '=', 'sale'), ('line_ids.account_id.account_type', '=', 'asset_receivable'), ('create_uid', '=', user.id)]</field>
+    </record>
+    <record id="rule_books_side_move_line" model="ir.rule">
+        <field name="name">Salespeople: customer-side journal items only</field>
+        <field name="model_id" ref="account.model_account_move_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else ['|', '|', '|', ('move_id.move_type', 'in', ('out_invoice', 'out_refund', 'out_receipt')), ('move_id.journal_id.type', '=', 'sale'), ('move_id.line_ids.account_id.account_type', '=', 'asset_receivable'), ('move_id.create_uid', '=', user.id)]</field>
+    </record>
+    <record id="rule_books_side_payment" model="ir.rule">
+        <field name="name">Salespeople: customer payments only</field>
+        <field name="model_id" ref="account.model_account_payment"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else ['|', ('partner_type', '=', 'customer'), ('create_uid', '=', user.id)]</field>
+    </record>
+    <record id="rule_books_side_voucher" model="ir.rule">
+        <field name="name">Salespeople: sale-side vouchers and receipts only</field>
+        <field name="model_id" ref="sonador_books.model_sb_voucher"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else ['|', ('voucher_type', 'in', ('sale', 'cash_sale', 'sale_return', 'receipt')), ('create_uid', '=', user.id)]</field>
+    </record>
+    <record id="rule_books_side_voucher_line" model="ir.rule">
+        <field name="name">Salespeople: lines of sale-side vouchers only</field>
+        <field name="model_id" ref="sonador_books.model_sb_voucher_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else ['|', ('voucher_id.voucher_type', 'in', ('sale', 'cash_sale', 'sale_return', 'receipt')), ('voucher_id.create_uid', '=', user.id)]</field>
+    </record>
+    <record id="rule_books_side_voucher_cash" model="ir.rule">
+        <field name="name">Salespeople: money lines of sale-side vouchers only</field>
+        <field name="model_id" ref="sonador_books.model_sb_voucher_cash"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else ['|', ('voucher_id.voucher_type', 'in', ('sale', 'cash_sale', 'sale_return', 'receipt')), ('voucher_id.create_uid', '=', user.id)]</field>
+    </record>
+    <record id="rule_books_side_voucher_apply" model="ir.rule">
+        <field name="name">Salespeople: applications of sale-side vouchers only</field>
+        <field name="model_id" ref="sonador_books.model_sb_voucher_apply"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else ['|', ('voucher_id.voucher_type', 'in', ('sale', 'cash_sale', 'sale_return', 'receipt')), ('voucher_id.create_uid', '=', user.id)]</field>
+    </record>
+    <record id="rule_books_side_bank_rec" model="ir.rule">
+        <field name="name">Salespeople: no bank reconciliations</field>
+        <field name="model_id" ref="sonador_books.model_sb_bank_rec"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else [(0, '=', 1)]</field>
+    </record>
+    <record id="rule_books_side_bank_rec_line" model="ir.rule">
+        <field name="name">Salespeople: no bank reconciliation lines</field>
+        <field name="model_id" ref="sonador_books.model_sb_bank_rec_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else [(0, '=', 1)]</field>
+    </record>
+    <record id="rule_books_side_bank_rec_stmt" model="ir.rule">
+        <field name="name">Salespeople: no bank statement lines</field>
+        <field name="model_id" ref="sonador_books.model_sb_bank_rec_stmt"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">[(1, '=', 1)] if not user.sb_books_customer_only else [(0, '=', 1)]</field>
+    </record>
+</odoo>
