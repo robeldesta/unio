@@ -82,6 +82,12 @@ bom = env['mrp.bom'].create({'product_tmpl_id': door.product_tmpl_id.id, 'produc
 O = env['sb.mfg.order']
 A = O.create({'product_id': door.id, 'bom_id': bom.id, 'qty_planned': 5, 'line_id': line.id, 'state': 'running'})
 B = O.create({'product_id': door.id, 'bom_id': bom.id, 'qty_planned': 3, 'line_id': line.id, 'state': 'running'})
+ok(A.name.startswith('MO/'), 'production orders are numbered MO/, not PO/ like purchase orders: %s' % A.name)
+ok(A.display_name == '%s · 5 × Prod steel door' % A.name, 'picking an order shows what it makes: "%s"' % A.display_name)
+f0 = Form(SV.with_context(default_voucher_type='giv'))
+f0.sb_mfg_order_id = A
+ok(round(sum(f0.line_ids._records[i].get('value', 0) or 0 for i in range(len(f0.line_ids))), 2) == round(6 * 1150 + 2 * 400, 2),
+   'the lines filled from the order show their value before posting: %s' % [f0.line_ids._records[i].get('value') for i in range(len(f0.line_ids))])
 
 
 def issue(order, qtys, label, user=None):
@@ -151,6 +157,10 @@ ok(round(bal(WIP) - start[WIP], 2) == 0, 'WIP empty when both orders are finishe
 ok(on_hand(steel) == 10 and on_hand(paint) == 8, 'raw materials left: steel %s (20 − 6 − 4), paint %s (10 − 2): taken once, on the GIVs' % (on_hand(steel), on_hand(paint)))
 ok(round(bal(RM) - start[RM], 2) == 14700, 'raw materials in the books = what is left: 10 × 1,150 + 8 × 400 = 14,700; books %s' % round(bal(RM) - start[RM], 2))
 ok(on_hand(door) == 8 and round(bal(FG) - start[FG], 2) == 13800, 'doors: %s in stock, %s in the books (rules 8 and 13,800)' % (on_hand(door), round(bal(FG) - start[FG], 2)))
+
+# ------------------------------------------------------------------ fully issued: a word, not an empty form
+res = SV.new({'voucher_type': 'giv', 'sb_mfg_order_id': A.id})._onchange_sb_mfg_order()
+ok(bool(res and res.get('warning')), 'choosing an order already fully issued says so: %s' % ((res or {}).get('warning', {}).get('message')))
 
 # ------------------------------------------------------------------ nothing issued
 C = O.create({'product_id': door.id, 'bom_id': bom.id, 'qty_planned': 2, 'line_id': line.id, 'state': 'running'})

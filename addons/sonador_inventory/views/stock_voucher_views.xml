@@ -136,7 +136,7 @@
                         <group>
                             <field name="date" readonly="state != 'draft'"/>
                             <field name="date_ec"/>
-                            <field name="account_id" string="Charge to (expense)" invisible="voucher_type != 'giv'"
+                            <field name="account_id" string="Charged to" invisible="voucher_type != 'giv'"
                                    readonly="state != 'draft'" options="{'no_create': True}"
                                    domain="['|', ('account_type', 'in', ('expense', 'expense_direct_cost', 'expense_depreciation')), ('name', 'ilike', 'work in pro')]"/>
                             <field name="account_id" string="Credit account" invisible="voucher_type not in ('grn', 'fprr')"

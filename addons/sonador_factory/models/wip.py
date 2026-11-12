@@ -31,6 +31,9 @@ class ResCompany(models.Model):
             rm = self.env['product.category'].sudo().with_company(company).search([('name', 'ilike', 'Raw Materials')], limit=1)
             if wip and rm and not rm.sb_issue_account_id:
                 rm.sb_issue_account_id = wip
+        seq = self.env.ref('sonador_factory.seq_order', raise_if_not_found=False)
+        if seq and (seq.prefix or '').startswith('PO/'):
+            seq.sudo().prefix = 'MO/' + seq.prefix[3:]   # purchase orders are PO/; orders already numbered keep theirs
         return True
 
 
@@ -39,6 +42,13 @@ class SbMfgOrder(models.Model):
 
     giv_ids = fields.One2many('sb.stock.voucher', 'sb_mfg_order_id', string='Materials issued',
                               domain=[('voucher_type', '=', 'giv')])
+
+    @api.depends('name', 'qty_planned', 'product_id')
+    def _compute_display_name(self):
+        """'MO/2026/0004 · 5 × Steel door 90x210': a store clerk picking an order sees what it makes."""
+        for o in self:
+            qty = ('%g' % o.qty_planned) if o.qty_planned else ''
+            o.display_name = '%s · %s × %s' % (o.name, qty, o.product_id.name) if o.product_id and qty else (o.name or '')
 
     def _sb_needs(self):
         """{product: quantity} the recipe needs for the planned quantity."""
@@ -96,8 +106,12 @@ class SbStockVoucher(models.Model):
             left = need - issued.get(product, 0.0)
             if left > 0:
                 cmds.append(Command.create({'product_id': product.id, 'name': product.display_name, 'quantity': left,
-                                            'unit_cost': product.standard_price, 'account_id': wip.id if wip else False}))
+                                            'unit_cost': product.standard_price, 'account_id': wip.id if wip else False,
+                                            'value': round(left * product.standard_price, 2)}))   # estimate until posted
         self.line_ids = cmds
+        if len(cmds) == 1:
+            return {'warning': {'type': 'notification', 'title': self.env._('Nothing left to issue'),
+                                'message': self.env._('Everything %s needs has been issued. Add a line for anything extra.', order.name)}}
 
     def _sb_force_wip(self):
         """A GIV for a production order charges work in progress, whatever an item's class says."""

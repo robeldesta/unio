@@ -197,7 +197,8 @@ class PurchaseOrder(models.Model):
             qty = l.product_uom_id._compute_quantity(l.sb_qty_to_receive, l.product_id.uom_id, round=False) \
                 if l.product_uom_id and l.product_uom_id != l.product_id.uom_id else l.sb_qty_to_receive
             vals.append({'product_id': l.product_id.id, 'name': l.name.split('\n')[0] if l.name else l.product_id.display_name,
-                         'quantity': qty, 'unit_cost': l._sb_price_company(day), 'sb_po_line_id': l.id})
+                         'quantity': qty, 'unit_cost': l._sb_price_company(day), 'sb_po_line_id': l.id,
+                         'value': round(qty * l._sb_price_company(day), 2)})   # shown before posting, set again at posting
         return vals
 
     def action_sb_receive(self):
@@ -214,6 +215,7 @@ class PurchaseOrder(models.Model):
         wh = self.picking_type_id.warehouse_id if 'picking_type_id' in self._fields else self.env['stock.warehouse']
         grn = self.env['sb.stock.voucher'].create({
             'voucher_type': 'grn', 'partner_id': self.partner_id.id, 'sb_purchase_id': self.id,
+            'received_by': self.env.user.name,  # the storekeeper receiving it, as on a GRN entered by hand
             'warehouse_id': (wh or self.env['stock.warehouse'].search([('company_id', '=', self.company_id.id)], limit=1)).id,
             'reference': self.partner_ref or False, 'memo': self.env._('Received against %s', self.name),
             'line_ids': [Command.create(v) for v in lines]})

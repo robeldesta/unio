@@ -97,6 +97,9 @@ def receive(po, qtys, label, user=None):
     """user: who posts it (a store clerk receives without seeing the order's payments)."""
     po_u = po.with_user(user) if user else po
     g = SV.with_user(user).browse(po_u.action_sb_receive()['res_id']) if user else SV.browse(po.action_sb_receive()['res_id'])
+    if user:
+        ok(g.received_by == user.name, '  %s: received by %s, filled in' % (label, g.received_by))
+        ok(round(sum(g.line_ids.mapped('value')), 2) > 0, '  %s: line values shown before posting' % label)
     for l in g.line_ids:
         l.quantity = qtys.get(l.product_id, 0)
     g.line_ids.filtered(lambda l: not l.quantity).unlink()

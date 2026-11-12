@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <record id="seq_order" model="ir.sequence"><field name="name">Production order</field><field name="code">sb.mfg.order</field><field name="prefix">PO/%(year)s/</field><field name="padding">4</field><field name="company_id" eval="False"/></record>
+    <record id="seq_order" model="ir.sequence"><field name="name">Production order</field><field name="code">sb.mfg.order</field><field name="prefix">MO/%(year)s/</field><field name="padding">4</field><field name="company_id" eval="False"/></record>
     <record id="shift_0" model="sb.mfg.shift"><field name="name">Shift A (morning)</field><field name="sequence">0</field><field name="hour_from">6</field><field name="hour_to">14</field></record>
     <record id="shift_1" model="sb.mfg.shift"><field name="name">Shift B (afternoon)</field><field name="sequence">1</field><field name="hour_from">14</field><field name="hour_to">22</field></record>
     <record id="shift_2" model="sb.mfg.shift"><field name="name">Shift C (night)</field><field name="sequence">2</field><field name="hour_from">22</field><field name="hour_to">6</field></record>
