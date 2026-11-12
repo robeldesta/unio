@@ -1,8 +1,12 @@
 """Which apps a customer company sees. Every app is in the price; a company starts with the ones its kind of business
 uses, and switches the others on or off itself on the Apps screen. An app not yet added to the company is added (its
 module installed) the first time it is switched on."""
+import logging
+
 from odoo import api, models
 from odoo.exceptions import AccessError
+
+_logger = logging.getLogger(__name__)
 
 # key: (name, root menu, what it is for)
 CATALOG = [
@@ -42,6 +46,45 @@ class SaasApps(models.AbstractModel):
     def _menu(self, xmlid):
         return self.env.ref(xmlid, raise_if_not_found=False)
 
+    # The company's choice is kept in saas.apps_off and applied again whenever the system starts: a module update
+    # reloads its menus as visible, which used to bring back every app the company had switched off at each release.
+    OFF = 'saas.apps_off'
+
+    def _apps_off(self):
+        P = self.env['ir.config_parameter'].sudo()
+        raw = P.get_param(self.OFF)
+        if raw is None or raw is False:
+            # companies from before the choice was kept: what their kind of business does not use
+            industry = P.get_param('saas.industry')
+            if not industry:
+                return None
+            keep = set(INDUSTRY.get(industry) or [k for k, *_r in CATALOG if k not in ('school', 'farm')])
+            return {k for k, *_r in CATALOG if k not in keep}
+        return {k for k in raw.split(',') if k}
+
+    def _set_apps_off(self, keys):
+        self.env['ir.config_parameter'].sudo().set_param(self.OFF, ','.join(sorted(keys)))
+
+    def _apply_choice(self):
+        off = self._apps_off()
+        if off is None:
+            return
+        for key, _name, xmlid, _what in CATALOG:
+            menu = self._menu_of(xmlid)
+            if menu and menu.active == (key in off):
+                menu.active = key not in off
+        odoo_apps = self._menu_of('base.menu_management')
+        if odoo_apps and odoo_apps.active:
+            odoo_apps.active = False
+
+    def _register_hook(self):
+        super()._register_hook()
+        try:
+            with self.env.cr.savepoint():
+                self.sudo()._apply_choice()
+        except Exception:  # never stop the system from starting over a menu
+            _logger.exception('Could not apply the company\'s app choice')
+
     @api.model
     def apply_industry(self, industry):
         """At sign-up: show the apps of this kind of business, hide the rest (all stay installed)."""
@@ -55,6 +98,7 @@ class SaasApps(models.AbstractModel):
         if odoo_apps:
             odoo_apps.sudo().active = False
         self.env['ir.config_parameter'].sudo().set_param('saas.industry', industry)
+        self._set_apps_off({k for k, *_r in CATALOG if k not in keep})
         return True
 
     def _menu_of(self, xmlid):
@@ -87,6 +131,8 @@ class SaasApps(models.AbstractModel):
         if not xmlid:
             return self.list_apps()
         menu = self._menu_of(xmlid)
+        off = self._apps_off() or {k for k, _n, x, _w in CATALOG if (self._menu_of(x) and not self._menu_of(x).active)}
+        self._set_apps_off((off - {key}) if on else (off | {key}))
         if menu:
             menu.active = bool(on)
             return self.list_apps()
