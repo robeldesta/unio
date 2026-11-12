@@ -68,6 +68,8 @@ class SbMe(models.AbstractModel):
         if me and out['apps']['planning']:
             out['week'] = self._safe(lambda: self._week())
         out['sections'] = self.sections()
+        out['setup'] = self._safe(lambda: self._setup()) or False
+        out['can_add_me'] = not me and self._setup_admin()
         out['notices'] = self._safe(lambda: self.env['sb.me.notice']._mine()) or []
         return out
 

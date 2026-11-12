@@ -28,6 +28,18 @@
 .o_me_actions, .o_me_refuse { display: flex; gap: 6px; margin-top: 10px; padding-left: 52px; align-items: center; }
 .o_me_refuse input { max-width: 340px; }
 .o_me_todo { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #F0F2F6; > .fa { color: #2D6BFF; width: 18px; } }
+.o_me_setup { border-color: #CBD6F5; }
+.o_me_setup_count { font-size: .85rem; font-weight: 700; color: #2D6BFF; }
+.o_me_setup_bar { height: 6px; background: #EEF2FB; border-radius: 999px; overflow: hidden; margin-bottom: 8px;
+    div { height: 100%; background: #2D6BFF; border-radius: 999px; transition: width .3s ease; } }
+.o_me_setup_step { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 10px; cursor: pointer;
+    &:hover { background: #F5F7FA; }
+    &.next { background: #EEF2FB; }
+    &.done { b { color: #6B7286; text-decoration: line-through; } } }
+.o_me_setup_num { width: 28px; height: 28px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: .85rem; border: 2px solid #CBD6F5; color: #2D6BFF;
+    .done & { background: #1F9A5A; border-color: #1F9A5A; color: #fff; } }
+.o_me_setup_foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 6px; }
 .o_me_stats { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 10px;
     div { display: flex; flex-direction: column; } b { font-size: 1.35rem; } span { font-size: .78rem; color: #6B7286; } }
 .o_me_row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid #F0F2F6; font-size: .92rem; }

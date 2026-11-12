@@ -8,7 +8,9 @@
             <img t-att-src="d.employee ? d.employee.avatar : d.user.avatar" alt=""/>
             <div class="o_me_hello_text">
                 <h1 t-esc="greeting"/>
-                <div t-if="d.employee" class="o_me_sub"><t t-esc="d.employee.job"/><t t-if="d.employee.department"> · <t t-esc="d.employee.department"/></t><t t-if="d.employee.manager"> · reports to <t t-esc="d.employee.manager"/></t></div>
+                <div t-if="d.employee" class="o_me_sub"><t t-esc="d.employee.job"/><t t-if="d.employee.job and d.employee.department"> · </t><t t-esc="d.employee.department"/><t t-if="d.employee.manager"><t t-if="d.employee.job or d.employee.department"> · </t>reports to <t t-esc="d.employee.manager"/></t></div>
+                <div t-elif="d.can_add_me" class="o_me_sub">You are not in People yet.
+                    <button class="btn btn-link btn-sm p-0 align-baseline" t-on-click="addMe">Add me to People</button></div>
                 <div t-else="" class="o_me_sub">Your login is not linked to an employee yet: ask HR.</div>
             </div>
             <div t-if="d.clock and !d.clock.none" class="o_me_clock">
@@ -134,6 +136,26 @@
                     <t t-component="sectionComponent(sec.key)" data="sec.data" reload.bind="load"/>
                 </section>
             </t>
+
+            <!-- first-day setup (the person who runs the system, until every step is done) -->
+            <section t-if="page === 'home' and d.setup" class="o_me_card o_me_wide o_me_setup">
+                <div class="o_me_head">
+                    <h2><i class="fa fa-flag-checkered"/> <t t-esc="d.setup.title"/></h2>
+                    <span class="o_me_setup_count"><t t-esc="d.setup.done"/> of <t t-esc="d.setup.total"/> done</span>
+                </div>
+                <div class="o_me_setup_bar"><div t-attf-style="width: {{ 100 * d.setup.done / d.setup.total }}%"/></div>
+                <div t-foreach="d.setup.steps" t-as="s" t-key="s.key" t-attf-class="o_me_setup_step {{ s.done ? 'done' : '' }} {{ s.key === d.setup.next ? 'next' : '' }}"
+                     t-on-click="() => this.openSetup(s)">
+                    <span class="o_me_setup_num"><i t-if="s.done" class="fa fa-check"/><t t-else="" t-esc="s_index + 1"/></span>
+                    <div class="o_me_item_body"><b t-esc="s.title"/><div class="small text-muted" t-esc="s.why"/></div>
+                    <button t-if="s.key === d.setup.next" class="btn btn-sm btn-primary">Start</button>
+                    <i t-elif="!s.done" class="fa fa-angle-right text-muted"/>
+                </div>
+                <div class="o_me_setup_foot">
+                    <span class="small text-muted">Each step ticks itself when it is done.</span>
+                    <button class="btn btn-link btn-sm text-muted" t-on-click="hideSetup">Hide this list</button>
+                </div>
+            </section>
 
             <!-- to do -->
             <section t-if="page === 'home' and d.todo.length" class="o_me_card o_me_wide">
