@@ -149,6 +149,13 @@ F = env['sb.factory']
 short = {r['product']: r for r in F.shortages()['rows']}
 ok(steel.display_name not in short and short.get(paint.display_name, {}).get('need') == 1.2,
    'shortages count only what is not issued yet (steel all issued; paint 1.2 for B): %s' % {k: v['need'] for k, v in short.items()})
+card_a = F.order(A.id)
+iss = {m['product']: m['issued'] for m in card_a['materials']}
+ok(iss.get(steel.display_name) == 6 and iss.get(paint.display_name) == 2,
+   'the order shows what the store issued for it: %s' % iss)
+ok('Hidar' in F.ec('2026-11-12'), 'the shift form shows the day in the Ethiopian calendar: %s' % F.ec('2026-11-12'))
+names = env['sb.mfg.reason'].search([('kind', '=', 'waste')]).mapped('name')
+ok('Rejects' in names and not any('wind' in n_ for n_ in names), 'waste reasons are generic (not a film plant\'s): %s' % names)
 v_a = finish(A, 120, 5, 'finish A')
 if v_a:
     ok(v_a.voucher_type == 'fprr', 'A is finished on an FPRR (not a Build): %s' % v_a.voucher_type)

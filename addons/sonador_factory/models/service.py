@@ -194,6 +194,15 @@ class SbFactory(models.AbstractModel):
                 'labour': round(labour, 2), 'overhead': round(overhead, 2), 'material_est': round(material, 2),
                 'unit_cost_est': round((material + labour + overhead) / good, 4) if good else None}
 
+    @api.model
+    def ec(self, day):
+        """A day as the Ethiopian date the shift records show (Hidar 3, 2019), for the shift form."""
+        self._require()
+        try:
+            return format_ethiopian(fields.Date.to_date(day)) if day else ''
+        except Exception:
+            return ''
+
     def _posted_cost(self, v):
         """{'value', 'unit_cost'} of the voucher an order was finished on: an FPRR (now), or a Build (before)."""
         if v.voucher_type == 'fprr':
@@ -207,11 +216,13 @@ class SbFactory(models.AbstractModel):
         self._require()
         o = self._O().browse(int(order_id))
         onhand = self._onhand(o.material_ids.product_id)
+        issued = o._sb_issued()   # what the store issued for this order on its GIVs (what the cost comes from)
         return dict(self._card(o, onhand), line=o.line_id.name or '', bom=o.bom_id.display_name or '', note=o.note or '',
                     partner_id=o.partner_id.id or False, started=o.started_at and fields.Datetime.to_string(o.started_at) or '',
                     voucher=o.voucher_id and dict({'id': o.voucher_id.id, 'name': o.voucher_id.name}, **self._posted_cost(o.voucher_id)) or False,
                     materials=[{'id': m.id, 'product': m.product_id.display_name, 'uom': m.uom_name, 'required': m.qty_required,
                                 'consumed': m.qty_consumed, 'lots': m.lots or '', 'onhand': onhand.get(m.product_id.id, 0),
+                                'issued': issued.get(m.product_id, 0.0),
                                 'expected': round(m.qty_required * (o.qty_good / o.qty_planned), 4) if o.qty_planned else 0}
                                for m in o.material_ids],
                     entries=[{'id': e.id, 'date': _s(e.date), 'ec': format_ethiopian(e.date), 'shift': e.shift_id.name or '',

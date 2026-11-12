@@ -23,9 +23,12 @@ class UnioTour(models.AbstractModel):
             act = self.env.ref(xmlid, raise_if_not_found=False)
             if not act:
                 continue
-            try:
-                act.check_access('read')
-            except Exception:
+            # Whether the person may open the screen: the action's own groups, then its menu. (Reading the action record
+            # itself is for administrators only in Odoo 19, so checking that hid every tour starting on a Unio screen
+            # from everyone else.)
+            groups = act.sudo().group_ids if 'group_ids' in act._fields else self.env['res.groups']
+            if groups and not (groups & self.env.user.all_group_ids if 'all_group_ids' in self.env.user._fields
+                               else groups & self.env.user.group_ids):
                 continue
             menus = self.env['ir.ui.menu'].sudo().search([('action', '=', '%s,%d' % (act._name, act.id))])
             if menus and not menus.with_user(self.env.user)._filter_visible_menus():
