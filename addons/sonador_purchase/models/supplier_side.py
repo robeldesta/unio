@@ -10,7 +10,7 @@ On credit (the standard three steps, chosen 12 Nov 2026):
 A CPV against an order first pays the order's open purchase vouchers (their VAT is already booked), then pays the goods
 not yet invoiced ahead (advance, with their VAT), and anything beyond the order is advance with no VAT.
 Each order's payments, GRNs and purchase vouchers are matched (reconciled) with each other only."""
-from odoo import api, models
+from odoo import Command, api, models
 from odoo.exceptions import UserError
 
 
@@ -55,21 +55,6 @@ class PurchaseOrder(models.Model):
         """Goods the order's purchase vouchers invoiced (before VAT): their debits to GRNI."""
         pv = self._sb_bills().filtered(lambda v: v.state == 'posted' and v.voucher_type == 'bill').move_id
         return sum(self._sb_side_lines(self.company_id.sb_grni_account_id, pv).mapped('debit'))
-
-    def _sb_vat_parts(self):
-        """[(share of the order's VAT, account)] from the order lines' own taxes."""
-        self.ensure_one()
-        Rep = self.env['account.tax.repartition.line']
-        amounts = {}
-        for line in self.order_line.filtered(lambda l: l.tax_ids and l.price_subtotal):
-            res = line.tax_ids.compute_all(line.price_unit * (1 - (line.discount or 0.0) / 100.0), self.currency_id,
-                                           line.product_qty, product=line.product_id, partner=self.partner_id)
-            for t in res['taxes']:
-                rep = Rep.browse(t['tax_repartition_line_id'])
-                if rep.account_id:
-                    amounts[rep] = amounts.get(rep, 0.0) + t['amount']
-        total = sum(amounts.values())
-        return [(amt / total, rep.account_id) for rep, amt in amounts.items()] if total else []
 
     def _sb_reconcile_side(self):
         """Match the order's payments, GRNs and purchase vouchers on advance, GRNI and the supplier's payable."""
@@ -164,16 +149,16 @@ class SbStockVoucher(models.Model):
 class SbVoucher(models.Model):
     _inherit = 'sb.voucher'
 
-    def _sb_unapplied_split(self, amount, sign):
+    def _sb_po_payment_parts(self, amount):
+        """How a payment of `amount` (VAT included) against its order splits, the one place both the entry and the
+        withholding base read: {'to_pv', 'pv_vat', 'lines': [(taxes, net)], 'goods_vat', 'ahead'}."""
         po = self.sb_purchase_id.sudo()
-        if not (self.voucher_type == 'payment' and sign < 0 and po and po.state == 'purchase'):
-            return super()._sb_unapplied_split(amount, sign)
-        c, cur, ref = self.company_id, self.company_id.currency_id, po.name
-        out = []
-        # 1. the order's purchase vouchers still open: their VAT is booked already
+        c, cur = self.company_id or self.env.company, (self.company_id or self.env.company).currency_id
+        # 1. the order's purchase vouchers still open: their VAT is booked already (its share of what is paid is VAT)
         to_pv = cur.round(min(amount, po._sb_payables_open()))
-        if to_pv:
-            out.append((po._sb_payable_account(), to_pv, self.env._('Purchase voucher(s) of %s', ref)))
+        pvs = po._sb_bills().filtered(lambda v: v.state == 'posted' and v.voucher_type == 'bill').move_id
+        pv_total = sum(abs(m.amount_total_signed) for m in pvs)
+        pv_vat = cur.round(to_pv * sum(abs(m.amount_tax_signed) for m in pvs) / pv_total) if pv_total else 0.0
         rest = cur.round(amount - to_pv)
         # 2. goods not yet invoiced: paid ahead, with their VAT; 3. beyond the order: advance, no VAT
         day = self.date or po.date_order
@@ -181,21 +166,77 @@ class SbVoucher(models.Model):
         rate = (po.currency_id._convert(po.amount_tax, cur, c, day) / untaxed) if untaxed else 0.0
         left = max(untaxed - po._sb_goods_paid_ahead() - po._sb_goods_invoiced(), 0.0)
         covered = min(rest, cur.round(left * (1 + rate)))
-        net = cur.round(covered / (1 + rate)) if rate else covered
-        vat = cur.round(covered - net)
-        ahead = cur.round(net + rest - covered)
-        if ahead:
-            out.append((c.sb_vendor_advance_account_id, ahead, self.env._('Advance on %s', ref)))
-        if vat:
-            parts = po._sb_vat_parts()
-            done = 0.0
-            for i, (share, account) in enumerate(parts):
-                part = cur.round(vat - done) if i == len(parts) - 1 else cur.round(vat * share)
-                done += part
-                out.append((account, part, self.env._('VAT on %s', ref)))
-            if not parts:
-                out.append((c.sb_vendor_advance_account_id, vat, self.env._('Advance on %s', ref)))
+        lines, plain = self._sb_goods_with_taxes(po, covered, rate, cur)
+        goods_vat = cur.round(covered - sum(n for _t, n in lines) - plain)
+        return {'to_pv': to_pv, 'pv_vat': pv_vat, 'lines': lines, 'goods_vat': goods_vat,
+                'ahead': cur.round(plain + rest - covered)}   # goods without VAT, the odd cent, anything beyond the order
+
+    def _sb_po_payment(self, sign=-1):
+        po = self.sb_purchase_id
+        return self.voucher_type == 'payment' and sign < 0 and po and po.sudo().state == 'purchase'
+
+    def _sb_unapplied_split(self, amount, sign):
+        if not self._sb_po_payment(sign):
+            return super()._sb_unapplied_split(amount, sign)
+        po = self.sb_purchase_id.sudo()
+        c, ref = self.company_id, po.name
+        parts = self._sb_po_payment_parts(amount)
+        out = []
+        if parts['to_pv']:
+            out.append((po._sb_payable_account(), parts['to_pv'], self.env._('Purchase voucher(s) of %s', ref)))
+        adv = c.sb_vendor_advance_account_id
+        label = self.env._('Advance on %s', ref)
+        # the goods paid ahead, one line per set of taxes on the order, carrying those taxes: Odoo adds the VAT lines
+        # with their tax grids (input VAT on local purchases, with its base), as on an invoice
+        for taxes, net in parts['lines']:
+            out.append((adv, net, label, {'tax_ids': [Command.set(taxes.ids)]}))
+        if parts['ahead']:
+            out.append((adv, parts['ahead'], label))
         return out
+
+    def _sb_wht_advance_base(self, advance):
+        """Withholding is on the value before VAT: a payment against an order takes out its purchase vouchers' VAT
+        share and the VAT of the goods it pays ahead."""
+        if not advance or not self._sb_po_payment():
+            return super()._sb_wht_advance_base(advance)
+        parts = self._sb_po_payment_parts(advance)
+        cur = (self.company_id or self.env.company).currency_id
+        return cur.round(max(advance - parts['pv_vat'] - parts['goods_vat'], 0.0))
+
+    def _sb_goods_with_taxes(self, po, covered, rate, cur):
+        """Split `covered` (goods paid ahead, VAT included) into [(taxes, amount before VAT)] by the order's tax groups,
+        so that each amount plus the VAT Odoo computes on it adds up to `covered` to the cent. Returns (lines, the part
+        with no tax, including any cent the rounding cannot place)."""
+        groups = {}
+        for l in po.order_line.filtered(lambda l: l.price_subtotal):
+            groups.setdefault(l.tax_ids, 0.0)
+            groups[l.tax_ids] += l.price_subtotal
+        total = sum(groups.values())
+        if not total or not covered:
+            return [], covered
+        net = cur.round(covered / (1 + rate)) if rate else covered
+        keys = sorted(groups, key=lambda t: -groups[t])
+        nets, done = {}, 0.0
+        for i, t in enumerate(keys):
+            nets[t] = cur.round(net - done) if i == len(keys) - 1 else cur.round(net * groups[t] / total)
+            done += nets[t]
+
+        def vat_of(t, n):
+            if not t or not n:
+                return 0.0
+            res = t.compute_all(n, cur, 1.0, partner=po.partner_id)
+            return cur.round(res['total_included'] - res['total_excluded'])
+
+        main = next((t for t in keys if t), None)
+        for _i in range(4):   # move the odd cent onto the main taxed line until net + VAT = what was paid
+            diff = cur.round(covered - sum(nets.values()) - sum(vat_of(t, n) for t, n in nets.items()))
+            if cur.is_zero(diff) or not main:
+                break
+            nets[main] = cur.round(nets[main] + diff / (1 + rate))
+        diff = cur.round(covered - sum(nets.values()) - sum(vat_of(t, n) for t, n in nets.items()))
+        lines = [(t, n) for t, n in nets.items() if t and n]
+        plain = cur.round(sum(n for t, n in nets.items() if not t) + diff)
+        return lines, plain
 
     def action_post(self):
         res = super().action_post()

@@ -51,6 +51,20 @@ class Book:
 
 
 book = Book()
+book_vat = [0.0]   # input VAT the rules say was booked (CPVs paid ahead + purchase vouchers): the VAT return must show it
+book_base = [0.0]  # and the purchases it is on (before VAT), as local purchases, not as imports
+
+
+def vat_return():
+    from odoo import fields as _f
+    d = _f.Date.to_string(_f.Date.context_today(env.user))
+    rows = {r.get('id'): r['values'] for r in env['sb.report'].get_report('vat_return', {'date_from': d, 'date_to': d})['rows']}
+    std = sum(v.get('base', 0.0) for k, v in rows.items() if k and k.startswith('purchase_') and k[9:].isdigit())
+    return {'tax': round(rows.get('purchase', {}).get('tax', 0.0), 2), 'base_std': round(std, 2),
+            'customs': round(rows.get('purchase_customs', {}).get('tax', 0.0), 2)}
+
+
+vat_start = vat_return()
 
 
 def new_po(partner, lines, rate):
@@ -126,6 +140,8 @@ def invoice(po, label):
     vat = round(net * book.rate[po.id], 2)
     book.ap[po.id] += net + vat
     book.invoiced[po.id] += net
+    book_vat[0] += vat
+    book_base[0] += net if vat else 0.0
     book.grni[po.id] = 0.0
     check(pv.move_id, want((GRNI, net, 0), (VAT, vat, 0), (payable(po), 0, net + vat)), label)
     return pv
@@ -157,6 +173,8 @@ def pay(po, amount, label):
     ahead = round(net + rest - covered, 2)
     book.adv[po.id] += ahead
     book.ahead[po.id] += ahead
+    book_vat[0] += vat
+    book_base[0] += net if vat else 0.0
     check(p.move_id, want((payable(po), to_pv, 0), (ADV, ahead, 0), (VAT, vat, 0), (BANK, 0, amount)), label)
     return p
 
@@ -268,6 +286,38 @@ try:
 except Exception as e:
     ok(False, 'GRN posted by the store clerk: refused (%s)' % str(e).splitlines()[0][:150])
 ledger_ok(s, 'after 9')
+
+print('\n--- 10. withholding: on the value before VAT, above the threshold before VAT')
+WHT = c.sb_wht_payable_account_id
+def pay_wht(po, amount):
+    p = V.create({'voucher_type': 'payment', 'partner_id': po.partner_id.id, 'payer_type': 'vendor', 'sb_purchase_id': po.id,
+                  'received_amount': amount, 'cash_account_id': BANK.id})
+    p._onchange_sync_single_deposit(); p.wht_supply = 'goods'; p._onchange_sync_single_deposit()
+    if not p.cash_line_ids:
+        p.cash_line_ids = [Command.create({'account_id': BANK.id, 'amount': p.amount_cash})]
+    p.action_post()
+    return p
+rate = c.sb_wht_rate
+for label, before_vat, vat_on, credit in (('paid ahead 20,000 + VAT', 20000.0, True, False), ('pays a purchase voucher of 30,000 + VAT', 30000.0, True, True),
+                                          ('paid ahead 18,000 + VAT (under the threshold before VAT, over it with VAT)', 18000.0, True, False)):
+    s = supplier('WHT %s' % label[:20]); s.sb_trade_license = 'TL-%d' % n[0]
+    k = item(100)
+    po = new_po(s, [(k, before_vat / 100, 100, vat_on)], .15)
+    if credit:
+        receive(po, {k: before_vat / 100}, '  GRN'); invoice(po, '  PV')
+    p = pay_wht(po, round(before_vat * 1.15, 2))
+    want_wht = round(before_vat * rate / 100, 2) if before_vat > c.sb_wht_goods_threshold else 0.0
+    got = round(sum(l.credit for l in p.move_id.line_ids if l.account_id == WHT), 2)
+    ok(got == want_wht, 'withholding, %s: %s (rules: %g%% of %s before VAT = %s)' % (label, got, rate, before_vat, want_wht))
+    if not credit:   # paid ahead: the CPV books the VAT (a purchase voucher's was counted when it was entered)
+        book_vat[0] += round(before_vat * .15, 2); book_base[0] += before_vat
+
+print('\n--- VAT return')
+end = vat_return()
+d_tax, d_base, d_customs = (round(end[k] - vat_start[k], 2) for k in ('tax', 'base_std', 'customs'))
+ok(d_tax == round(book_vat[0], 2), 'the VAT return shows all the input VAT booked: return %s, booked %s' % (d_tax, round(book_vat[0], 2)))
+ok(d_customs == 0, 'none of it filed as import VAT paid at customs (these are local purchases): %s' % d_customs)
+ok(d_base == round(book_base[0], 2), 'the purchases it is on are declared, at 15%%: base %s, rules %s' % (d_base, round(book_base[0], 2)))
 
 print('\n%d of %d checks pass' % (sum(results), len(results)))
 env.cr.rollback()
