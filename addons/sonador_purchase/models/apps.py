@@ -40,7 +40,7 @@ class SbAppHome(models.AbstractModel):
                         lambda o: dict(o._fields['sb_receipt_status'].selection).get(o.sb_receipt_status), order='date_planned'),
             self._queue('advances', 'Paid, goods not all in', 'fa-exclamation-circle', 'purchase.order', [('id', 'in', advances.ids)],
                         lambda o: o.name, lambda o: o.partner_id.name, lambda o: money(o.sb_amount_paid), tone='warn'),
-            self._queue('to_bill', 'Received, not billed', 'fa-file-text', 'sb.stock.voucher', [('id', 'in', unbilled.ids)],
+            self._queue('to_bill', 'Received, not invoiced', 'fa-file-text', 'sb.stock.voucher', [('id', 'in', unbilled.ids)],
                         lambda g: g.name, lambda g: '%s · %s' % (g.partner_id.name, g.sb_purchase_id.name),
                         lambda g: money(g.amount_total), order='date'),
         ]
@@ -52,10 +52,10 @@ class SbAppHome(models.AbstractModel):
             flows.append([tile('Advance Payment', 'fa-upload', B % 'action_sb_payment', True, 'CPV before delivery')])
         flows.append([tile('Receive (GRN)', 'fa-sign-in', I % 'action_sb_grn', True, 'in batches, against the order')])
         if books:
-            flows.append([tile('Bill', 'fa-file-text', B % 'action_sb_bill', True, 'clears the GRNs'),
+            flows.append([tile('Purchase Voucher', 'fa-file-text', B % 'action_sb_bill', True, 'clears the GRNs'),
                           tile('Pay', 'fa-money', B % 'action_sb_payment', True, 'CPV')])
         return {
-            'title': 'Purchase', 'subtitle': 'Requests for quotation, purchase orders, deliveries, bills and payments',
+            'title': 'Purchase', 'subtitle': 'Requests for quotation, purchase orders, deliveries, purchase vouchers and payments',
             'icon': 'fa-shopping-cart',
             'kpis': [{'label': 'Open orders', 'value': len(open_pos)},
                      {'label': 'Paid, goods not all in', 'value': money(sum(advances.mapped('sb_amount_paid')))}],
@@ -79,8 +79,9 @@ class SbAppHome(models.AbstractModel):
             'key': 'expected', 'title': 'Expected from suppliers', 'icon': 'fa-shopping-cart', 'count': len(pos),
             'tone': 'bad' if pos.filtered(lambda o: o.date_planned and o.date_planned < now) else None,
             'model': 'purchase.order', 'domain': [('id', 'in', pos.ids)], 'action_name': 'Expected from suppliers',
-            'rows': [{'id': o.id, 'label': o.name,
-                      'sub': '%s · due %s' % (o.partner_id.name, fields.Date.to_string(o.date_planned.date()) if o.date_planned else '—'),
+            # a click receives: a GRN filled from the order (the store does not need the order's money and vouchers)
+            'rows': [{'id': o.id, 'label': o.name, 'call': 'action_sb_receive',
+                      'sub': '%s · due %s · click to receive' % (o.partner_id.name, fields.Date.to_string(o.date_planned.date()) if o.date_planned else '—'),
                       'value': dict(o._fields['sb_receipt_status'].selection).get(o.sb_receipt_status)} for o in pos[:8]]})
         data['reports'] = data['reports'] + ['po_status']
         return data

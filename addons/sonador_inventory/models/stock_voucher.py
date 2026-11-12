@@ -579,7 +579,12 @@ class SbStockVoucher(models.Model):
     @api.depends('bill_ids.state', 'bill_many_ids.state')
     def _compute_billed(self):
         for v in self:
-            v.billed = any(b.state == 'posted' for b in v.bill_ids | v.bill_many_ids)
+            v.billed = v._sb_has_posted_bill()
+
+    def _sb_has_posted_bill(self):
+        """A posted bill (purchase voucher) was entered for this GRN: it cannot be voided or corrected before it."""
+        self.ensure_one()
+        return any(b.state == 'posted' for b in self.bill_ids | self.bill_many_ids)
 
     @api.depends('line_ids.value')
     def _compute_amount(self):
@@ -708,6 +713,10 @@ class SbStockVoucher(models.Model):
                 and not self.env.user.has_group('sonador_books.group_sb_accountant'):
             raise UserError(self.env._('Only accountants can post opening stock and stock adjustments.'))
 
+    def _sb_grn_advance_open(self):
+        """The supplier's advance still open for what this GRN receives (before VAT). Purchase: the order's advance."""
+        return 0.0
+
     def _post_stock(self):
         self.ensure_one()
         Stock = self.env['sb.stock']
@@ -729,6 +738,10 @@ class SbStockVoucher(models.Model):
             Stock._check_available(company, out, stock, self.display_name, self.date)
         entry = []
         label = self.memo or self.reference or self.name
+        # a GRN for goods already paid for: what is still open of that advance is used first (Cr advance), the rest is
+        # owed (Cr suppliers – goods received). Purchase knows the order's advance; without it there is none.
+        adv_left = self._sb_grn_advance_open() if self.voucher_type == 'grn' else 0.0
+        adv_acc = company.sb_vendor_advance_account_id
         for l in lines:
             p, qty = l.product_id, l.quantity
             if float_is_zero(qty, precision_rounding=p.uom_id.rounding):
@@ -740,7 +753,13 @@ class SbStockVoucher(models.Model):
                 src = loc['supplier'] if self.voucher_type == 'grn' else loc['inventory']
                 m = Stock._move(p, qty, src, stock, self.date, self.name, company, unit_cost=l._sb_unit_cost(), link=link)
                 value = m.value
-                entry += [(inv_acc, value, name, None), (self.account_id, -value, name, None)]
+                from_adv = company.currency_id.round(min(value, adv_left)) if adv_left > 0 and adv_acc else 0.0
+                adv_left -= from_adv
+                entry += [(inv_acc, value, name, None)]
+                if from_adv:
+                    entry.append((adv_acc, -from_adv, name, None))
+                if not company.currency_id.is_zero(value - from_adv):
+                    entry.append((self.account_id, -(value - from_adv), name, None))
             elif self.voucher_type == 'giv':
                 m = Stock._move(p, qty, stock, loc['giv'], self.date, self.name, company, link=link)
                 value = abs(m.value)
@@ -779,8 +798,8 @@ class SbStockVoucher(models.Model):
                 continue
             if not self.env.su and not self.env.user.has_group('sonador_books.group_sb_accountant'):
                 raise UserError(self.env._('Only accountants can void inventory vouchers.'))
-            if v.billed:
-                raise UserError(self.env._('%s is already billed. Void the bill first.', v.name))
+            if v._sb_has_posted_bill():
+                raise UserError(self.env._('%s is already on a purchase voucher. Void the purchase voucher first.', v.name))
             v._sb_require_void_reason()
             v._sb_check_own_entry()
             v.env['sb.stock']._lock_items(v.company_id, v._sb_items())
@@ -912,8 +931,8 @@ class SbStockVoucher(models.Model):
                 raise UserError(self.env._('%s cannot be corrected: void it and enter a new one.', v.name))
             if v.sb_migrated:
                 raise UserError(self.env._('%s was brought over from the previous system: correct it with a new voucher.', v.name))
-            if v.billed:
-                raise UserError(self.env._('%s is already billed. Void the bill first.', v.name))
+            if v._sb_has_posted_bill():
+                raise UserError(self.env._('%s is already on a purchase voucher. Void the purchase voucher first.', v.name))
             v._sb_check_own_entry()
             company = v.company_id
             lock = company._get_user_fiscal_lock_date(company.account_stock_journal_id)
@@ -1010,10 +1029,10 @@ class SbStockVoucher(models.Model):
                 'name': self.env._('Journal Entry')}
 
     def action_create_bill(self):
-        """Enter the vendor bill for this GRN: the lines clear what the GRN credited (goods received not invoiced)."""
+        """Enter the purchase voucher for this GRN: the lines clear what the GRN credited (goods received not invoiced)."""
         self.ensure_one()
         if self.voucher_type != 'grn' or self.state != 'posted':
-            raise UserError(self.env._('Only a posted GRN can be billed.'))
+            raise UserError(self.env._('Only a posted GRN can go on a purchase voucher.'))
         account = self.account_id or self.company_id.sb_grni_account_id  # clear what the GRN credited
         lines = [Command.create(dict(part, product_id=l.product_id.id, account_id=account.id,
                                      tax_ids=[Command.set(l.product_id.supplier_taxes_id.filtered(lambda t: t.company_id == self.company_id).ids)]))
@@ -1023,7 +1042,7 @@ class SbStockVoucher(models.Model):
                                               'sb_warehouse_id': self.warehouse_id.id,
                                               'memo': self.env._('Bill for %s', self.name), 'line_ids': lines})
         return {'type': 'ir.actions.act_window', 'res_model': 'sb.voucher', 'res_id': bill.id, 'view_mode': 'form',
-                'name': self.env._('Purchase Bill')}
+                'name': self.env._('Purchase Voucher')}
 
     def unlink(self):
         if any(v.state != 'draft' for v in self):

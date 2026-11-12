@@ -1,6 +1,6 @@
 """Goods received on a prepaid purchase order are billed by themselves (a company setting, off by default).
 
-When a GRN is posted against an order with an advance not yet used, the supplier bill for what this GRN received is made
+When a GRN is posted against an order with an advance not yet used, the purchase voucher for what this GRN received is made
 at the order's prices and taxes (as the order's Bill button makes it), posted, and the advance applied to it: the
 supplier's advance and goods received not invoiced clear without anyone doing anything. A partial receipt is billed for
 what arrived; what is left of the advance stays on the order. If the bill cannot be posted (a closed period, a missing
@@ -16,8 +16,8 @@ class ResCompany(models.Model):
 
     sb_po_auto_bill = fields.Boolean(
         'Bill goods received on prepaid purchase orders automatically',
-        help='A GRN posted against a purchase order paid in advance makes and posts the supplier bill for what it received, '
-             'at the order\'s prices, and applies the advance to it. A bill that cannot be posted waits for finance in Me.')
+        help='A GRN posted against a purchase order paid in advance makes and posts the purchase voucher for what it received, '
+             'at the order\'s prices, and applies the advance to it. A purchase voucher that cannot be posted waits for finance in Me.')
 
 
 class SbStockVoucher(models.Model):
@@ -39,7 +39,7 @@ class SbStockVoucher(models.Model):
             return False  # not paid in advance: billed by hand, as before
         vals = po._sb_bill_vals(self, services=False)
         vals.update(date=self.date, sb_auto_bill=True, company_id=self.company_id.id,
-                    memo=self.env._('Bill for %(po)s (%(grn)s), made automatically', po=po.name, grn=self.name))
+                    memo=self.env._('Purchase voucher for %(po)s (%(grn)s), made automatically', po=po.name, grn=self.name))
         bill = self.env['sb.voucher'].sudo().with_context(default_voucher_type='bill').create(vals)
         bill.message_post(body=self.env._('Made automatically from %(grn)s, posted by %(u)s: %(po)s was paid in advance.',
                                           grn=self.name, u=self.env.user.name, po=po.name))
@@ -52,10 +52,10 @@ class SbStockVoucher(models.Model):
             error = (e.args[0] if e.args and isinstance(e.args[0], str) else str(e)) or type(e).__name__
             bill.write({'sb_auto_bill_error': error[:500]})
         if error:
-            self.message_post(body=self.env._('Supplier bill made from this GRN but not posted (%(err)s): it waits for finance '
+            self.message_post(body=self.env._('Purchase voucher made from this GRN but not posted (%(err)s): it waits for finance '
                                               'in Me as a draft.', err=error))
         else:
-            self.message_post(body=self.env._('Supplier bill %(bill)s made and posted automatically; the advance on %(po)s '
+            self.message_post(body=self.env._('Purchase voucher %(bill)s made and posted automatically; the advance on %(po)s '
                                               'is applied to it.', bill=bill.name, po=po.name))
         return bill
 
@@ -64,9 +64,9 @@ class SbVoucher(models.Model):
     _inherit = 'sb.voucher'
 
     sb_auto_bill = fields.Boolean('Made automatically', copy=False, readonly=True,
-                                  help='A bill Unio made from a GRN of a prepaid purchase order.')
+                                  help='A purchase voucher Unio made from a GRN of a prepaid purchase order.')
     sb_auto_bill_error = fields.Char('Not posted automatically', copy=False, readonly=True,
-                                     help='Why the bill made from the GRN could not be posted: it waits for finance in Me.')
+                                     help='Why the purchase voucher made from the GRN could not be posted: it waits for finance in Me.')
 
     def action_post(self):
         auto = self.filtered(lambda v: v.state == 'draft' and v.sb_auto_bill)

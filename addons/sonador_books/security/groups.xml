@@ -15,7 +15,7 @@
     <record id="group_sb_clerk" model="res.groups">
         <field name="name">Clerk</field>
         <field name="sequence">20</field>
-        <field name="comment">Enters and posts day-to-day vouchers: cash sales, invoices, receipts, bills, payments, transfers. Cannot edit or void posted vouchers, post journal vouchers, reconcile banks or close periods.</field>
+        <field name="comment">Enters and posts day-to-day vouchers: cash sales, invoices, receipts, purchase vouchers, payments, transfers. Cannot edit or void posted vouchers, post journal vouchers, reconcile banks or close periods.</field>
         <field name="privilege_id" ref="privilege_sonador_books"/>
         <field name="implied_ids" eval="[(4, ref('group_sb_auditor')), (4, ref('account.group_account_invoice'))]"/>
     </record>

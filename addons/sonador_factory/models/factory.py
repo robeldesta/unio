@@ -104,7 +104,7 @@ class SbMfgOrder(models.Model):
     def create(self, vals_list):
         for v in vals_list:
             if v.get('name', '/') == '/':
-                v['name'] = self.env['ir.sequence'].next_by_code('sb.mfg.order') or 'PO/NEW'
+                v['name'] = self.env['ir.sequence'].next_by_code('sb.mfg.order') or 'MO/NEW'
         return super().create(vals_list)
 
 

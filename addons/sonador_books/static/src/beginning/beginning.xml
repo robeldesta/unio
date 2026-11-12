@@ -211,7 +211,7 @@
                                 <a href="#" class="ms-2 small" t-on-click.prevent="openPartner"><i class="fa fa-external-link"/></a>
                             </div>
                             <span class="text-muted small ms-auto">
-                                <t t-if="cust">Open sales invoices on account</t><t t-else="">Unpaid bills and goods received (GRN / DRM) not paid</t>
+                                <t t-if="cust">Open sales invoices on account</t><t t-else="">Unpaid purchase vouchers and goods received (GRN / DRM) not paid</t>
                                 on or before <t t-esc="state.detail.last_day_label"/>
                             </span>
                         </div>

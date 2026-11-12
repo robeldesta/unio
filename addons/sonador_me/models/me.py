@@ -68,6 +68,8 @@ class SbMe(models.AbstractModel):
         if me and out['apps']['planning']:
             out['week'] = self._safe(lambda: self._week())
         out['sections'] = self.sections()
+        out['setup'] = self._safe(lambda: self._setup()) or False
+        out['can_add_me'] = not me and self._setup_admin()
         out['notices'] = self._safe(lambda: self.env['sb.me.notice']._mine()) or []
         return out
 
@@ -664,7 +666,7 @@ class SbMe(models.AbstractModel):
     def _ap_store_open(self, rid):
         return self._form('sb.stock.voucher', rid)
 
-    # supplier bills Unio made by itself (a prepaid purchase order received) that could not be posted
+    # purchase vouchers Unio made by itself (a prepaid purchase order received) that could not be posted
     def _ap_autobill_pending(self):
         V = self.env['sb.voucher']
         if 'sb_auto_bill_error' not in V._fields or not self._finance_user():
@@ -673,7 +675,7 @@ class SbMe(models.AbstractModel):
         for b in V.search([('state', '=', 'draft'), ('sb_auto_bill_error', '!=', False), ('company_id', 'in', self.env.companies.ids)],
                           limit=80):
             items.append({'key': 'autobill:%d' % b.id, 'app': 'Purchase', 'icon': 'fa-file-text-o',
-                          'title': 'Supplier bill · %s' % (b.partner_id.name or ''), 'doc': 'Supplier bill',
+                          'title': 'Purchase voucher · %s' % (b.partner_id.name or ''), 'doc': 'Purchase voucher',
                           'amount': b.amount_total, 'currency': b.currency_id.symbol or b.currency_id.name,
                           'details': ['Made from %s, not posted: %s' % (', '.join(b.sb_grn_ids.mapped('name')) or '-', b.sb_auto_bill_error)]
                                      + ['%s × %s' % ('%g' % l.quantity, l.product_id.display_name or l.name) for l in b.line_ids[:5]],

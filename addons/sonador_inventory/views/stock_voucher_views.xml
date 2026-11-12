@@ -38,7 +38,7 @@
                 <filter name="posted" string="Posted" domain="[('state', '=', 'posted')]"/>
                 <filter name="void" string="Void" domain="[('state', '=', 'void')]"/>
                 <separator/>
-                <filter name="not_billed" string="Not billed" domain="[('voucher_type', '=', 'grn'), ('state', '=', 'posted'), ('billed', '=', False)]"/>
+                <filter name="not_billed" string="Not invoiced" domain="[('voucher_type', '=', 'grn'), ('state', '=', 'posted'), ('billed', '=', False)]"/>
                 <separator/>
                 <filter name="date" string="Date" date="date"/>
                 <group>
@@ -65,7 +65,9 @@
                     <button name="action_post_new" type="object" string="Post &amp; New" class="btn-primary"
                             invisible="state != 'draft' or sb_finance_posts" data-hotkey="n"/>
                     <button name="action_post" type="object" string="Post" invisible="state != 'draft' or sb_finance_posts"/>
-                    <button name="action_create_bill" type="object" string="Enter Bill" class="btn-primary"
+                    <!-- finance's step, not the store's: a store clerk receives the goods and stops there -->
+                    <button name="action_create_bill" type="object" string="Enter Purchase Voucher" class="btn-primary"
+                            groups="sonador_books.group_sb_clerk"
                             invisible="voucher_type != 'grn' or state != 'posted' or billed"/>
                     <button name="action_void" type="object" string="Void" invisible="state != 'posted' and not (state == 'draft' and sb_correction_before)"
                             groups="sonador_books.group_sb_accountant"
@@ -98,7 +100,7 @@
                     <field name="billed" invisible="1"/>
                     <field name="sb_migrated" invisible="1"/>
                     <widget name="web_ribbon" title="Void" bg_color="text-bg-danger" invisible="state != 'void'"/>
-                    <widget name="web_ribbon" title="Billed" invisible="not billed"/>
+                    <widget name="web_ribbon" title="Invoiced" invisible="not billed"/>
                     <div class="oe_title">
                         <span class="o_form_label"><field name="voucher_type" readonly="1" nolabel="1"/></span>
                         <h1><field name="name" readonly="1"/></h1>
@@ -134,7 +136,7 @@
                         <group>
                             <field name="date" readonly="state != 'draft'"/>
                             <field name="date_ec"/>
-                            <field name="account_id" string="Charge to (expense)" invisible="voucher_type != 'giv'"
+                            <field name="account_id" string="Charged to" invisible="voucher_type != 'giv'"
                                    readonly="state != 'draft'" options="{'no_create': True}"
                                    domain="['|', ('account_type', 'in', ('expense', 'expense_direct_cost', 'expense_depreciation')), ('name', 'ilike', 'work in pro')]"/>
                             <field name="account_id" string="Credit account" invisible="voucher_type not in ('grn', 'fprr')"
@@ -181,7 +183,7 @@
                                 A gain takes the unit cost you enter (the average cost on the adjustment date by default); a loss is always valued at the average cost.
                             </div>
                         </page>
-                        <page name="bills" string="Bills" invisible="voucher_type != 'grn'" groups="account.group_account_invoice">
+                        <page name="bills" string="Purchase Vouchers" invisible="voucher_type != 'grn'" groups="account.group_account_invoice">
                             <field name="bill_ids" readonly="1">
                                 <list>
                                     <field name="name"/>
@@ -215,9 +217,9 @@
         <field name="view_mode">list,form</field>
         <field name="domain">[('voucher_type', '=', 'grn')]</field>
         <field name="context">{'default_voucher_type': 'grn'}</field>
-        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Receive goods before the bill arrives</p>
-            <p>The goods go into stock at the agreed cost; "Enter Bill" later clears goods received not invoiced.
-               Goods bought on a cash purchase or a bill are received by that voucher directly.</p></field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Receive goods before the supplier's invoice arrives</p>
+            <p>The goods go into stock at the agreed cost; "Enter Purchase Voucher" later clears goods received not invoiced.
+               Goods bought on a cash purchase or a purchase voucher are received by that voucher directly.</p></field>
     </record>
     <record id="action_sb_giv" model="ir.actions.act_window">
         <field name="name">Goods Issued (GIV)</field>

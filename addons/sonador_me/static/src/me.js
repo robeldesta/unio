@@ -170,6 +170,20 @@ export class MeApp extends Component {
         return sections.contains(key) ? sections.get(key) : null;
     }
 
+    // first-day setup
+    async openSetup(step) {
+        const act = await this.orm.call("sb.me", "setup_open", [step.key]);
+        if (act) {
+            this.action.doAction(act);
+        }
+    }
+    async hideSetup() {
+        this.state.d = await this.orm.call("sb.me", "setup_hide", []);
+    }
+    async addMe() {
+        this.state.d = await this.orm.call("sb.me", "setup_add_me", []);
+    }
+
     // to do
     async done(t) {
         this.state.d = await this.orm.call("sb.me", "todo_done", [t.key]);

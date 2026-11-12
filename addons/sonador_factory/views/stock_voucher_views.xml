@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- GIV and FPRR: the production order they belong to. On a GIV, choosing it fills what the recipe still needs and
+         charges work in progress; each line shows the account it really charges. -->
+    <record id="sb_stock_voucher_form_production" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.production</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='department']" position="before">
+                <field name="sb_mfg_order_id" invisible="voucher_type not in ('giv', 'fprr')" readonly="state != 'draft'"
+                       options="{'no_create': True}" placeholder="For a production order? Choose it: its materials fill in"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='account_id']" position="attributes">
+                <attribute name="optional">show</attribute>
+                <attribute name="string">Charged to</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

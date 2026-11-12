@@ -11,7 +11,7 @@ VOUCHER_TYPES = [
     ('sale_return', 'Sales Return / Credit Note'),
     ('receipt', 'Receipt (CRV)'),
     ('cash_purchase', 'Cash Purchase'),
-    ('bill', 'Purchase Bill'),
+    ('bill', 'Purchase Voucher'),
     ('purchase_return', 'Purchase Return / Debit Note'),
     ('payment', 'Payment (CPV)'),
     ('transfer', 'Bank Transfer'),
@@ -86,7 +86,7 @@ class SbVoucher(models.Model):
         'sb.voucher', string='Against', check_company=True,
         domain="[('state', '=', 'posted'), ('partner_id', '=', partner_id), "
                "('voucher_type', 'in', ('sale', 'cash_sale') if voucher_type == 'sale_return' else ('bill', 'cash_purchase'))]",
-        help='Original invoice / cash sale (or bill / cash purchase) being returned.')
+        help='Original invoice / cash sale (or purchase voucher / cash purchase) being returned.')
     reference = fields.Char('Reference', help='Customer PO, vendor invoice no., cheque no. ...')
     memo = fields.Char('Description')
     received_amount = fields.Monetary(
@@ -151,7 +151,7 @@ class SbVoucher(models.Model):
                               help='What the rule asked for on a payment withheld less (or not at all), with a reason.')
 
     amount_currency_id = fields.Many2one('res.currency', compute='_compute_amount_currency', string='Amounts in',
-                                         help='Invoices and bills: the invoice currency; receipts, payments and journals: the company currency.')
+                                         help='Invoices and purchase vouchers: the invoice currency; receipts, payments and journals: the company currency.')
     amount_untaxed = fields.Monetary(compute='_compute_amounts', store=True, currency_field='amount_currency_id')
     amount_tax = fields.Monetary(compute='_compute_amounts', store=True, currency_field='amount_currency_id')
     amount_total = fields.Monetary('Total', compute='_compute_amounts', store=True, currency_field='amount_currency_id')
@@ -171,7 +171,7 @@ class SbVoucher(models.Model):
         ('not_paid', 'Not Paid'), ('partial', 'Partially Paid'), ('in_payment', 'In Payment'), ('paid', 'Paid'),
         ('reversed', 'Reversed'), ('blocked', 'Blocked'), ('invoicing_legacy', 'Invoicing App Legacy')],
         string='Payment Status', compute='_compute_payment_state', store=True,
-        help='Invoices and bills: whether they have been settled. Cash sales, cash purchases, receipts and payments '
+        help='Invoices and purchase vouchers: whether they have been settled. Cash sales, cash purchases, receipts and payments '
              'are money already received or paid, so they show as Paid.')
     amount_residual = fields.Monetary(compute='_compute_payment_state', store=True, string='Balance Due')
 
@@ -1033,11 +1033,16 @@ class SbVoucher(models.Model):
             add(line.account_id, line.amount if sign < 0 else 0.0, line.amount if sign > 0 else 0.0,
                 line.name, line.partner_id or partner)
         if self.amount_unapplied > 0:
-            advance = (self.company_id.sb_customer_advance_account_id if sign > 0
-                       else self.company_id.sb_vendor_advance_account_id)
-            add(advance, self.amount_unapplied if sign < 0 else 0.0, self.amount_unapplied if sign > 0 else 0.0,
-                self.env._('Advance %s', self.reference or ''), partner)
+            for account, amount, label in self._sb_unapplied_split(self.amount_unapplied, sign):
+                add(account, amount if sign < 0 else 0.0, amount if sign > 0 else 0.0, label, partner)
         return lines
+
+    def _sb_unapplied_split(self, amount, sign):
+        """[(account, amount, label)] for the money not applied to any item or line: an advance. Purchase splits a
+        payment against an order into goods already received, VAT and advance."""
+        advance = (self.company_id.sb_customer_advance_account_id if sign > 0
+                   else self.company_id.sb_vendor_advance_account_id)
+        return [(advance, amount, self.env._('Advance %s', self.reference or ''))]
 
     def _check_before_post(self):
         self.ensure_one()
@@ -1297,7 +1302,7 @@ class SbVoucher(models.Model):
         self.ensure_one()
         due = 0.0
         if self.sb_wht_country and not self.wht_supply and self._sb_wht_pays_supplies():
-            # whatever posts it (the form, Pay Several Bills, an import): goods or services decides the threshold
+            # whatever posts it (the form, Pay Several Purchase Vouchers, an import): goods or services decides the threshold
             self.wht_supply = self._sb_wht_guess_supply()
             if not self.wht_supply and self._sb_wht_parts()[0] > 0:  # with no choice the rule tests the lower threshold
                 raise ValidationError(self.env._(
@@ -1444,7 +1449,7 @@ class SbVoucher(models.Model):
             (open_line | mine).reconcile()
 
     def _reconcile_return(self):
-        """A return against an open invoice / bill settles it straight away (remaining credit stays open)."""
+        """A return against an open invoice / purchase voucher settles it straight away (remaining credit stays open)."""
         self.ensure_one()
         if self.voucher_type not in ('sale_return', 'purchase_return') or not self.origin_id.move_id.is_invoice():
             return
@@ -1736,7 +1741,7 @@ class SbVoucherLine(models.Model):
     account_id = fields.Many2one('account.account', string='GL Account', check_company=True,
                                  domain="[('active', '=', True)]")
     partner_id = fields.Many2one('res.partner', string='Partner', check_company=True)
-    due_date = fields.Date('Due Date', help='Opening balances: due date of the open invoice / bill.')
+    due_date = fields.Date('Due Date', help='Opening balances: due date of the open invoice / purchase voucher.')
     quantity = fields.Float(default=1.0, digits='Product Unit')
     price_unit = fields.Float('Unit Price', digits='Product Price')
     tax_ids = fields.Many2many('account.tax', string='Taxes', check_company=True)
@@ -1840,7 +1845,7 @@ class SbVoucherApply(models.Model):
     item_currency_id = fields.Many2one('res.currency', compute='_compute_item', string='Item Currency', compute_sudo=True)
     direction = fields.Selection([('debit', 'They owe us'), ('credit', 'We owe them')],
                                  compute='_compute_direction', store=True)
-    kind = fields.Selection([('invoice', 'Invoice / Bill'), ('credit', 'Advance / Credit')],
+    kind = fields.Selection([('invoice', 'Invoice / Purchase voucher'), ('credit', 'Advance / Credit')],
                             compute='_compute_direction', store=True)
     document = fields.Char(compute='_compute_item', string='Document', compute_sudo=True)
     item_type = fields.Char(compute='_compute_item', string='Type', compute_sudo=True)

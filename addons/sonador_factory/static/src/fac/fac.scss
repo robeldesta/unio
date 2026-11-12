@@ -1,5 +1,9 @@
 .o_fc {
     .min-w-0 { min-width: 0; }
+    // the board is wider than a small laptop: let it scroll inside its card instead of stretching the page.
+    // .o_pp_inner centres itself with auto margins in a column flex box, which sizes it to its content (the 60rem
+    // board), so the toolbar's last button went off the right edge. Full width, still capped by its max-width.
+    .o_pp_inner { width: 100%; min-width: 0; }
     .o_fc_legend { display: flex; gap: .5rem; span { padding: .05rem .5rem; border-radius: 999px; border-left: 4px solid; background: #fff; }
         .planned { border-color: $sb-steel; } .running { border-color: $sb-teal; } .paused { border-color: $sb-amber; } .done { border-color: $sb-good; } }
     .o_fc_boardwrap { overflow-x: auto; }

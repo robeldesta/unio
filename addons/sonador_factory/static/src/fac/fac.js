@@ -45,6 +45,10 @@ export class FactoryApp extends Component {
         this.state.page = page;
         await this.load();
     }
+    /** Recipes live with the costing (Build) in sonador_mrp; open them from here so the floor never needs Accounting. */
+    openRecipes() {
+        this.action.doAction("sonador_mrp.action_sb_recipes");
+    }
     async load() {
         const s = this.state;
         s.busy = true;

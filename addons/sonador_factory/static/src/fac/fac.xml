@@ -12,7 +12,8 @@
                         <button t-att-class="state.page === 'board' ? 'active' : ''" t-on-click="() => this.go('board')"><i class="fa fa-th"/> Board</button>
                         <button t-att-class="state.page === 'materials' ? 'active' : ''" t-on-click="() => this.go('materials')"><i class="fa fa-cubes"/> Materials</button>
                         <button t-att-class="state.page === 'analytics' ? 'active' : ''" t-on-click="() => this.go('analytics')"><i class="fa fa-line-chart"/> Analytics</button>
-                        <button t-if="ctx.is_manager" t-att-class="state.page === 'setup' ? 'active' : ''" t-on-click="() => this.go('setup')"><i class="fa fa-cog"/></button>
+                        <button t-if="ctx.is_manager" t-on-click="openRecipes" title="What goes into each product: materials, labour and overhead"><i class="fa fa-list-alt"/> Recipes</button>
+                        <button t-if="ctx.is_manager" t-att-class="state.page === 'setup' ? 'active' : ''" t-on-click="() => this.go('setup')"><i class="fa fa-cog"/> Setup</button>
                     </nav>
                     <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
                 </div>

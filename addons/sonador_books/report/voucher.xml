@@ -6,7 +6,7 @@
         <field name="model">sb.voucher</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">sonador_books.report_voucher</field>
-        <field name="print_report_name">'%s %s' % ({'payment': 'Payment voucher', 'receipt': 'Receipt voucher', 'journal': 'Journal voucher', 'transfer': 'Transfer', 'bill': 'Bill', 'cash_purchase': 'Cash purchase'}.get(object.voucher_type, 'Voucher'), object.name)</field>
+        <field name="print_report_name">'%s %s' % ({'payment': 'Payment voucher', 'receipt': 'Receipt voucher', 'journal': 'Journal voucher', 'transfer': 'Transfer', 'bill': 'Purchase voucher', 'cash_purchase': 'Cash purchase'}.get(object.voucher_type, 'Voucher'), object.name)</field>
     </record>
     <template id="report_voucher">
         <t t-call="web.html_container">

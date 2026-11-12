@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- at install and at every update: work in progress account, FPRR cost from WIP, raw materials issued to WIP
+         (only where the company has not chosen otherwise) -->
+    <function model="res.company" name="_sb_setup_production"/>
+</odoo>

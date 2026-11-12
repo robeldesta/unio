@@ -11,7 +11,7 @@
                         groups="sonador_inventory.group_sb_store_user,sonador_books.group_sb_clerk"/>
                 <button name="action_sb_pay" type="object" string="Pay / Advance" icon="fa-upload"
                         invisible="state != 'purchase' or sb_payment_status == 'paid'" groups="sonador_books.group_sb_clerk"/>
-                <button name="action_sb_bill" type="object" string="Bill" icon="fa-file-text"
+                <button name="action_sb_bill" type="object" string="Purchase Voucher" icon="fa-file-text"
                         invisible="state != 'purchase' or sb_bill_status == 'full'" groups="sonador_books.group_sb_clerk"/>
             </xpath>
             <xpath expr="//button[@name='action_bill_matching']" position="attributes">
@@ -25,7 +25,7 @@
                     <field name="sb_grn_count" widget="statinfo" string="GRNs"/>
                 </button>
                 <button name="action_sb_view_bills" type="object" class="oe_stat_button" icon="fa-file-text" invisible="not sb_bill_count">
-                    <field name="sb_bill_count" widget="statinfo" string="Bills"/>
+                    <field name="sb_bill_count" widget="statinfo" string="Purchase Vouchers"/>
                 </button>
                 <button name="action_sb_view_payments" type="object" class="oe_stat_button" icon="fa-upload" invisible="not sb_payment_count">
                     <field name="sb_payment_count" widget="statinfo" string="Payments"/>
@@ -121,7 +121,7 @@
                 <separator/>
                 <filter name="sb_to_receive" string="Still to receive" domain="[('state', '=', 'purchase'), ('sb_receipt_status', 'in', ('none', 'partial'))]"/>
                 <filter name="sb_part_received" string="Partly received" domain="[('sb_receipt_status', '=', 'partial')]"/>
-                <filter name="sb_to_bill" string="Received, not fully billed"
+                <filter name="sb_to_bill" string="Received, not fully invoiced"
                         domain="[('state', '=', 'purchase'), ('sb_receipt_status', '!=', 'none'), ('sb_bill_status', '!=', 'full')]"/>
                 <filter name="sb_late" string="Late" domain="[('state', '=', 'purchase'), ('sb_receipt_status', 'in', ('none', 'partial')),
                         ('date_planned', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
@@ -149,7 +149,7 @@
         <field name="domain">[('state', '=', 'purchase')]</field>
         <field name="context">{'search_default_sb_to_receive': 1}</field>
         <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No purchase orders</p>
-            <p>Confirmed requests for quotation appear here, with what is received, billed and paid.</p></field>
+            <p>Confirmed requests for quotation appear here, with what is received, invoiced and paid.</p></field>
     </record>
     <record id="action_sb_vendor_prices" model="ir.actions.act_window">
         <field name="name">Vendor Prices</field>

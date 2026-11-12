@@ -52,7 +52,15 @@ export class AppHome extends Component {
         });
     }
 
-    openRow(q, row) {
+    async openRow(q, row) {
+        if (row.call) {
+            // the store's next step on that record (an expected order: a GRN filled from it), not the record itself
+            const act = await this.orm.call(q.model, row.call, [[row.id]]);
+            if (act && act.type === "ir.actions.act_window" && !act.views) {
+                act.views = (act.view_mode || "form").split(",").map((m) => [false, m === "tree" ? "list" : m]);
+            }
+            return this.action.doAction(act);
+        }
         return this.action.doAction({
             type: "ir.actions.act_window", res_model: q.model, res_id: row.id, views: [[false, "form"]],
         });
