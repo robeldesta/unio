@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import AccessError
 
 from odoo.addons.sonador_books.models.report_catalog import E
 
@@ -14,8 +15,59 @@ BLURBS = {
 }
 
 
+# What a salesperson (Sales Clerk without an accounting role) opens: the customer side only. Sales Clerk carries
+# Odoo's invoicing right to post sales invoices and cash sales, which on its own would open every ledger report.
+SALES_REPORTS = {'undelivered', 'delivery_register', 'open_orders', 'items_sold'}
+CUSTOMER_REPORTS = {'aged', 'partner_ledger', 'partner_statement', 'partner_sales', 'partner_list', 'open_credits'}
+CUSTOMER_REGISTERS = {'sales', 'receipts'}           # Sales Journal, Cash Receipts Journal
+CUSTOMER_DOCUMENTS = {'sale', 'cash_sale'}           # Invoice Register, Cash Sales Register
+
+
 class SbReportSales(models.AbstractModel):
     _inherit = 'sb.report'
+
+    @api.model
+    def _sb_sales_only(self):
+        user = self.env.user
+        return not self.env.su and not user._is_superuser() and user.has_group('sonador_sales.group_sb_sales_user') \
+            and not user.has_group('sonador_books.group_sb_auditor')
+
+    @api.model
+    def _sb_customer_side(self, key, opts):
+        opts = opts or {}
+        if key in SALES_REPORTS:
+            return True
+        if key in CUSTOMER_REPORTS:
+            return (opts.get('partner_type') or 'customer') == 'customer'
+        if key == 'journal':
+            regs = set(opts.get('registers') or [])
+            return bool(regs) and regs <= CUSTOMER_REGISTERS
+        if key == 'document_register':
+            return (opts.get('register') or 'sale') in CUSTOMER_DOCUMENTS
+        return False
+
+    @api.model
+    def _report_allowed(self, key, opts=None):
+        ok = super()._report_allowed(key, opts)
+        if ok and self._sb_sales_only():
+            return self._sb_customer_side(key, opts)
+        return ok
+
+    @api.model
+    def _check_report_access(self, key, opts=None):
+        if self._sb_sales_only() and super()._report_allowed(key, opts) and not self._sb_customer_side(key, opts):
+            raise AccessError(self.env._('Sales sees the customer side of the books (customer ledgers and statements, aged '
+                                         'receivables, sales and receipts journals, invoice and cash sales registers). '
+                                         'This report needs an accounting role.'))
+        return super()._check_report_access(key, opts)
+
+    @api.model
+    def _check_lazy_access(self, lazy, opts):
+        super()._check_lazy_access(lazy, opts)
+        if self._sb_sales_only():
+            kind = lazy.get('partner_type') or ('customer' if lazy.get('account_type') == 'asset_receivable' else 'vendor')
+            if lazy.get('kind') != 'partner_lines' or kind != 'customer':
+                raise AccessError(self.env._('Sales sees the customer side of the books only.'))
 
     def _extra_catalog(self):
         return super()._extra_catalog() + EXTRA
