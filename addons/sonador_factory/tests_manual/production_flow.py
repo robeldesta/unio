@@ -84,9 +84,9 @@ A = O.create({'product_id': door.id, 'bom_id': bom.id, 'qty_planned': 5, 'line_i
 B = O.create({'product_id': door.id, 'bom_id': bom.id, 'qty_planned': 3, 'line_id': line.id, 'state': 'running'})
 
 
-def issue(order, qtys, label):
+def issue(order, qtys, label, user=None):
     """The store issues materials for a production order (as from the GIV form, with its onchanges)."""
-    f = Form(SV.with_context(default_voucher_type='giv'))
+    f = Form((SV.with_user(user) if user else SV).with_context(default_voucher_type='giv'))
     f.department = 'Production'
     f.sb_mfg_order_id = order
     for p, q in qtys.items():
@@ -113,7 +113,14 @@ def issue(order, qtys, label):
 
 g_a = issue(A, {steel: 6, paint: 2}, 'GIV for order A')
 check(g_a.move_id, want((WIP, 7700, 0), (RM, 0, 7700)), 'GIV A: 6 steel × 1,150 + 2 paint × 400 → Dr WIP / Cr raw materials')
-g_b = issue(B, {steel: 4}, 'GIV for order B')
+clerk = env['res.users'].create({'name': 'Prod Store Clerk', 'login': 'prod-clerk@test.local',
+                                 'group_ids': [Command.set([env.ref('base.group_user').id, env.ref('sonador_inventory.group_sb_store_user').id])]})
+try:
+    g_b = issue(B, {steel: 4}, 'GIV for order B', user=clerk)
+    ok(True, 'the store clerk picks the production order and posts the GIV')
+except Exception as e:
+    ok(False, 'the store clerk could not issue for the order: %s' % str(e).splitlines()[0][:150])
+    g_b = issue(B, {steel: 4}, 'GIV for order B')
 check(g_b.move_id, want((WIP, 4600, 0), (RM, 0, 4600)), 'GIV B: 4 steel × 1,150')
 ok(g_a.line_ids.mapped('account_id') <= WIP or g_a.account_id == WIP, 'the GIV form shows WIP as what it charges')
 

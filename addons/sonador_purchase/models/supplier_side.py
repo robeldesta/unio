@@ -138,7 +138,7 @@ class SbStockVoucher(models.Model):
     def _sb_grn_advance_open(self):
         po = self.sb_purchase_id
         if self.voucher_type == 'grn' and po and not self.sb_migrated:
-            return po._sb_advance_open()
+            return po.sudo()._sb_advance_open()   # the store posts GRNs; it does not see the order's payments
         return super()._sb_grn_advance_open()
 
     @api.depends('bill_ids.state', 'bill_many_ids.state', 'move_id')
@@ -147,7 +147,7 @@ class SbStockVoucher(models.Model):
         super()._compute_billed()
         for g in self.filtered(lambda g: not g.billed and g.voucher_type == 'grn' and g.state == 'posted'
                                and g.sb_purchase_id and g.move_id):
-            g.billed = g.sb_purchase_id._sb_grn_grni_share(g) <= 0
+            g.billed = g.sb_purchase_id.sudo()._sb_grn_grni_share(g.sudo()) <= 0
 
     def action_create_bill(self):
         """Against an order: the order's purchase voucher (only the part not paid in advance)."""
@@ -157,7 +157,7 @@ class SbStockVoucher(models.Model):
 
     def action_post(self):
         res = super().action_post()
-        self.filtered(lambda g: g.voucher_type == 'grn' and g.state == 'posted').sb_purchase_id._sb_reconcile_side()
+        self.filtered(lambda g: g.voucher_type == 'grn' and g.state == 'posted').sb_purchase_id.sudo()._sb_reconcile_side()
         return res
 
 
@@ -165,7 +165,7 @@ class SbVoucher(models.Model):
     _inherit = 'sb.voucher'
 
     def _sb_unapplied_split(self, amount, sign):
-        po = self.sb_purchase_id
+        po = self.sb_purchase_id.sudo()
         if not (self.voucher_type == 'payment' and sign < 0 and po and po.state == 'purchase'):
             return super()._sb_unapplied_split(amount, sign)
         c, cur, ref = self.company_id, self.company_id.currency_id, po.name
@@ -199,5 +199,5 @@ class SbVoucher(models.Model):
 
     def action_post(self):
         res = super().action_post()
-        self.filtered(lambda v: v.voucher_type in ('payment', 'bill') and v.state == 'posted').sb_purchase_id._sb_reconcile_side()
+        self.filtered(lambda v: v.voucher_type in ('payment', 'bill') and v.state == 'posted').sb_purchase_id.sudo()._sb_reconcile_side()
         return res

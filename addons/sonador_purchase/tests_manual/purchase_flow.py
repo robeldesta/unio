@@ -93,8 +93,10 @@ def payable(po):
     return po.partner_id.commercial_partner_id.property_account_payable_id
 
 
-def receive(po, qtys, label):
-    g = SV.browse(po.action_sb_receive()['res_id'])
+def receive(po, qtys, label, user=None):
+    """user: who posts it (a store clerk receives without seeing the order's payments)."""
+    po_u = po.with_user(user) if user else po
+    g = SV.with_user(user).browse(po_u.action_sb_receive()['res_id']) if user else SV.browse(po.action_sb_receive()['res_id'])
     for l in g.line_ids:
         l.quantity = qtys.get(l.product_id, 0)
     g.line_ids.filtered(lambda l: not l.quantity).unlink()
@@ -251,6 +253,18 @@ receive(po, {d: 40}, 'GRN all')
 invoice(po, 'PV all')
 pay(po, 34500, 'CPV 34,500 pays the PV only, no new VAT')
 ledger_ok(s, 'after 8')
+
+print('\n--- 9. the store clerk receives against a prepaid order (no access to payments)')
+clerk = env['res.users'].create({'name': 'Stress Store Clerk', 'login': 'stress-clerk@test.local',
+                                 'group_ids': [Command.set([env.ref('base.group_user').id, env.ref('sonador_inventory.group_sb_store_user').id])]})
+s = supplier('Stress Clerk Supplier'); k = item(900)
+po = new_po(s, [(k, 10, 900, True)], .15)
+pay(po, 10350, 'CPV ahead (finance)')
+try:
+    receive(po, {k: 10}, 'GRN posted by the store clerk', user=clerk)
+except Exception as e:
+    ok(False, 'GRN posted by the store clerk: refused (%s)' % str(e).splitlines()[0][:150])
+ledger_ok(s, 'after 9')
 
 print('\n%d of %d checks pass' % (sum(results), len(results)))
 env.cr.rollback()

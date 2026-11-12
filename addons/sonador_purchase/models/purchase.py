@@ -77,9 +77,11 @@ class PurchaseOrder(models.Model):
     sb_voucher_ids = fields.One2many('sb.voucher', 'sb_purchase_id', string='Purchase vouchers and payments')
     sb_receipt_status = fields.Selection(RECEIPT, string='Receipt', compute='_compute_sb_status', store=True)
     sb_bill_status = fields.Selection(BILLING, string='Billing', compute='_compute_sb_status', store=True)
-    sb_grn_count = fields.Integer(compute='_compute_sb_counts')
-    sb_bill_count = fields.Integer(compute='_compute_sb_counts')
-    sb_payment_count = fields.Integer(compute='_compute_sb_counts')
+    # counted with the system's rights, as the money fields are: a store clerk opens the order to receive against it
+    # without seeing the vouchers themselves
+    sb_grn_count = fields.Integer(compute='_compute_sb_counts', compute_sudo=True)
+    sb_bill_count = fields.Integer(compute='_compute_sb_counts', compute_sudo=True)
+    sb_payment_count = fields.Integer(compute='_compute_sb_counts', compute_sudo=True)
     sb_amount_billed = fields.Monetary('Invoiced', compute='_compute_sb_money', currency_field='company_currency_id', compute_sudo=True)
     sb_amount_paid = fields.Monetary('Paid', compute='_compute_sb_money', currency_field='company_currency_id', compute_sudo=True,
                                      help='Cash paid for this order: payments made against it (advances included) and payments of its purchase vouchers.')

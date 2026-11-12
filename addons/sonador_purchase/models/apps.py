@@ -79,8 +79,9 @@ class SbAppHome(models.AbstractModel):
             'key': 'expected', 'title': 'Expected from suppliers', 'icon': 'fa-shopping-cart', 'count': len(pos),
             'tone': 'bad' if pos.filtered(lambda o: o.date_planned and o.date_planned < now) else None,
             'model': 'purchase.order', 'domain': [('id', 'in', pos.ids)], 'action_name': 'Expected from suppliers',
-            'rows': [{'id': o.id, 'label': o.name,
-                      'sub': '%s · due %s' % (o.partner_id.name, fields.Date.to_string(o.date_planned.date()) if o.date_planned else '—'),
+            # a click receives: a GRN filled from the order (the store does not need the order's money and vouchers)
+            'rows': [{'id': o.id, 'label': o.name, 'call': 'action_sb_receive',
+                      'sub': '%s · due %s · click to receive' % (o.partner_id.name, fields.Date.to_string(o.date_planned.date()) if o.date_planned else '—'),
                       'value': dict(o._fields['sb_receipt_status'].selection).get(o.sb_receipt_status)} for o in pos[:8]]})
         data['reports'] = data['reports'] + ['po_status']
         return data
