@@ -6,5 +6,5 @@
         <field name="params" eval="{'page': 'home'}"/>
     </record>
     <menuitem id="menu_root" name="Fleet" sequence="26" web_icon="sonador_fleet,static/description/icon.png"
-              action="action_fleet" groups="group_driver"/>
+              action="action_fleet" groups="group_driver,group_viewer"/>
 </odoo>

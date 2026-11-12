@@ -11,4 +11,9 @@
         <field name="implied_ids" eval="[(4, ref('group_operator'))]"/>
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
+    <record id="group_viewer" model="res.groups">
+        <field name="name">Production: viewer</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Sees the board, the orders, materials and analytics, and changes nothing. For a general manager or an owner.</field>
+    </record>
 </odoo>

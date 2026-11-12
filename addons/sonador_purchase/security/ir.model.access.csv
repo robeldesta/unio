@@ -12,3 +12,5 @@ access_acc_purchase,account.account purchase,account.model_account_account,group
 access_journal_purchase,account.journal purchase,account.model_account_journal,group_sb_purchase_user,1,0,0,0
 access_po_rule_user,sb.po.approval.rule user,model_sb_po_approval_rule,base.group_user,1,0,0,0
 access_po_rule_mgr,sb.po.approval.rule manager,model_sb_po_approval_rule,sonador_books.group_sb_manager,1,1,1,1
+access_po_store_viewer,purchase.order store viewer,purchase.model_purchase_order,sonador_inventory.group_sb_store_viewer,1,0,0,0
+access_pol_store_viewer,purchase.order.line store viewer,purchase.model_purchase_order_line,sonador_inventory.group_sb_store_viewer,1,0,0,0

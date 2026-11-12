@@ -25,3 +25,27 @@ access_sb_report_view_store,sb.report.view store,sonador_books.model_sb_report_v
 access_sb_report_pack_store,sb.report.pack store,sonador_books.model_sb_report_pack,group_sb_store_user,1,0,0,0
 access_sb_report_pack_line_store,sb.report.pack.line store,sonador_books.model_sb_report_pack_line,group_sb_store_user,1,0,0,0
 access_sb_stock_item_lock_system,sb.stock.item.lock system,model_sb_stock_item_lock,base.group_system,1,1,1,1
+access_sb_stock_voucher_store_viewer,sb.stock.voucher store viewer,model_sb_stock_voucher,group_sb_store_viewer,1,0,0,0
+access_sb_stock_voucher_line_store_viewer,sb.stock.voucher.line store viewer,model_sb_stock_voucher_line,group_sb_store_viewer,1,0,0,0
+access_sb_adjust_reason_store_viewer,sb.adjust.reason store viewer,model_sb_adjust_reason,group_sb_store_viewer,1,0,0,0
+access_sb_stock_revaluation_store_viewer,sb.stock.revaluation store viewer,model_sb_stock_revaluation,group_sb_store_viewer,1,0,0,0
+access_sb_gate_pass_store_viewer,sb.gate.pass store viewer,model_sb_gate_pass,group_sb_store_viewer,1,0,0,0
+access_sb_gate_pass_line_store_viewer,sb.gate.pass.line store viewer,model_sb_gate_pass_line,group_sb_store_viewer,1,0,0,0
+access_account_account_store_viewer,account.account store viewer,account.model_account_account,group_sb_store_viewer,1,0,0,0
+access_account_journal_store_viewer,account.journal store viewer,account.model_account_journal,group_sb_store_viewer,1,0,0,0
+access_account_analytic_store_viewer,account.analytic.account store viewer,analytic.model_account_analytic_account,group_sb_store_viewer,1,0,0,0
+access_sb_report_pack_store_viewer,sb.report.pack store viewer,sonador_books.model_sb_report_pack,group_sb_store_viewer,1,0,0,0
+access_sb_report_pack_line_store_viewer,sb.report.pack.line store viewer,sonador_books.model_sb_report_pack_line,group_sb_store_viewer,1,0,0,0
+access_stock_warehouse_store_viewer,stock_warehouse store viewer,stock.model_stock_warehouse,group_sb_store_viewer,1,0,0,0
+access_stock_location_store_viewer,stock_location store viewer,stock.model_stock_location,group_sb_store_viewer,1,0,0,0
+access_stock_quant_store_viewer,stock_quant store viewer,stock.model_stock_quant,group_sb_store_viewer,1,0,0,0
+access_stock_move_store_viewer,stock_move store viewer,stock.model_stock_move,group_sb_store_viewer,1,0,0,0
+access_stock_move_line_store_viewer,stock_move_line store viewer,stock.model_stock_move_line,group_sb_store_viewer,1,0,0,0
+access_stock_picking_store_viewer,stock_picking store viewer,stock.model_stock_picking,group_sb_store_viewer,1,0,0,0
+access_stock_picking_type_store_viewer,stock_picking_type store viewer,stock.model_stock_picking_type,group_sb_store_viewer,1,0,0,0
+access_stock_lot_store_viewer,stock_lot store viewer,stock.model_stock_lot,group_sb_store_viewer,1,0,0,0
+access_product_product_store_viewer,product_product store viewer,product.model_product_product,group_sb_store_viewer,1,0,0,0
+access_product_template_store_viewer,product_template store viewer,product.model_product_template,group_sb_store_viewer,1,0,0,0
+access_product_category_store_viewer,product_category store viewer,product.model_product_category,group_sb_store_viewer,1,0,0,0
+access_uom_uom_store_viewer,uom_uom store viewer,uom.model_uom_uom,group_sb_store_viewer,1,0,0,0
+access_sb_report_view_store_viewer,sb.report.view store viewer,sonador_books.model_sb_report_view,group_sb_store_viewer,1,1,1,1

@@ -76,6 +76,34 @@ class ResUsers(models.Model):
             u.sb_books_customer_only = not u._is_superuser() and u.has_group('sonador_sales.group_sb_sales_user') \
                 and not any(self.env.ref(g, raise_if_not_found=False) and u.has_group(g) for g in OTHER_BOOK_ROLES)
 
+    @api.onchange('group_ids')
+    def _onchange_sb_sales_exclusive(self):
+        """On the user form the two are one choice: picking a store, purchase or petty cash role clears Sales Clerk, and
+        picking Sales Clerk on someone who had one of those clears it. Administrators and accounting roles keep both."""
+        sales, others = _exclusive_groups(self.env)
+        if not sales or not others:
+            return
+        picked = self.group_ids._origin  # on the form the lines are new records: compare the real groups
+        mine = picked | picked.all_implied_ids
+        exempt = self.env['res.groups']
+        for xmlid in ('base.group_system', 'account.group_account_readonly'):
+            exempt |= self.env.ref(xmlid, raise_if_not_found=False) or self.env['res.groups']
+        clash = mine & others
+        if sales not in mine or not clash or mine & exempt:
+            return
+        before = self._origin.all_group_ids
+        if clash & before and sales not in before:  # had the other role, Sales Clerk was just picked: it replaces the other
+            drop = picked.filtered(lambda g: (g | g.all_implied_ids) & clash)
+            kept, cleared = sales.name, ', '.join(clash.mapped('name'))
+        else:
+            drop = picked.filtered(lambda g: sales in (g | g.all_implied_ids))
+            kept, cleared = ', '.join(clash.mapped('name')), sales.name
+        self.group_ids = picked - drop
+        return {'warning': {'title': self.env._('One or the other'), 'message': self.env._(
+            '%(kept)s and %(cleared)s cannot be given to the same person: salespeople see only the customer side of the books. '
+            '%(cleared)s was cleared. If you meant the opposite, clear %(kept)s and pick %(cleared)s again.',
+            kept=kept, cleared=cleared)}}
+
     @api.constrains('group_ids')
     def _check_disjoint_groups(self):
         super()._check_disjoint_groups()

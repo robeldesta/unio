@@ -20,3 +20,10 @@ access_sb_vehicle_service_manager,sb_vehicle_service manager,model_sb_vehicle_se
 access_sb_vehicle_schedule_driver,sb_vehicle_schedule driver,model_sb_vehicle_schedule,group_driver,1,0,0,0
 access_sb_vehicle_schedule_user,sb_vehicle_schedule officer,model_sb_vehicle_schedule,group_user,1,1,1,0
 access_sb_vehicle_schedule_manager,sb_vehicle_schedule manager,model_sb_vehicle_schedule,group_manager,1,1,1,1
+access_sb_vehicle_viewer,sb_vehicle driver,model_sb_vehicle,group_viewer,1,0,0,0
+access_sb_vehicle_doc_viewer,sb_vehicle_doc driver,model_sb_vehicle_doc,group_viewer,1,0,0,0
+access_sb_vehicle_reading_viewer,sb_vehicle_reading driver,model_sb_vehicle_reading,group_viewer,1,0,0,0
+access_sb_fuel_viewer,sb_fuel driver,model_sb_fuel,group_viewer,1,0,0,0
+access_sb_trip_viewer,sb_trip driver,model_sb_trip,group_viewer,1,0,0,0
+access_sb_vehicle_service_viewer,sb_vehicle_service driver,model_sb_vehicle_service,group_viewer,1,0,0,0
+access_sb_vehicle_schedule_viewer,sb_vehicle_schedule driver,model_sb_vehicle_schedule,group_viewer,1,0,0,0

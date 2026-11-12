@@ -28,11 +28,20 @@ class SbFactory(models.AbstractModel):
     def _is_manager(self):
         return self.env.su or self.env.user.has_group('sonador_factory.group_manager')
 
-    def _require(self, manager=False):
+    def _is_viewer(self):
+        """Looks at all of Production and changes nothing (the general manager, an owner)."""
+        return not self.env.su and self.env.user.has_group('sonador_factory.group_viewer')
+
+    def _require(self, manager=False, read=False):
+        """read=True only on methods that change nothing: those are open to a viewer, every other method is not."""
+        if read and self._is_viewer():
+            return
+        if not (self.env.su or self.env.user.has_group('sonador_factory.group_operator')):
+            if self._is_viewer():
+                raise AccessError(self.env._('You can look at Production, not change it.'))
+            raise AccessError(self.env._('Production is for the factory team.'))
         if manager and not self._is_manager():
             raise AccessError(self.env._('Only a production manager can do this.'))
-        if not (self.env.su or self.env.user.has_group('sonador_factory.group_operator')):
-            raise AccessError(self.env._('Production is for the factory team.'))
 
     def _O(self):
         return self.env['sb.mfg.order'].sudo()
@@ -50,10 +59,11 @@ class SbFactory(models.AbstractModel):
     # ------------------------------------------------------------------ context
     @api.model
     def ctx(self):
-        self._require()
+        self._require(read=True)
         c = self.env.company
         products = self.env['mrp.bom'].sudo().search([('company_id', 'in', (c.id, False))]).mapped('product_tmpl_id.product_variant_ids')
-        return {'is_manager': self._is_manager(), 'company': c.name, 'today': _s(fields.Date.context_today(self)),
+        return {'is_manager': self._is_manager(), 'view_only': self._is_viewer() and not self.env.user.has_group('sonador_factory.group_operator'),
+                'company': c.name, 'today': _s(fields.Date.context_today(self)),
                 'today_ec': format_ethiopian(fields.Date.context_today(self)),
                 'lines': [{'id': l.id, 'name': l.name, 'code': l.code or '', 'speed': l.rated_speed, 'unit': l.speed_unit or '',
                            'labour': l.labour_rate, 'overhead': l.overhead_rate, 'crew': l.crew}
@@ -83,7 +93,7 @@ class SbFactory(models.AbstractModel):
 
     @api.model
     def board(self, start=False, days=7):
-        self._require()
+        self._require(read=True)
         today = fields.Date.context_today(self)
         d0 = fields.Date.to_date(start) if start else today - timedelta(days=1)
         d1 = d0 + timedelta(days=int(days) - 1)
@@ -196,7 +206,7 @@ class SbFactory(models.AbstractModel):
 
     @api.model
     def order(self, order_id):
-        self._require()
+        self._require(read=True)
         o = self._O().browse(int(order_id))
         onhand = self._onhand(o.material_ids.product_id)
         return dict(self._card(o, onhand), line=o.line_id.name or '', bom=o.bom_id.display_name or '', note=o.note or '',
@@ -362,7 +372,7 @@ class SbFactory(models.AbstractModel):
     # ------------------------------------------------------------------ materials
     @api.model
     def shortages(self):
-        self._require()
+        self._require(read=True)
         orders = self._O().search([('company_id', '=', self.env.company.id), ('state', 'in', ('draft', 'planned', 'running', 'paused'))],
                                   order='date_planned')
         need = defaultdict(float)
@@ -414,7 +424,7 @@ class SbFactory(models.AbstractModel):
     # ------------------------------------------------------------------ analytics
     @api.model
     def analytics(self, date_from, date_to, line_id=False):
-        self._require()
+        self._require(read=True)
         df, dt = fields.Date.to_date(date_from), fields.Date.to_date(date_to)
         dom = [('company_id', '=', self.env.company.id), ('date', '>=', df), ('date', '<=', dt)]
         if line_id:

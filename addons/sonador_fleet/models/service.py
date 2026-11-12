@@ -49,12 +49,23 @@ class SbFleet(models.AbstractModel):
     def _is_officer(self):
         return self.env.su or self.env.user.has_group('sonador_fleet.group_user')
 
-    def _require(self, level='driver'):
+    def _is_viewer(self):
+        """Looks at all of Fleet, costs included, and changes nothing (the general manager, an owner)."""
+        return not self.env.su and self.env.user.has_group('sonador_fleet.group_viewer')
+
+    def _require(self, level='driver', read=False):
+        """read=True only on methods that change nothing: those are open to a viewer, every other method is not."""
+        if read and self._is_viewer():
+            return
+        if level != 'driver' and self._is_viewer() and not self._is_officer():
+            raise AccessError(self.env._('You can look at Fleet, not change it.'))
         if level == 'manager' and not self._is_manager():
             raise AccessError(self.env._('Only a fleet manager can do this.'))
         if level == 'officer' and not self._is_officer():
             raise AccessError(self.env._('Only the fleet office can do this.'))
         if not (self.env.su or self.env.user.has_group('sonador_fleet.group_driver')):
+            if self._is_viewer():
+                raise AccessError(self.env._('You can look at Fleet, not change it.'))
             raise AccessError(self.env._('Fleet is for drivers and the fleet office.'))
 
     def _me(self):
@@ -67,7 +78,7 @@ class SbFleet(models.AbstractModel):
         dom = [('company_id', '=', self.env.company.id)]
         if not all_:
             dom.append(('active', '=', True))
-        if not self._is_officer():
+        if not (self._is_officer() or self._is_viewer()):
             me = self._me()
             dom += ['|', ('driver_id', '=', me.id or 0), ('user_ids', 'in', me.ids or [0])]
         return self._V().search(dom)
@@ -108,11 +119,13 @@ class SbFleet(models.AbstractModel):
     # ------------------------------------------------------------------ context
     @api.model
     def ctx(self):
-        self._require()
+        self._require(read=True)
         c = self.env.company
         me = self._me()
         sel = lambda lst: [{'id': k, 'name': v} for k, v in lst]  # noqa: E731
-        return {'is_manager': self._is_manager(), 'is_officer': self._is_officer(), 'me': me.id or False, 'me_name': me.name or '',
+        viewer = self._is_viewer()
+        return {'is_manager': self._is_manager(), 'is_officer': self._is_officer() or viewer, 'sees_costs': self._is_manager() or viewer,
+                'view_only': viewer and not self._is_officer(), 'me': me.id or False, 'me_name': me.name or '',
                 'company': c.name, 'currency': c.currency_id.name, 'today': _s(self._today()), 'today_ec': _ec(self._today()),
                 'now': self._dt_out(fields.Datetime.now()),
                 'kinds': sel(VEHICLE_KINDS), 'ownership': sel(OWNERSHIP), 'states': sel(VEHICLE_STATES), 'fuels': sel(FUELS),
@@ -120,7 +133,7 @@ class SbFleet(models.AbstractModel):
                 'perdiem_rate': c.sb_fleet_perdiem_rate, 'prices': {'diesel': c.sb_fleet_diesel_price, 'benzine': c.sb_fleet_benzine_price,
                                                                      'hybrid': c.sb_fleet_benzine_price},
                 'people': [{'id': e.id, 'name': e.name} for e in self.env['hr.employee'].sudo().search(
-                    [('company_id', '=', c.id)], order='name')] if self._is_officer() else ([{'id': me.id, 'name': me.name}] if me else []),
+                    [('company_id', '=', c.id)], order='name')] if self._is_officer() or viewer else ([{'id': me.id, 'name': me.name}] if me else []),
                 'jobs': [{'id': j.id, 'name': j.display_name} for j in self.env['sb.job'].sudo().search(
                     [('company_id', '=', c.id), ('state', 'in', ('active', 'hold'))])] if 'job_id' in self.env['sb.trip']._fields else [],
                 'vehicles': [{'id': v.id, 'name': v.name, 'plate': v.plate, 'fuel': v.fuel, 'tank': v.tank, 'odometer': v.odometer,
@@ -159,7 +172,7 @@ class SbFleet(models.AbstractModel):
     # ------------------------------------------------------------------ dashboard
     @api.model
     def dashboard(self):
-        self._require()
+        self._require(read=True)
         c = self.env.company
         vs = self._vehicles()
         today = self._today()
@@ -227,7 +240,7 @@ class SbFleet(models.AbstractModel):
 
     @api.model
     def vehicles(self, f=None):
-        self._require()
+        self._require(read=True)
         f = f or {}
         vs = self._vehicles(all_=bool(f.get('archived')))
         if f.get('archived'):
@@ -244,7 +257,7 @@ class SbFleet(models.AbstractModel):
 
     @api.model
     def vehicle(self, vid):
-        self._require()
+        self._require(read=True)
         v = self._vehicle(vid)
         warn = v.company_id.sb_fleet_doc_warn_days or 30
         today = self._today()
@@ -345,7 +358,7 @@ class SbFleet(models.AbstractModel):
 
     @api.model
     def partners(self, search):
-        self._require()
+        self._require(read=True)
         return [{'id': p.id, 'name': p.name} for p in self.env['res.partner'].sudo().search(
             [('name', 'ilike', search), ('company_id', 'in', (False, self.env.company.id))], limit=10)]
 
@@ -456,7 +469,7 @@ class SbFleet(models.AbstractModel):
 
     @api.model
     def fuel_list(self, f=None):
-        self._require()
+        self._require(read=True)
         f = f or {}
         vs = self._vehicles(all_=True)
         dom = [('vehicle_id', 'in', vs.ids)]
@@ -579,7 +592,7 @@ class SbFleet(models.AbstractModel):
 
     @api.model
     def trips(self, f=None):
-        self._require()
+        self._require(read=True)
         f = f or {}
         vs = self._vehicles(all_=True)
         dom = [('vehicle_id', 'in', vs.ids)]
@@ -708,7 +721,7 @@ class SbFleet(models.AbstractModel):
 
     @api.model
     def maintenance(self, f=None):
-        self._require('officer')
+        self._require('officer', read=True)
         f = f or {}
         vs = self._vehicles()
         sched = [self._sched_due(s) for s in self.env['sb.vehicle.schedule'].sudo().search([('vehicle_id', 'in', vs.ids)])]
@@ -834,7 +847,7 @@ class SbFleet(models.AbstractModel):
 
     @api.model
     def costs(self, d0, d1):
-        self._require('manager')
+        self._require('manager', read=True)
         d0, d1 = fields.Date.to_date(d0), fields.Date.to_date(d1)
         if d1 < d0:
             raise ValidationError(self.env._('The period ends before it starts.'))
@@ -847,7 +860,7 @@ class SbFleet(models.AbstractModel):
     # ------------------------------------------------------------------ driver's page
     @api.model
     def my(self):
-        self._require()
+        self._require(read=True)
         me = self._me()
         if not me:
             return {'no_person': True}

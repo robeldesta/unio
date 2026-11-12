@@ -6,5 +6,5 @@
         <field name="params" eval="{'page': 'board'}"/>
     </record>
     <menuitem id="menu_root" name="Production" sequence="23" web_icon="sonador_factory,static/description/icon.png"
-              action="action_board" groups="group_operator"/>
+              action="action_board" groups="group_operator,group_viewer"/>
 </odoo>

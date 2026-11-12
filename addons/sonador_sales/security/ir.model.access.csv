@@ -29,3 +29,7 @@ access_sb_price_rule_sales,sb.price.rule sales,model_sb_price_rule,group_sb_sale
 access_sb_gate_pass_sales,sb.gate.pass sales,sonador_inventory.model_sb_gate_pass,group_sb_sales_user,1,1,1,0
 access_sb_gate_pass_line_sales,sb.gate.pass.line sales,sonador_inventory.model_sb_gate_pass_line,group_sb_sales_user,1,1,1,1
 access_sb_stock_voucher_sales,sb.stock.voucher sales,sonador_inventory.model_sb_stock_voucher,group_sb_sales_user,1,0,0,0
+access_sb_delivery_order_store_viewer,sb.delivery.order store viewer,model_sb_delivery_order,sonador_inventory.group_sb_store_viewer,1,0,0,0
+access_sb_delivery_order_line_store_viewer,sb.delivery.order.line store viewer,model_sb_delivery_order_line,sonador_inventory.group_sb_store_viewer,1,0,0,0
+access_sb_delivery_batch_store_viewer,sb.delivery.batch store viewer,model_sb_delivery_batch,sonador_inventory.group_sb_store_viewer,1,0,0,0
+access_sb_delivery_batch_line_store_viewer,sb.delivery.batch.line store viewer,model_sb_delivery_batch_line,sonador_inventory.group_sb_store_viewer,1,0,0,0

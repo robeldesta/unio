@@ -16,3 +16,12 @@ access_qtpl_op,qtpl,model_sb_mfg_check_template,group_operator,1,0,0,0
 access_qtpl_mgr,qtpl mgr,model_sb_mfg_check_template,group_manager,1,1,1,1
 access_check_op,check,model_sb_mfg_check,group_operator,1,1,1,0
 access_check_mgr,check mgr,model_sb_mfg_check,group_manager,1,1,1,1
+access_line_op_viewer,line,model_sb_mfg_line,group_viewer,1,0,0,0
+access_shift_op_viewer,shift,model_sb_mfg_shift,group_viewer,1,0,0,0
+access_reason_op_viewer,reason,model_sb_mfg_reason,group_viewer,1,0,0,0
+access_order_op_viewer,order,model_sb_mfg_order,group_viewer,1,0,0,0
+access_mat_op_viewer,material,model_sb_mfg_material,group_viewer,1,0,0,0
+access_entry_op_viewer,entry,model_sb_mfg_entry,group_viewer,1,0,0,0
+access_loss_op_viewer,loss,model_sb_mfg_loss,group_viewer,1,0,0,0
+access_qtpl_op_viewer,qtpl,model_sb_mfg_check_template,group_viewer,1,0,0,0
+access_check_op_viewer,check,model_sb_mfg_check,group_viewer,1,0,0,0

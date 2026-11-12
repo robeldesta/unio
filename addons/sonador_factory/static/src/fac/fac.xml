@@ -14,6 +14,7 @@
                         <button t-att-class="state.page === 'analytics' ? 'active' : ''" t-on-click="() => this.go('analytics')"><i class="fa fa-line-chart"/> Analytics</button>
                         <button t-if="ctx.is_manager" t-att-class="state.page === 'setup' ? 'active' : ''" t-on-click="() => this.go('setup')"><i class="fa fa-cog"/></button>
                     </nav>
+                    <span t-if="ctx.view_only" class="badge text-bg-light border"><i class="fa fa-eye me-1"/>View only</span>
                     <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
                 </div>
             </div>
