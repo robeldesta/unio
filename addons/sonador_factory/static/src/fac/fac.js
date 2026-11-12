@@ -215,13 +215,11 @@ export class FactoryApp extends Component {
     async finish() {
         const o = this.state.ord;
         const noUse = o.materials.length && !o.materials.some((m) => m.consumed);
-        let useExpected = false;
-        if (noUse) {
-            if (!window.confirm("No material use is entered. Post the recipe quantities for the output made?")) {
-                return;
-            }
-            useExpected = true;
-        } else if (!window.confirm(`Finish ${o.name} and post ${this.n(o.good)} ${o.uom} to stock and the books?`)) {
+        // the cost comes from what the store issued for the order (its GIVs) plus labour and overhead; the material use
+        // entered here is a record for the usage report (the recipe quantities when none is entered)
+        const useExpected = !!noUse;
+        if (!window.confirm(`Finish ${o.name}: receive ${this.n(o.good)} ${o.uom} into stock, at the cost of the materials ` +
+                            `the store issued for it plus labour and overhead?`)) {
             return;
         }
         this.state.ord = await this.orm.call("sb.factory", "finish", [o.id, useExpected]);

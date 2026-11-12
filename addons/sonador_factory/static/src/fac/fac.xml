@@ -187,7 +187,7 @@
                                 <td t-att-class="'text-end ' + (m.onhand &lt; m.required - m.consumed ? 'o_pp_badtxt' : '')" t-esc="n(m.onhand, 2)"/>
                                 <td><input t-if="O.state !== 'done'" type="number" class="form-control form-control-sm" t-att-value="state.mats[m_index].consumed" t-on-change="(ev) => this.setM(m_index, 'consumed', ev.target.value)"/><t t-else="" t-esc="n(m.consumed, 2)"/></td>
                                 <td><input t-if="O.state !== 'done'" class="form-control form-control-sm" placeholder="e.g. JR-2231, JR-2232" t-att-value="state.mats[m_index].lots" t-on-change="(ev) => this.setM(m_index, 'lots', ev.target.value)"/><t t-else="" t-esc="m.lots"/></td>
-                            </tr><tr t-if="!O.materials.length"><td colspan="6" class="o_pp_empty">The product has no recipe: add one under Accounting › Inventory › Recipes.</td></tr></tbody></table>
+                            </tr><tr t-if="!O.materials.length"><td colspan="6" class="o_pp_empty">The product has no recipe: add one in Production › Recipes.</td></tr></tbody></table>
                         <div t-if="O.state !== 'done' and O.materials.length" class="o_pp_panel_foot"><button class="btn btn-light border btn-sm" t-on-click="saveMats">Save material use</button></div>
                     </div>
 

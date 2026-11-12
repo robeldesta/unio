@@ -82,6 +82,8 @@ bom = env['mrp.bom'].create({'product_tmpl_id': door.product_tmpl_id.id, 'produc
 O = env['sb.mfg.order']
 A = O.create({'product_id': door.id, 'bom_id': bom.id, 'qty_planned': 5, 'line_id': line.id, 'state': 'running'})
 B = O.create({'product_id': door.id, 'bom_id': bom.id, 'qty_planned': 3, 'line_id': line.id, 'state': 'running'})
+for _o in (A, B):   # the board gives an order its recipe lines when it is saved there
+    _o.material_ids = [(5, 0, 0)] + env['sb.factory']._materials_vals(_o)
 ok(A.name.startswith('MO/'), 'production orders are numbered MO/, not PO/ like purchase orders: %s' % A.name)
 ok(A.display_name == '%s · 5 × Prod steel door' % A.name, 'picking an order shows what it makes: "%s"' % A.display_name)
 f0 = Form(SV.with_context(default_voucher_type='giv'))
@@ -142,15 +144,29 @@ def finish(order, minutes, good, label):
     return order.voucher_id
 
 
+# shortages count only what the store has not issued yet (A and B issued above; A needs 6 steel, B 4: both covered)
+F = env['sb.factory']
+short = {r['product']: r for r in F.shortages()['rows']}
+ok(steel.display_name not in short and short.get(paint.display_name, {}).get('need') == 1.2,
+   'shortages count only what is not issued yet (steel all issued; paint 1.2 for B): %s' % {k: v['need'] for k, v in short.items()})
 v_a = finish(A, 120, 5, 'finish A')
 if v_a:
     ok(v_a.voucher_type == 'fprr', 'A is finished on an FPRR (not a Build): %s' % v_a.voucher_type)
     check(v_a.move_id, want((FG, 8700, 0), (WIP, 0, 7700), (LAB, 0, 600), (OVH, 0, 400)),
           'FPRR A: Dr FG 8,700 / Cr WIP 7,700 (A\'s GIV only) · labour 2 h × 300 · overhead 2 h × 200')
+if v_a:
+    card = F.order(A.id)
+    ok(card['voucher'] and round(card['voucher']['unit_cost'], 2) == 1740.0,
+       'the finished order shows its posted cost per unit (8,700 / 5): %s' % (card['voucher'] and card['voucher']['unit_cost']))
 ok(round(bal(WIP) - start[WIP], 2) == 4600, 'WIP after A holds only B\'s materials: %s' % round(bal(WIP) - start[WIP], 2))
 v_b = finish(B, 60, 3, 'finish B')
 if v_b:
     check(v_b.move_id, want((FG, 5100, 0), (WIP, 0, 4600), (LAB, 0, 300), (OVH, 0, 200)), 'FPRR B: Dr FG 5,100')
+from odoo import fields as _f
+an = F.analytics(_f.Date.to_string(_f.Date.context_today(env.user)), _f.Date.to_string(_f.Date.context_today(env.user)), False)
+row = next((r for r in an['costs'] if r['product'] == door.display_name), None)
+ok(row and round(row['total'], 2) == 13800 and row['qty'] == 8,
+   'Analytics cost of production includes the FPRRs: %s' % (str((row['qty'], row['total'], row['material'], row['labour'], row['overhead'])) if row else 'missing'))
 ok(round(bal(WIP) - start[WIP], 2) == 0, 'WIP empty when both orders are finished: %s' % round(bal(WIP) - start[WIP], 2))
 
 # ------------------------------------------------------------------ stock moved once
