@@ -31,6 +31,28 @@
         </xpath>
     </template>
 
+    <!-- sign-in page: email and password show at once. Odoo sends the form hidden and only shows it after the
+         "Choose a user" component loads with the lazy scripts, so people stared at an empty card for seconds. Now it
+         is hidden only when this browser remembers two or more people (then the chooser is shown instead), decided
+         straight away from the same browser storage the chooser reads. -->
+    <template id="login_form_now" inherit_id="web.login" priority="99">
+        <xpath expr="//form[@data-captcha='login']" position="attributes">
+            <attribute name="t-attf-class">oe_login_form</attribute>
+        </xpath>
+        <xpath expr="//form[@data-captcha='login']" position="after">
+            <script t-if="not login">
+                (function () {
+                    try {
+                        var users = JSON.parse(localStorage.getItem('web.lastConnectedUser') || '[]');
+                        if (users.length > 1) {
+                            document.querySelector('form.oe_login_form').classList.add('d-none');
+                        }
+                    } catch (e) { /* storage blocked: keep the form visible */ }
+                })();
+            </script>
+        </xpath>
+    </template>
+
     <template id="brand_promotion_message" inherit_id="web.brand_promotion_message">
         <xpath expr="//t[@t-set='odoo_logo']" position="replace">
             <t t-set="odoo_logo">
