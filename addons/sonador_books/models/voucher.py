@@ -1033,11 +1033,16 @@ class SbVoucher(models.Model):
             add(line.account_id, line.amount if sign < 0 else 0.0, line.amount if sign > 0 else 0.0,
                 line.name, line.partner_id or partner)
         if self.amount_unapplied > 0:
-            advance = (self.company_id.sb_customer_advance_account_id if sign > 0
-                       else self.company_id.sb_vendor_advance_account_id)
-            add(advance, self.amount_unapplied if sign < 0 else 0.0, self.amount_unapplied if sign > 0 else 0.0,
-                self.env._('Advance %s', self.reference or ''), partner)
+            for account, amount, label in self._sb_unapplied_split(self.amount_unapplied, sign):
+                add(account, amount if sign < 0 else 0.0, amount if sign > 0 else 0.0, label, partner)
         return lines
+
+    def _sb_unapplied_split(self, amount, sign):
+        """[(account, amount, label)] for the money not applied to any item or line: an advance. Purchase splits a
+        payment against an order into goods already received, VAT and advance."""
+        advance = (self.company_id.sb_customer_advance_account_id if sign > 0
+                   else self.company_id.sb_vendor_advance_account_id)
+        return [(advance, amount, self.env._('Advance %s', self.reference or ''))]
 
     def _check_before_post(self):
         self.ensure_one()

@@ -5,3 +5,4 @@ from . import report_purchase
 from . import series
 from . import approval
 from . import auto_bill
+from . import supplier_side
