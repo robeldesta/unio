@@ -9,9 +9,10 @@
     'data': [
         'security/groups.xml',
         'security/ir.model.access.csv',
+        'security/books_side.xml',
         'views/delivery_views.xml',
-        'views/sale_views.xml',
         'views/pricing_views.xml',
+        'views/sale_views.xml',
         'report/delivery_note.xml',
         'views/sales_app.xml',
         'views/series_views.xml',

@@ -202,7 +202,7 @@ class SbReportCatalog(models.AbstractModel):
         entries = CATALOG + [e for e in self._extra_catalog() if e['key'] not in known]
         entries = [dict(e, priority=1) if e['priority'] > 1 and hasattr(self, '_report_%s' % e['report']) else e for e in entries]
         entries = [dict(e, name=names.get(e['key'], e['name'])) for e in entries
-                   if e['key'] not in hidden and self._report_allowed(e['report'])]
+                   if e['key'] not in hidden and self._report_allowed(e['report'], e.get('options'))]
         cats = list(CATEGORIES)
         for key, name, title, after in self._extra_categories():
             if key not in {c[0] for c in cats}:

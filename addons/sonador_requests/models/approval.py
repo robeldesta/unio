@@ -14,6 +14,8 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.fields import Domain
 
+from odoo.addons.sonador_books.models.client_guard import refuse_client_write
+
 STEPS = ('dept', 'finance', 'gm')
 STATES = [('draft', 'Draft'), ('dept', 'Department approval'), ('finance', 'Finance check'),
           ('gm', 'General manager approval'), ('approved', 'Approved'), ('cancel', 'Cancelled')]
@@ -157,6 +159,7 @@ class SbRequestMixin(models.AbstractModel):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            refuse_client_write(self.browse(), vals, self._SB_FLOW_FIELDS, self._description)
             if vals.get('name', '/') == '/':
                 code = self.new(vals)._sb_sequence_code()
                 vals['name'] = self.env['ir.sequence'].sudo().next_by_code(code) or '/'
@@ -298,7 +301,15 @@ class SbRequestMixin(models.AbstractModel):
     # ------------------------------------------------------------------ guarding edits
     _SB_LOCKED = ('amount', 'requester_id', 'company_id')
 
+    # kept by the buttons (Submit, Approve, Send back, Cancel, Pay): a client never writes them
+    _SB_FLOW_FIELDS = ('state', 'submitted_at', 'dept_by', 'dept_at', 'finance_by', 'finance_at', 'gm_by', 'gm_at',
+                       'sent_back_reason', 'sent_back_by', 'cancel_reason', 'sb_step_user_id', 'sb_migrated', 'sb_legacy_ref')
+
     def write(self, vals):
+        refuse_client_write(self, vals, self._SB_FLOW_FIELDS, self._description)
+        # the department head is chosen in draft; once submitted, only a requests administrator moves the request to another
+        refuse_client_write(self, vals, ('dept_approver_id',), self._description,
+                            allow=lambda r: r.state == 'draft' or self.env.user.has_group('sonador_requests.group_request_admin'))
         if not self.env.su and set(vals) & set(self._SB_LOCKED):
             for r in self:
                 if r.state != 'draft':

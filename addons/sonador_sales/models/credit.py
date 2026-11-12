@@ -3,6 +3,8 @@ Checked when a sales order is confirmed and when a sales invoice (on account) is
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
+from odoo.addons.sonador_books.models.client_guard import refuse_client_write
+
 
 class ResCompany(models.Model):
     _inherit = 'res.company'
@@ -100,3 +102,20 @@ class SbVoucher(models.Model):
                                                   l.sb_qty_to_invoice) / l.product_uom_qty
             _check(self.env, v, v.partner_id, max(amount, 0.0), self.env._('invoice'))
         return super().action_post()
+
+
+class SaleOrderFlowFields(models.Model):
+    _inherit = 'sale.order'
+
+    # confirmed, locked and cancelled by the buttons (which check credit, approval and stock), never by editing the order
+    _SB_FLOW_FIELDS = ('state',)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            refuse_client_write(self.browse(), vals, self._SB_FLOW_FIELDS, self.env._('Sales order'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        refuse_client_write(self, vals, self._SB_FLOW_FIELDS, self.env._('Sales order'))
+        return super().write(vals)

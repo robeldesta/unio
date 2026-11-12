@@ -6,6 +6,8 @@ to "To Approve"; only a member of that band's group (or of a higher band's group
 from odoo import api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+from odoo.addons.sonador_books.models.client_guard import refuse_client_write
+
 
 class SbPoApprovalRule(models.Model):
     _name = 'sb.po.approval.rule'
@@ -69,6 +71,19 @@ class PurchaseOrder(models.Model):
             o.sb_can_approve = bool(mine) or (mine is None and user.has_group('purchase.group_purchase_manager'))
             o.sb_can_submit = clerk or user in (o.user_id | o.create_uid)
             o.sb_can_cancel = o.sb_can_approve or (user in (o.user_id | o.create_uid)) or (clerk and o.state != 'to approve')
+
+    # approved (band checked), confirmed, cancelled and locked by the buttons: a client never writes them
+    _SB_FLOW_FIELDS = ('state', 'sb_approved_by', 'date_approve')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            refuse_client_write(self.browse(), vals, self._SB_FLOW_FIELDS, self.env._('Purchase order'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        refuse_client_write(self, vals, self._SB_FLOW_FIELDS, self.env._('Purchase order'))
+        return super().write(vals)
 
     def _sb_amount_company(self):
         self.ensure_one()

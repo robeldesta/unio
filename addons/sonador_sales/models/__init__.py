@@ -5,3 +5,4 @@ from . import pricing
 from . import credit
 from . import apps
 from . import series
+from . import books_side

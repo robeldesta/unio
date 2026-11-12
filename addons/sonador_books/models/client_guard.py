@@ -13,6 +13,7 @@ at all (a shell or script acting as that user); a button, a wizard or a cron is.
 import contextvars
 
 from odoo import models
+from odoo.exceptions import UserError
 from odoo.http import request
 from odoo.service import model as service_model
 
@@ -22,6 +23,8 @@ CLIENT_STRIP = frozenset({
     'skip_readonly_check', 'skip_is_manually_modified', 'tracking_disable', 'mail_notrack', 'force_delete',
     'install_mode', 'import_file', 'disable_abnormal_invoice_detection', 'move_reverse_cancel', 'no_new_invoice',
     'sb_settling', 'sb_move_flow', 'sb_posting', 'sb_year_end', 'sb_autopost', 'bypass_audit',
+    # approval and numbering switches of the apps: set inside their own flows only
+    'sb_so_approved', 'sb_confirm_inside', 'sb_open_numbering', 'sale_write_from_compute',
 })
 # methods by which a client writes data straight into records
 CLIENT_WRITES = frozenset({'write', 'create', 'web_save', 'web_save_multi', 'load', 'unlink', 'copy', 'copy_data',
@@ -42,6 +45,40 @@ def client_writing(models_=JOURNAL_MODELS):
     """Whether a client is writing or creating records of `models_` directly (write, create, web_save ...)."""
     call = _CLIENT_CALL.get()
     return bool(call) and call[0] in models_ and call[1] in CLIENT_WRITES
+
+
+def strip_from_clients(*keys):
+    """Modules add the context switches of their own flows: a client request never carries them."""
+    global CLIENT_STRIP
+    CLIENT_STRIP = CLIENT_STRIP | frozenset(keys)
+
+
+def _differs(record, name, value):
+    field = record._fields[name]
+    try:
+        return field.convert_to_cache(value, record) != field.convert_to_cache(record[name], record)
+    except Exception:  # noqa: BLE001 - a value we cannot compare counts as a change
+        return True
+
+
+def refuse_client_write(records, vals, names, what, allow=None):
+    """A client writing these records directly (write, create, web_save, import ...) may not set the fields its flows keep
+    (an approval status, who approved and when): the buttons do. `records` is the recordset written, or an empty
+    recordset of the model on create; `allow(record)` lets a record through (a draft, an administrator)."""
+    if not client_writing((records._name,)) or records.env.su:
+        return
+    names = [n for n in names if n in vals and n in records._fields]
+    if not names:
+        return
+    if records:
+        changed = [n for n in names if any(_differs(r, n, vals[n]) for r in records if not (allow and allow(r)))]
+    else:
+        defaults = records.default_get(names)
+        changed = [n for n in names if vals[n] and vals[n] != defaults.get(n)]
+    if changed:
+        labels = ', '.join(records._fields[n].string or n for n in changed)
+        raise UserError(records.env._('%(what)s: %(fields)s change only through the approval buttons, not by editing the '
+                                      'record.', what=what, fields=labels))
 
 
 def server_side(env):

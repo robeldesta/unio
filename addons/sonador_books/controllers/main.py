@@ -29,7 +29,7 @@ class SonadorReports(http.Controller):
         opts = json.loads(options or '{}')
         exp = json.loads(expanded or '[]')
         # the report's own access rule (payroll reports: HR only), before anything is computed or rendered
-        request.env['sb.report']._check_report_access(report)
+        request.env['sb.report']._check_report_access(report, request.env['sb.report']._options(opts))
         doc = request.env['sb.report'].get_report(report, opts, exp)
         doc['rows'] = visible_rows(doc, set(exp))
         hidden = set(opts.get('hidden_cols') or [])
