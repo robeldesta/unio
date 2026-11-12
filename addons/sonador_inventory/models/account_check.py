@@ -45,4 +45,16 @@ class ResCompany(models.Model):
             row = self.env.cr.fetchone()
             if row and row[0] != current.id:
                 company.sb_giv_account_id = row[0]
+        self._sb_fix_default_expense()
+        return True
+
+    @api.model
+    def _sb_fix_default_expense(self):
+        """Odoo's Ethiopian chart sets the company's default expense account to 2301 Goods in Transit, a current asset:
+        every item with no expense account of its own then 'expenses' to an asset. Use the company's issue account."""
+        for company in self.sudo().search([]):
+            current = company.expense_account_id if 'expense_account_id' in company._fields else False
+            if current and current.account_type not in ('expense', 'expense_direct_cost', 'expense_depreciation') \
+                    and company.sb_giv_account_id:
+                company.expense_account_id = company.sb_giv_account_id
         return True

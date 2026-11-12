@@ -16,3 +16,4 @@ from . import stock_guard
 from . import account_check
 from . import giv_account
 from . import store_finance
+from . import item_class

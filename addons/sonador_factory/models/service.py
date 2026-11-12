@@ -344,17 +344,26 @@ class SbFactory(models.AbstractModel):
                 m.qty_consumed = m.qty_required * (o.qty_good / o.qty_planned) if o.qty_planned else 0
         if mats and not any(m.qty_consumed for m in mats):
             raise ValidationError(self.env._('Enter what material was used (or use the recipe quantities for the output).'))
+        # The materials came out of the store on the order's GIVs (Dr WIP / Cr inventory). Finishing receives the good
+        # output on an FPRR: Dr finished goods / Cr WIP (this order's GIVs) and the labour and overhead absorbed.
+        # Nothing is taken from stock here: what was used is recorded above for the usage report only.
+        wip = o.company_id.account_production_wip_account_id
+        if not wip:
+            raise UserError(self.env._('Set the work in progress account of the company (Settings) first.'))
+        if not o._sb_waiting_givs():
+            raise UserError(self.env._(
+                'No materials have been issued to %s yet. The store issues them on a GIV for this production order '
+                '(Inventory › Issue, choose the production order), then finish it here.', o.name))
         hours = o.run_minutes / 60.0
         wh = self._wh()
         V = self.env['sb.stock.voucher'].sudo()
-        v = V.create({'voucher_type': 'build', 'company_id': o.company_id.id, 'warehouse_id': wh.id, 'date': fields.Date.context_today(self),
-                      'build_product_id': o.product_id.id, 'build_bom_id': o.bom_id.id or False, 'build_qty': o.qty_good,
+        v = V.create({'voucher_type': 'fprr', 'company_id': o.company_id.id, 'warehouse_id': wh.id, 'date': fields.Date.context_today(self),
+                      'sb_mfg_order_id': o.id, 'sb_wip_costed': True, 'account_id': wip.id,
                       'reference': o.name, 'memo': ('%s %s' % (o.name, ('lot ' + o.lot_name) if o.lot_name else '')).strip(),
                       'sb_labour_total': round(hours * (o.line_id.labour_rate or 0.0), 2),
                       'sb_overhead_total': round(hours * (o.line_id.overhead_rate or 0.0), 2),
-                      'line_ids': [(0, 0, {'product_id': m.product_id.id, 'name': m.product_id.display_name, 'quantity': m.qty_consumed,
-                                           'qty_standard': m.qty_required * (o.qty_good / o.qty_planned) if o.qty_planned else m.qty_required})
-                                   for m in mats if m.qty_consumed]})
+                      'line_ids': [(0, 0, {'product_id': o.product_id.id, 'name': o.product_id.display_name, 'quantity': o.qty_good,
+                                           'unit_cost': o.product_id.standard_price or 0.0})]})
         v.action_post()
         o.write({'state': 'done', 'finished_at': fields.Datetime.now(), 'voucher_id': v.id})
         return self.order(o.id)

@@ -165,7 +165,10 @@ class SbStockVoucherLine(models.Model):
             company = self.voucher_id.company_id or self.env.company
             account = self.product_id.categ_id.with_company(company).sb_issue_account_id or \
                 self.product_id.with_company(company).product_tmpl_id.get_product_accounts().get('expense')
-            if account:
+            # only an expense, a cost or work in process can be charged by an issue (the same rule as the item class
+            # accounts): never an asset such as Goods in Transit, which Odoo's Ethiopian chart sets as its default expense
+            if account and (account.account_type in ('expense', 'expense_direct_cost', 'expense_depreciation')
+                            or 'work in pro' in (account.name or '').lower()):
                 self.account_id = account
         return res
 
