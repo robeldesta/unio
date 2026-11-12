@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_po_approval_rule_list" model="ir.ui.view">
+        <field name="name">sb.po.approval.rule.list</field>
+        <field name="model">sb.po.approval.rule</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="display_name" string="Band" readonly="1"/>
+                <field name="amount_from"/>
+                <field name="amount_to"/>
+                <field name="group_id" options="{'no_create': True}"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="company_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_sb_po_approval_rules" model="ir.actions.act_window">
+        <field name="name">Approval Limits</field>
+        <field name="res_model">sb.po.approval.rule</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html"><p>Purchase orders are approved by the group of their amount band (VAT included, company currency).
+            A higher band's group can approve lower bands. With no bands, orders are confirmed directly.</p></field>
+    </record>
+    <menuitem id="menu_purchase_config" name="Configuration" parent="menu_purchase_root" sequence="90"
+              groups="sonador_books.group_sb_manager"/>
+    <menuitem id="menu_purchase_approval" name="Approval Limits" parent="menu_purchase_config" action="action_sb_po_approval_rules" sequence="1"/>
+
+    <record id="purchase_order_form_sb_approval" model="ir.ui.view">
+        <field name="name">purchase.order.form.sb.approval</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <!-- the approver of the order's band approves; the requester (or a purchase clerk) submits -->
+            <xpath expr="//button[@name='button_approve']" position="attributes">
+                <attribute name="groups"></attribute>
+                <attribute name="invisible">not sb_can_approve</attribute>
+            </xpath>
+            <xpath expr="//button[@name='button_confirm'][@id='bid_confirm']" position="attributes">
+                <attribute name="string">Submit for Approval</attribute>
+                <attribute name="invisible">state != 'sent' or not sb_can_submit</attribute>
+            </xpath>
+            <xpath expr="//button[@name='button_confirm'][@id='draft_confirm']" position="attributes">
+                <attribute name="string">Submit for Approval</attribute>
+                <attribute name="invisible">state != 'draft' or not sb_can_submit</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='button_cancel']" position="attributes">
+                <attribute name="invisible">state not in ('draft', 'to approve', 'sent', 'purchase') or locked or not sb_can_cancel</attribute>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <field name="sb_can_approve" invisible="1"/>
+                <field name="sb_can_submit" invisible="1"/>
+                <field name="sb_can_cancel" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_ref']" position="after">
+                <field name="sb_approver_group_id" invisible="state not in ('draft', 'sent', 'to approve')" readonly="1"/>
+                <field name="sb_approved_by" invisible="not sb_approved_by"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

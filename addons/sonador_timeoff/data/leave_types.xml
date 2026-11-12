@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Labour Proclamation No. 1156/2019 -->
+    <record id="type_annual" model="sb.leave.type"><field name="sequence">1</field><field name="name">Annual leave</field><field name="code">AL</field>
+        <field name="kind">annual</field><field name="unit">working</field><field name="legal_ref">art. 76-80</field><field name="color">#2A9D8F</field></record>
+    <record id="type_sick" model="sb.leave.type"><field name="sequence">2</field><field name="name">Sick leave</field><field name="code">SL</field>
+        <field name="kind">sick</field><field name="unit">calendar</field><field name="max_days">180</field><field name="needs_document" eval="True"/>
+        <field name="legal_ref">art. 85-86</field><field name="color">#D9634C</field></record>
+    <record id="type_maternity_pre" model="sb.leave.type"><field name="sequence">3</field><field name="name">Maternity leave, pre-natal</field><field name="code">MP</field>
+        <field name="kind">maternity_pre</field><field name="unit">calendar</field><field name="max_days">30</field><field name="gender">female</field>
+        <field name="legal_ref">art. 88(3)</field><field name="color">#8E7DBE</field></record>
+    <record id="type_maternity_post" model="sb.leave.type"><field name="sequence">4</field><field name="name">Maternity leave, post-natal</field><field name="code">MN</field>
+        <field name="kind">maternity_post</field><field name="unit">calendar</field><field name="max_days">90</field><field name="gender">female</field>
+        <field name="legal_ref">art. 88(3)</field><field name="color">#8E7DBE</field></record>
+    <record id="type_pregnancy_check" model="sb.leave.type"><field name="sequence">5</field><field name="name">Pregnancy medical examination</field><field name="code">PE</field>
+        <field name="kind">other</field><field name="unit">working</field><field name="gender">female</field><field name="needs_document" eval="True"/>
+        <field name="legal_ref">art. 88(1)</field><field name="color">#B9A6E0</field></record>
+    <record id="type_paternity" model="sb.leave.type"><field name="sequence">6</field><field name="name">Paternity leave</field><field name="code">PAT</field>
+        <field name="kind">paternity</field><field name="unit">calendar</field><field name="max_days">3</field><field name="gender">male</field>
+        <field name="legal_ref">art. 81(2)</field><field name="color">#5D8DA8</field></record>
+    <record id="type_marriage" model="sb.leave.type"><field name="sequence">7</field><field name="name">Marriage leave</field><field name="code">MAR</field>
+        <field name="kind">marriage</field><field name="unit">working</field><field name="max_days">3</field>
+        <field name="legal_ref">art. 81(1)</field><field name="color">#E9A23B</field></record>
+    <record id="type_bereavement" model="sb.leave.type"><field name="sequence">8</field><field name="name">Bereavement leave</field><field name="code">BER</field>
+        <field name="kind">bereavement</field><field name="unit">working</field><field name="max_days">3</field>
+        <field name="legal_ref">art. 81(1)</field><field name="color">#6B7A85</field></record>
+    <record id="type_unpaid" model="sb.leave.type"><field name="sequence">9</field><field name="name">Leave without pay</field><field name="code">LWP</field>
+        <field name="kind">unpaid</field><field name="unit">calendar</field><field name="max_days">5</field><field name="max_per_year">2</field>
+        <field name="paid" eval="False"/><field name="legal_ref">art. 81(3)</field><field name="color">#A63D40</field></record>
+    <record id="type_union" model="sb.leave.type"><field name="sequence">10</field><field name="name">Trade union leave</field><field name="code">TU</field>
+        <field name="kind">union</field><field name="unit">working</field><field name="legal_ref">art. 82</field><field name="color">#243742</field></record>
+    <record id="type_court" model="sb.leave.type"><field name="sequence">11</field><field name="name">Court, hearing or public duty</field><field name="code">CPD</field>
+        <field name="kind">court</field><field name="unit">working</field><field name="needs_document" eval="True"/>
+        <field name="legal_ref">art. 83</field><field name="color">#7FB069</field></record>
+</odoo>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_insights" model="ir.actions.client">
+        <field name="name">HR Analytics</field>
+        <field name="tag">sonador_insights.app</field>
+        <field name="params" eval="{'page': 'analytics'}"/>
+    </record>
+    <record id="action_pulse" model="ir.actions.client">
+        <field name="name">Surveys</field>
+        <field name="tag">sonador_insights.app</field>
+        <field name="params" eval="{'page': 'surveys'}"/>
+    </record>
+    <menuitem id="menu_insights" name="HR Analytics" parent="sonador_books.menu_hr_root" action="action_insights" sequence="13" groups="sonador_books.group_sb_hr"/>
+    <menuitem id="menu_pulse" name="Surveys" parent="sonador_books.menu_hr_root" action="action_pulse" sequence="14"/>
+</odoo>

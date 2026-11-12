@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ticket_user,ticket user,model_sb_support_ticket,base.group_user,1,0,0,0
+access_ticket_agent,ticket agent,model_sb_support_ticket,group_agent,1,1,1,0

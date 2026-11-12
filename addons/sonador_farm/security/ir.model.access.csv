@@ -1,0 +1,19 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_farm_w,farm worker,model_sb_farm,group_worker,1,0,0,0
+access_farm_m,farm manager,model_sb_farm,group_manager,1,1,1,1
+access_unit_w,unit worker,model_sb_farm_unit,group_worker,1,0,0,0
+access_unit_m,unit manager,model_sb_farm_unit,group_manager,1,1,1,1
+access_breed_w,breed worker,model_sb_farm_breed,group_worker,1,0,0,0
+access_breed_m,breed manager,model_sb_farm_breed,group_manager,1,1,1,1
+access_target_w,target worker,model_sb_farm_breed_target,group_worker,1,0,0,0
+access_target_m,target manager,model_sb_farm_breed_target,group_manager,1,1,1,1
+access_flock_w,flock worker,model_sb_farm_flock,group_worker,1,0,0,0
+access_flock_m,flock manager,model_sb_farm_flock,group_manager,1,1,1,1
+access_record_w,record worker,model_sb_farm_record,group_worker,1,1,1,0
+access_record_m,record manager,model_sb_farm_record,group_manager,1,1,1,1
+access_egg_w,egg worker,model_sb_farm_record_egg,group_worker,1,1,1,1
+access_egg_m,egg manager,model_sb_farm_record_egg,group_manager,1,1,1,1
+access_htpl_w,htpl worker,model_sb_farm_health_template,group_worker,1,0,0,0
+access_htpl_m,htpl manager,model_sb_farm_health_template,group_manager,1,1,1,1
+access_health_w,health worker,model_sb_farm_health,group_worker,1,1,0,0
+access_health_m,health manager,model_sb_farm_health,group_manager,1,1,1,1

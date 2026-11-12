@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_root" name="Controller" sequence="12" web_icon="sonador_controller,static/description/icon.png"
+              action="action_ctl_app" groups="sonador_books.group_sb_auditor"/>
+    <menuitem id="menu_overview" name="Overview" parent="menu_root" action="action_ctl_app" sequence="1"/>
+    <menuitem id="menu_findings" name="Findings" parent="menu_root" action="action_ctl_findings" sequence="2"/>
+    <menuitem id="menu_config" name="Configuration" parent="menu_root" sequence="9" groups="sonador_books.group_sb_manager"/>
+    <menuitem id="menu_settings" name="Settings" parent="menu_config" action="action_ctl_settings" sequence="1"/>
+    <menuitem id="menu_runs" name="Runs" parent="menu_config" action="action_ctl_runs" sequence="2"/>
+</odoo>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.SbRecordDrawer">
+        <Dialog size="'lg'" title="props.title" withBodyPadding="false" modalRef="modalRef" onExpand="onExpandCallback" contentClass="'o_sb_drawer'">
+            <View t-props="viewProps"/>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="() => props.close()">Close</button>
+                <button t-if="onExpandCallback" class="btn btn-link" t-on-click="onExpandCallback"><i class="fa fa-expand me-1"/>Open full</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

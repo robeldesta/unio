@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="reason_fit" model="sb.recruit.reason"><field name="name">Does not fit the job requirements</field><field name="sequence">1</field></record>
+    <record id="reason_filled" model="sb.recruit.reason"><field name="name">Job already filled</field><field name="sequence">2</field></record>
+    <record id="reason_interview" model="sb.recruit.reason"><field name="name">Did not pass the interview</field><field name="sequence">3</field></record>
+    <record id="reason_duplicate" model="sb.recruit.reason"><field name="name">Duplicate</field><field name="sequence">4</field></record>
+    <record id="reason_spam" model="sb.recruit.reason"><field name="name">Spam</field><field name="sequence">5</field></record>
+    <record id="reason_salary" model="sb.recruit.reason"><field name="name">Withdrew: salary</field><field name="sequence">6</field><field name="by_candidate" eval="True"/></record>
+    <record id="reason_other_offer" model="sb.recruit.reason"><field name="name">Withdrew: took another offer</field><field name="sequence">7</field><field name="by_candidate" eval="True"/></record>
+    <record id="reason_job_fit" model="sb.recruit.reason"><field name="name">Withdrew: job not for them</field><field name="sequence">8</field><field name="by_candidate" eval="True"/></record>
+</odoo>

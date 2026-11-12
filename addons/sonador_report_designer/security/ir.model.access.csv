@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rep_template_user,report template user,model_sb_rep_template,base.group_user,1,0,0,0
+access_rep_template_mgr,report template manager,model_sb_rep_template,sonador_books.group_sb_manager,1,1,1,1
+access_rep_tsection_user,report template section user,model_sb_rep_template_section,base.group_user,1,0,0,0
+access_rep_tsection_mgr,report template section manager,model_sb_rep_template_section,sonador_books.group_sb_manager,1,1,1,1
+access_rep_report_user,report user,model_sb_rep_report,base.group_user,1,0,0,0
+access_rep_rsection_user,report section user,model_sb_rep_report_section,base.group_user,1,0,0,0

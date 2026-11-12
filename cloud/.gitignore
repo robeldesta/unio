@@ -1,0 +1,9 @@
+.env
+CREDENTIALS.txt
+CREDENTIALS*.txt
+brevo.txt
+turnstile.txt
+telebirr_*.txt
+chapa_*.txt
+queue/
+hq.txt

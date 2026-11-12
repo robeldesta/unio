@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.Fx">
+        <div class="o_pp o_fx o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="state.ctx.company"/> · books in <t t-esc="state.ctx.currency"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-exchange me-2"/>Currencies and revaluation</h1>
+                    </div>
+                    <label class="d-flex align-items-center gap-2 small">
+                        <input type="checkbox" class="form-check-input" t-att-checked="state.ctx.auto" t-on-change="toggleAuto"/> Fetch rates every morning
+                    </label>
+                    <button class="btn btn-light border btn-sm" t-att-disabled="state.busy" t-on-click="fetchNow"><i class="fa fa-refresh me-1"/>Fetch today's rates</button>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <div t-if="!state.ctx.currencies.length" class="o_pp_card p-3">Only <t t-esc="state.ctx.currency"/> is in use. Activate another currency (e.g. USD) to buy or sell in it.</div>
+                <div class="o_fx_rates">
+                    <div t-foreach="state.ctx.currencies" t-as="c" t-key="c.id" class="o_pp_card o_fx_card">
+                        <div class="d-flex align-items-baseline gap-2">
+                            <h3 class="m-0" t-esc="c.name"/>
+                            <span class="ms-auto o_fx_big" t-if="c.history.length"><t t-esc="money(c.history[0].per_unit, 2)"/> <small t-esc="state.ctx.currency"/></span>
+                        </div>
+                        <div class="small text-muted" t-if="c.history.length">per 1 <t t-esc="c.name"/>, <t t-esc="c.history[0].date"/></div>
+                        <table class="o_pp_table small mt-2">
+                            <tr t-foreach="c.history.slice(1, 6)" t-as="h" t-key="h.id"><td t-esc="h.date"/><td class="text-end" t-esc="money(h.per_unit, 2)"/></tr>
+                        </table>
+                        <div class="d-flex gap-1 mt-2">
+                            <input type="date" class="form-control form-control-sm" t-att-value="state.ctx.today"
+                                   t-on-change="(ev) => { this.state.newRate[c.id] = Object.assign(this.state.newRate[c.id] || {}, { date: ev.target.value }); }"/>
+                            <input type="number" step="0.0001" class="form-control form-control-sm o_fx_in" t-attf-placeholder="{{ state.ctx.currency }} per {{ c.name }}"
+                                   t-on-change="(ev) => { this.state.newRate[c.id] = Object.assign(this.state.newRate[c.id] || {}, { value: ev.target.value }); }"/>
+                            <button class="btn btn-light border btn-sm" t-on-click="() => this.saveRate(c)">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h2 class="o_fx_h2">Month-end revaluation</h2>
+                <p class="small text-muted">Open customer and supplier balances and foreign-currency bank accounts restated at the closing rate (IAS 21). The difference goes to exchange gain or loss and reverses on the next day; the real difference is booked when the item is paid.</p>
+                <div class="o_pp_toolbar">
+                    <input type="date" class="form-control form-control-sm w-auto" t-att-value="state.day" t-on-change="(ev) => { this.state.day = ev.target.value; this.preview(); }"/>
+                    <span class="ms-auto"/>
+                    <button t-if="state.reval and state.reval.posted" class="btn btn-light border btn-sm" t-on-click="() => this.openVoucher(state.reval.posted_id)">
+                        <i class="fa fa-check text-success me-1"/>Posted as <t t-esc="state.reval.posted"/></button>
+                    <button t-elif="state.reval and state.reval.items.length" class="btn btn-primary btn-sm" t-att-disabled="state.busy" t-on-click="post">
+                        <i class="fa fa-play me-1"/>Post revaluation</button>
+                </div>
+                <div class="o_pp_card o_fx_wrap" t-if="state.reval">
+                    <table class="o_pp_table">
+                        <thead><tr><th>Account</th><th>Customer / supplier</th><th class="text-end">Open in currency</th><th class="text-end">Closing rate</th>
+                            <th class="text-end">Booked at</th><th class="text-end">At closing rate</th><th class="text-end">Gain / (loss)</th></tr></thead>
+                        <tbody>
+                            <tr t-if="!state.reval.items.length"><td colspan="7" class="text-muted">
+                                <t t-if="state.reval.posted">Revalued on <t t-esc="state.reval.date"/> (<t t-esc="state.reval.posted"/>): every foreign-currency item stands at the closing rate.</t>
+                                <t t-else="">Nothing to revalue on <t t-esc="state.reval.date"/>: no open foreign-currency items.</t></td></tr>
+                            <tr t-foreach="state.reval.items" t-as="i" t-key="i_index">
+                                <td t-esc="i.account"/><td t-esc="i.partner"/>
+                                <td class="text-end"><t t-esc="i.currency"/> <t t-esc="money(i.amount_currency, 2)"/></td>
+                                <td class="text-end" t-esc="money(i.rate, 2)"/>
+                                <td class="text-end" t-esc="money(i.booked)"/><td class="text-end" t-esc="money(i.restated)"/>
+                                <td t-attf-class="text-end fw-bold {{ i.diff &lt; 0 ? 'o_pp_badtxt' : '' }}" t-esc="money(i.diff)"/>
+                            </tr>
+                        </tbody>
+                        <tfoot t-if="state.reval.items.length"><tr><td colspan="6">Net unrealised gain / (loss)</td><td class="text-end fw-bold" t-esc="money(state.reval.total)"/></tr></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The HR role reads the payroll (runs, payslip lines, tax brackets) for its reports, and prints report packs,
+         without an accounting role. The record rules of payroll_rules.xml still decide whose pay anyone sees. -->
+    <record id="access_sb_payroll_run_hr" model="ir.model.access">
+        <field name="name">sb.payroll.run hr</field>
+        <field name="model_id" ref="model_sb_payroll_run"/>
+        <field name="group_id" ref="group_sb_hr"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_sb_payroll_line_hr" model="ir.model.access">
+        <field name="name">sb.payroll.line hr</field>
+        <field name="model_id" ref="model_sb_payroll_line"/>
+        <field name="group_id" ref="group_sb_hr"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_sb_payroll_bracket_hr" model="ir.model.access">
+        <field name="name">sb.payroll.bracket hr</field>
+        <field name="model_id" ref="model_sb_payroll_bracket"/>
+        <field name="group_id" ref="group_sb_hr"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_sb_report_pack_hr" model="ir.model.access">
+        <field name="name">sb.report.pack hr</field>
+        <field name="model_id" ref="model_sb_report_pack"/>
+        <field name="group_id" ref="group_sb_hr"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="access_sb_report_pack_line_hr" model="ir.model.access">
+        <field name="name">sb.report.pack.line hr</field>
+        <field name="model_id" ref="model_sb_report_pack_line"/>
+        <field name="group_id" ref="group_sb_hr"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>

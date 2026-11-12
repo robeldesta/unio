@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inventory app: the store's clerical work. Valuation, counts and adjustments stay in Accounting. -->
+    <record id="action_sb_store_home" model="ir.actions.client">
+        <field name="name">Inventory</field>
+        <field name="tag">sonador_inventory.app_home</field>
+        <field name="params">{'app': 'store'}</field>
+    </record>
+    <record id="action_sb_store_rep_stock_card" model="ir.actions.client">
+        <field name="name">Stock Card (Bin Card)</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'stock_card', 'catalog_key': 'stock_card'}</field>
+    </record>
+    <record id="action_sb_store_rep_by_wh" model="ir.actions.client">
+        <field name="name">Stock by Warehouse</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'stock_by_wh', 'catalog_key': 'stock_by_wh'}</field>
+    </record>
+    <record id="action_sb_store_rep_count_sheet" model="ir.actions.client">
+        <field name="name">Physical Count Sheet</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'count_sheet', 'catalog_key': 'count_sheet'}</field>
+    </record>
+    <record id="action_sb_store_rep_reorder" model="ir.actions.client">
+        <field name="name">Reorder Worksheet</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'reorder', 'catalog_key': 'reorder'}</field>
+    </record>
+    <record id="action_sb_store_rep_grn" model="ir.actions.client">
+        <field name="name">GRN Register</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'grn_register', 'catalog_key': 'grn_register'}</field>
+    </record>
+    <record id="action_sb_store_rep_giv" model="ir.actions.client">
+        <field name="name">GIV Register</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'giv_register', 'catalog_key': 'giv_register'}</field>
+    </record>
+
+    <menuitem id="menu_store_root" name="Inventory" sequence="22" web_icon="sonador_inventory,static/description/icon.png"
+              groups="group_sb_store_user"/>
+    <menuitem id="menu_store_home" name="Home" parent="menu_store_root" action="action_sb_store_home" sequence="1"/>
+    <menuitem id="menu_store_receive" name="Receive" parent="menu_store_root" sequence="10"/>
+    <menuitem id="menu_store_grn" name="Goods Received" parent="menu_store_receive" action="action_sb_grn" sequence="1"/>
+    <menuitem id="menu_store_issue" name="Issue" parent="menu_store_root" sequence="20"/>
+    <menuitem id="menu_store_giv" name="Goods Issued (GIV)" parent="menu_store_issue" action="action_sb_giv" sequence="1"/>
+    <menuitem id="menu_store_trf" name="Stock Transfers" parent="menu_store_issue" action="action_sb_stock_transfer" sequence="2"/>
+    <menuitem id="menu_store_dispatch" name="Dispatch" parent="menu_store_root" sequence="30"/>
+    <menuitem id="menu_store_gate" name="Gate Passes" parent="menu_store_dispatch" action="action_sb_gate_pass" sequence="10"/>
+    <menuitem id="menu_store_items" name="Items" parent="menu_store_root" sequence="40"/>
+    <menuitem id="menu_store_item_list" name="Inventory Items" parent="menu_store_items" action="sonador_books.action_sb_products" sequence="1"/>
+    <menuitem id="menu_store_reports" name="Reports" parent="menu_store_root" sequence="50"/>
+    <menuitem id="menu_store_rep_card" name="Stock Card (Bin Card)" parent="menu_store_reports" action="action_sb_store_rep_stock_card" sequence="1"/>
+    <menuitem id="menu_store_rep_wh" name="Stock by Warehouse" parent="menu_store_reports" action="action_sb_store_rep_by_wh" sequence="2"/>
+    <menuitem id="menu_store_rep_count" name="Physical Count Sheet" parent="menu_store_reports" action="action_sb_store_rep_count_sheet" sequence="3"/>
+    <menuitem id="menu_store_rep_reorder" name="Reorder Worksheet" parent="menu_store_reports" action="action_sb_store_rep_reorder" sequence="4"/>
+    <menuitem id="menu_store_rep_grn" name="Goods Received Register" parent="menu_store_reports" action="action_sb_store_rep_grn" sequence="10"/>
+    <menuitem id="menu_store_rep_giv" name="GIV Register" parent="menu_store_reports" action="action_sb_store_rep_giv" sequence="11"/>
+</odoo>

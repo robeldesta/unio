@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_delivery" model="product.product">
+        <field name="name">Delivery</field>
+        <field name="type">service</field>
+        <field name="sale_ok" eval="True"/>
+        <field name="purchase_ok" eval="False"/>
+        <field name="list_price">0</field>
+        <field name="taxes_id" eval="[(5, 0, 0)]"/>
+        <field name="default_code">DELIVERY</field>
+    </record>
+    <record id="cron_chapa" model="ir.cron">
+        <field name="name">Website: check Chapa payments</field>
+        <field name="model_id" ref="model_unio_site_shop"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_chapa()</field>
+        <field name="interval_number">10</field>
+        <field name="interval_type">minutes</field>
+    </record>
+</odoo>

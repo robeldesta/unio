@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_sb_nav_center" model="ir.actions.client">
+        <field name="name">Navigation Center</field>
+        <field name="tag">sonador_books.nav_center</field>
+    </record>
+
+    <record id="action_sb_customers" model="ir.actions.act_window">
+        <field name="name">Customers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'res_partner_search_mode': 'customer', 'default_customer_rank': 1}</field>
+    </record>
+    <record id="action_sb_vendors" model="ir.actions.act_window">
+        <field name="name">Vendors</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'res_partner_search_mode': 'supplier', 'default_supplier_rank': 1}</field>
+    </record>
+    <record id="action_sb_products" model="ir.actions.act_window">
+        <field name="name">Inventory Items</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,kanban,form</field>
+    </record>
+    <record id="action_sb_product_categories" model="ir.actions.act_window">
+        <field name="name">Item Classes and Costing</field>
+        <field name="res_model">product.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_sb_journal_items" model="ir.actions.act_window">
+        <field name="name">General Ledger Lines</field>
+        <field name="res_model">account.move.line</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="domain">[('parent_state', '=', 'posted')]</field>
+        <field name="context">{'search_default_group_by_account': 1}</field>
+    </record>
+    <record id="action_sb_deferred_revenue" model="ir.actions.act_window">
+        <field name="name">Deferred Revenue (IFRS 15)</field>
+        <field name="res_model">account.asset.asset</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('category_id.type', '=', 'sale')]</field>
+        <field name="context">{'default_type': 'sale'}</field>
+    </record>
+    <record id="action_sb_deferred_revenue_types" model="ir.actions.act_window">
+        <field name="name">Deferred Revenue Types</field>
+        <field name="res_model">account.asset.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('type', '=', 'sale')]</field>
+        <field name="context">{'default_type': 'sale'}</field>
+    </record>
+
+    <menuitem id="menu_sb_root" name="Accounting" sequence="24"
+              web_icon="sonador_books,static/description/icon.png"
+              groups="sonador_books.group_sb_auditor"/>
+    <menuitem id="menu_sb_home" name="Home" parent="menu_sb_root" action="action_sb_nav_center" sequence="1"/>
+
+    <menuitem id="menu_sb_customers" name="Customers &amp; Sales" parent="menu_sb_root" sequence="10"/>
+    <menuitem id="menu_sb_customers_list" name="Customers" parent="menu_sb_customers" action="action_sb_customers" sequence="1"/>
+    <menuitem id="menu_sb_cash_sale" name="Cash Sales" parent="menu_sb_customers" action="action_sb_cash_sale" sequence="5"/>
+    <menuitem id="menu_sb_sale" name="Sales Invoices (on account)" parent="menu_sb_customers" action="action_sb_sale" sequence="10"/>
+    <menuitem id="menu_sb_receipt" name="Receipts (CRV)" parent="menu_sb_customers" action="action_sb_receipt" sequence="20"/>
+    <menuitem id="menu_sb_finance_charge" groups="sonador_books.group_sb_accountant" name="Finance Charges" parent="menu_sb_customers" action="action_sb_finance_charge" sequence="40"/>
+    <menuitem id="menu_sb_sale_return" name="Sales Returns / Credit Notes" parent="menu_sb_customers" action="action_sb_sale_return" sequence="30"/>
+
+    <menuitem id="menu_sb_vendors" name="Vendors &amp; Purchases" parent="menu_sb_root" sequence="20"/>
+    <menuitem id="menu_sb_vendors_list" name="Vendors" parent="menu_sb_vendors" action="action_sb_vendors" sequence="1"/>
+    <menuitem id="menu_sb_cash_purchase" name="Cash Purchases" parent="menu_sb_vendors" action="action_sb_cash_purchase" sequence="5"/>
+    <menuitem id="menu_sb_bill" name="Purchase Bills (on account)" parent="menu_sb_vendors" action="action_sb_bill" sequence="10"/>
+    <menuitem id="menu_sb_payment" name="Payments (CPV)" parent="menu_sb_vendors" action="action_sb_payment" sequence="20"/>
+    <menuitem id="menu_sb_batch_payment" groups="sonador_books.group_sb_accountant" name="Pay Several Bills" parent="menu_sb_vendors" action="action_sb_batch_payment" sequence="25"/>
+    <menuitem id="menu_sb_purchase_return" name="Purchase Returns / Debit Notes" parent="menu_sb_vendors" action="action_sb_purchase_return" sequence="30"/>
+
+    <menuitem id="menu_sb_banking" name="Banking" parent="menu_sb_root" sequence="25"/>
+    <menuitem id="menu_sb_bank_receipts" name="Receipts (CRV)" parent="menu_sb_banking" action="action_sb_receipt" sequence="1"/>
+    <menuitem id="menu_sb_bank_payments" name="Payments (CPV)" parent="menu_sb_banking" action="action_sb_payment" sequence="2"/>
+    <menuitem id="menu_sb_transfer" name="Bank Transfers" parent="menu_sb_banking" action="action_sb_transfer" sequence="3"/>
+    <menuitem id="menu_sb_bank_deposit" name="Bank Deposit" parent="menu_sb_banking" action="action_sb_bank_deposit" sequence="4"/>
+    <menuitem id="menu_sb_bank_rec" groups="sonador_books.group_sb_accountant,sonador_books.group_sb_clerk" name="Reconcile Accounts" parent="menu_sb_banking" action="action_sb_bank_rec" sequence="5"/>
+    <menuitem id="menu_sb_cheques" name="Cheques" parent="menu_sb_banking" action="action_sb_cheques" sequence="4"/>
+    <menuitem id="menu_sb_bank_accounts" name="Bank &amp; Cash Accounts" parent="menu_sb_banking" action="action_sb_bank_accounts" sequence="20"/>
+    <menuitem id="menu_sb_bank_book" name="Cash and Bank Book" parent="menu_sb_banking" action="action_sb_rep_cash_book" sequence="10"/>
+
+    <menuitem id="menu_sb_payroll_root" name="Payroll" parent="menu_sb_root" sequence="35"/>
+    <menuitem id="menu_sb_payroll" name="Payroll Runs" parent="menu_sb_payroll_root" action="action_sb_payroll" sequence="1"/>
+    <menuitem id="menu_sb_employees" name="Employees" parent="menu_sb_payroll_root" action="action_sb_employees" sequence="2"/>
+    <menuitem id="menu_sb_payroll_brackets" name="Income Tax Table" parent="menu_sb_payroll_root" action="action_sb_payroll_brackets" sequence="10"
+              groups="sonador_books.group_sb_manager"/>
+
+    <menuitem id="menu_sb_inventory" name="Inventory &amp; Costing" parent="menu_sb_root" sequence="30"/>
+    <menuitem id="menu_sb_products" name="Inventory Items" parent="menu_sb_inventory" action="action_sb_products" sequence="1"/>
+    <menuitem id="menu_sb_categories" name="Item Classes and Costing" parent="menu_sb_inventory" action="action_sb_product_categories" sequence="10"/>
+
+    <menuitem id="menu_sb_gl" name="General Ledger" parent="menu_sb_root" sequence="40"/>
+    <menuitem id="menu_sb_jv" groups="sonador_books.group_sb_accountant" name="Journal Vouchers" parent="menu_sb_gl" action="action_sb_journal" sequence="1"/>
+    <menuitem id="menu_sb_chart" name="Chart of Accounts" parent="menu_sb_gl" action="action_sb_chart" sequence="10"/>
+    <menuitem id="menu_sb_opening" groups="sonador_books.group_sb_accountant" name="Beginning Balances" parent="menu_sb_gl" action="action_sb_beginning" sequence="15"/>
+    <menuitem id="menu_sb_opening_entries" groups="sonador_books.group_sb_accountant" name="Beginning Balance Entries" parent="menu_sb_gl" action="action_sb_opening" sequence="16"/>
+    <menuitem id="menu_sb_gl_lines" name="General Ledger Lines" parent="menu_sb_gl" action="action_sb_journal_items" sequence="20"/>
+    <menuitem id="menu_sb_assets" name="Fixed Assets" parent="menu_sb_gl" action="om_account_asset.action_account_asset_asset_form" sequence="30"/>
+    <record id="action_sb_fx" model="ir.actions.client">
+        <field name="name">Currencies</field>
+        <field name="tag">sonador_books.fx</field>
+    </record>
+    <menuitem id="menu_sb_fx" groups="sonador_books.group_sb_accountant" name="Currencies and Revaluation" parent="menu_sb_gl" action="action_sb_fx" sequence="35"/>
+    <menuitem id="menu_sb_deferred" name="Deferred Revenue (IFRS 15)" parent="menu_sb_gl" action="action_sb_deferred_revenue" sequence="40"/>
+
+    <menuitem id="menu_sb_reports" name="Reports" parent="menu_sb_root" sequence="50"/>
+    <menuitem id="menu_sb_report_center" name="Report Center" parent="menu_sb_reports" action="action_sb_report_center" sequence="0"/>
+    <menuitem id="menu_sb_report_packs" name="Report Packs" parent="menu_sb_reports" action="action_sb_report_pack" sequence="0"/>
+    <menuitem id="menu_sb_rep_tb" name="Trial Balance" parent="menu_sb_reports" action="action_sb_rep_tb" sequence="1"/>
+    <menuitem id="menu_sb_rep_gl" name="General Ledger" parent="menu_sb_reports" action="action_sb_rep_gl" sequence="2"/>
+    <menuitem id="menu_sb_rep_pl" name="Income Statement" parent="menu_sb_reports" action="action_sb_rep_pl" sequence="3"/>
+    <menuitem id="menu_sb_rep_bs" name="Statement of Financial Position" parent="menu_sb_reports" action="action_sb_rep_bs" sequence="4"/>
+    <menuitem id="menu_sb_rep_aged_ar" name="Aged Receivables" parent="menu_sb_reports" action="action_sb_rep_aged_ar" sequence="10"/>
+    <menuitem id="menu_sb_rep_aged_ap" name="Aged Payables" parent="menu_sb_reports" action="action_sb_rep_aged_ap" sequence="11"/>
+    <menuitem id="menu_sb_rep_cust" name="Customer Ledger" parent="menu_sb_reports" action="action_sb_rep_cust_ledger" sequence="12"/>
+    <menuitem id="menu_sb_rep_vend" name="Vendor Ledger" parent="menu_sb_reports" action="action_sb_rep_vend_ledger" sequence="13"/>
+    <menuitem id="menu_sb_rep_cash" name="Cash and Bank Book" parent="menu_sb_reports" action="action_sb_rep_cash_book" sequence="20"/>
+
+    <menuitem id="menu_sb_setup" name="Setup" parent="menu_sb_root" sequence="90"/>
+    <menuitem id="menu_sb_setup_guide" name="Setup Guide" parent="menu_sb_setup" action="action_sb_setup_guide" sequence="0"/>
+    <menuitem id="menu_sb_periods" name="Accounting Periods" parent="menu_sb_setup" action="action_sb_periods_open" sequence="1"/>
+    <menuitem id="menu_sb_year_end" name="Year-End Closing" parent="menu_sb_setup" action="action_sb_year_end" sequence="2"
+              groups="sonador_books.group_sb_manager"/>
+    <menuitem id="menu_sb_ifrs_lines" name="IFRS Line Items" parent="menu_sb_setup" action="action_sb_ifrs_line" sequence="10"/>
+    <menuitem id="menu_sb_ifrs_check" name="IFRS Mapping Check" parent="menu_sb_setup" action="action_sb_ifrs_check" sequence="11"/>
+    <menuitem id="menu_sb_asset_types" name="Asset Types" parent="menu_sb_setup" action="om_account_asset.action_account_asset_asset_list_normal_purchase" sequence="20"/>
+    <menuitem id="menu_sb_deferred_types" name="Deferred Revenue Types" parent="menu_sb_setup" action="action_sb_deferred_revenue_types" sequence="21"/>
+    <menuitem id="menu_sb_series" name="Document Series (pads)" parent="menu_sb_setup" action="action_sb_doc_series" sequence="24"
+              groups="sonador_books.group_sb_accountant"/>
+    <menuitem id="menu_sb_rep_numbering" name="Document Numbering Check" parent="menu_sb_reports" action="action_sb_rep_numbering" sequence="30"/>
+    <menuitem id="menu_sb_purposes" name="Receipt / Payment Purposes" parent="menu_sb_setup" action="action_sb_purpose" sequence="25"/>
+    <menuitem id="menu_sb_journals" name="Journals" parent="menu_sb_setup" action="account.action_account_journal_form" sequence="30"/>
+    <menuitem id="menu_sb_taxes" name="Taxes" parent="menu_sb_setup" action="account.action_tax_form" sequence="31"/>
+    <menuitem id="menu_sb_maintenance" name="Data Maintenance" parent="menu_sb_setup" action="action_sb_maintenance" sequence="95"
+              groups="base.group_system"/>
+    <menuitem id="menu_sb_settings" name="Settings" parent="menu_sb_setup" action="action_sb_company_settings" sequence="99"
+              groups="sonador_books.group_sb_manager"/>
+</odoo>

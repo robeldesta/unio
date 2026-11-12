@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_employee_search" model="ir.ui.view">
+        <field name="name">sb.employee.search</field>
+        <field name="model">sb.employee</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="job"/>
+                <field name="department"/>
+                <filter name="archived" string="Left" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="by_department" string="Department" context="{'group_by': 'department'}"/>
+                    <filter name="by_job" string="Position" context="{'group_by': 'job'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_sb_hr_employees" model="ir.actions.act_window">
+        <field name="name">Employees</field>
+        <field name="res_model">sb.employee</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="sb_employee_search"/>
+        <field name="context">{'search_default_by_department': 1}</field>
+    </record>
+    <menuitem id="menu_hr_root" name="Employees" sequence="25" web_icon="sonador_books,static/description/apps/employees.png"
+              groups="group_sb_hr"/>
+    <menuitem id="menu_hr_employees" name="Employees" parent="menu_hr_root" action="action_sb_hr_employees" sequence="1"/>
+    <menuitem id="menu_hr_users" name="Users and Roles" parent="menu_hr_root" action="base.action_res_users" sequence="20"
+              groups="base.group_system"/>
+</odoo>

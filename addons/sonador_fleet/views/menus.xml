@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_fleet" model="ir.actions.client">
+        <field name="name">Fleet</field>
+        <field name="tag">sonador_fleet.app</field>
+        <field name="params" eval="{'page': 'home'}"/>
+    </record>
+    <menuitem id="menu_root" name="Fleet" sequence="26" web_icon="sonador_fleet,static/description/icon.png"
+              action="action_fleet" groups="group_driver"/>
+</odoo>

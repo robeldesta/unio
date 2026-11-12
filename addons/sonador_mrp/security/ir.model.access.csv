@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_mrp_bom_sb_auditor,mrp.bom auditor,mrp.model_mrp_bom,sonador_books.group_sb_auditor,1,0,0,0
+access_mrp_bom_sb_accountant,mrp.bom accountant,mrp.model_mrp_bom,sonador_books.group_sb_accountant,1,1,1,1
+access_mrp_bom_line_sb_auditor,mrp.bom.line auditor,mrp.model_mrp_bom_line,sonador_books.group_sb_auditor,1,0,0,0
+access_mrp_bom_line_sb_accountant,mrp.bom.line accountant,mrp.model_mrp_bom_line,sonador_books.group_sb_accountant,1,1,1,1
+access_mrp_production_sb_clerk,mrp.production clerk,mrp.model_mrp_production,sonador_books.group_sb_clerk,1,1,1,0

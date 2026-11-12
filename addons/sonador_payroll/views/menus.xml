@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_payroll" model="ir.actions.client">
+        <field name="name">Payroll</field>
+        <field name="tag">sonador_payroll.app</field>
+        <field name="params" eval="{'page': 'runs'}"/>
+    </record>
+    <record id="action_my_payslips" model="ir.actions.client">
+        <field name="name">My Payslips</field>
+        <field name="tag">sonador_payroll.app</field>
+        <field name="params" eval="{'page': 'employee'}"/>
+    </record>
+    <record id="action_loans" model="ir.actions.client">
+        <field name="name">Loans and advances</field>
+        <field name="tag">sonador_payroll.app</field>
+        <field name="params" eval="{'page': 'loans'}"/>
+    </record>
+    <menuitem id="menu_payroll" name="Payroll" parent="sonador_books.menu_hr_root" action="action_payroll" sequence="7" groups="sonador_books.group_sb_hr"/>
+    <menuitem id="menu_my_payslips" name="My Payslips" parent="sonador_books.menu_hr_root" action="action_my_payslips" sequence="8"/>
+    <menuitem id="menu_loans" name="Loans and Advances" parent="sonador_books.menu_hr_root" action="action_loans" sequence="9"/>
+    <function model="sb.settlement" name="ensure_reasons"/>
+</odoo>

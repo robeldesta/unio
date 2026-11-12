@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="sonador_saas.Hq">
+    <div class="o_hq" t-if="state.d">
+        <t t-set="d" t-value="state.d"/>
+        <t t-set="k" t-value="d.kpis"/>
+        <div class="o_hq_top">
+            <div>
+                <h1>Unio HQ</h1>
+                <span class="text-muted small">As of <t t-esc="d.generated"/> · amounts in <t t-esc="d.currency"/></span>
+            </div>
+            <button class="btn btn-light" t-on-click="measure" t-att-disabled="state.busy"><i class="fa fa-refresh me-1" t-att-class="{'fa-spin': state.busy}"/>Measure now</button>
+        </div>
+
+        <div class="o_hq_kpis">
+            <div class="o_hq_kpi big"><span>Monthly recurring revenue</span><b t-esc="fmt(k.mrr)"/><small>ARR <t t-esc="fmt(k.arr)"/></small></div>
+            <div class="o_hq_kpi"><span>Paying companies</span><b t-esc="k.paying"/><small><t t-esc="k.trials"/> on trial · <t t-esc="k.yearly"/> yearly</small></div>
+            <div class="o_hq_kpi" t-att-class="{'alert': k.overdue}"><span>Renewals in 30 days</span><b t-esc="k.renewals_30d"/><small><t t-esc="k.overdue"/> overdue</small></div>
+            <div class="o_hq_kpi"><span>Trial → paying</span><b><t t-esc="k.conversion"/>%</b><small><t t-esc="k.signups_30d"/> sign-ups in 30 days</small></div>
+            <div class="o_hq_kpi"><span>Cash this month</span><b t-esc="fmt(k.cash_month)"/><small>open invoices <t t-esc="fmt(k.open_invoices)"/></small></div>
+            <div class="o_hq_kpi"><span>Users on Unio</span><b t-esc="k.users"/><small>in <t t-esc="k.live"/> companies</small></div>
+            <div class="o_hq_kpi" t-att-class="{'alert': k.payments_waiting}" t-on-click="() => this.state.tab = 'leads'"><span>Payments to confirm</span><b t-esc="k.payments_waiting"/></div>
+            <div class="o_hq_kpi" t-att-class="{'alert': k.tickets_open}" t-on-click="() => this.state.tab = 'support'"><span>Questions waiting</span><b t-esc="k.tickets_open"/></div>
+            <div class="o_hq_kpi" t-att-class="{'alert': k.at_risk}" t-on-click="() => this.state.tab = 'customers'"><span>Companies at risk</span><b t-esc="k.at_risk"/></div>
+            <div class="o_hq_kpi" t-att-class="{'alert': k.errors_24h}" t-on-click="() => this.state.tab = 'tech'"><span>Errors (24 h)</span><b t-esc="k.errors_24h"/></div>
+        </div>
+
+        <div class="o_hq_tabs">
+            <t t-foreach="[['overview', 'Overview'], ['money', 'Money'], ['leads', 'Funnel and leads'], ['customers', 'Customers'], ['support', 'Support'], ['tech', 'Server and data']]" t-as="t" t-key="t[0]">
+                <button t-att-class="{'on': state.tab === t[0]}" t-on-click="() => this.state.tab = t[0]" t-esc="t[1]"/>
+            </t>
+        </div>
+
+        <!-- ================================================= overview -->
+        <t t-if="state.tab === 'overview'">
+            <div class="o_hq_grid">
+                <t t-call="sonador_saas.HqAi"/>
+                <div class="o_hq_card wide">
+                    <h3>Money received, last 12 months</h3>
+                    <t t-call="sonador_saas.HqBars"><t t-set="series" t-value="d.revenue"/><t t-set="key" t-value="'value'"/></t>
+                </div>
+                <div class="o_hq_card wide" t-if="d.plan">
+                    <h3>Plan for <t t-esc="d.plan.month"/> · year target <t t-esc="fmt(d.plan.year_target.arr)"/> birr ARR by <t t-esc="d.plan.year_end"/></h3>
+                    <div t-foreach="d.plan.rows" t-as="r" t-key="r.label" class="o_hq_plan">
+                        <span class="o_hq_plan_l" t-esc="r.label"/>
+                        <span class="o_hq_plan_bar"><i t-attf-style="width: {{ r.pct > 100 ? 100 : r.pct }}%" t-attf-class="{{ r.pct >= 100 ? 'ok' : (r.pct >= 60 ? 'mid' : 'low') }}"/></span>
+                        <span class="o_hq_plan_n"><b t-esc="fmt(r.actual)"/> / <t t-esc="fmt(r.target)"/> <small>(<t t-esc="r.pct"/>%)</small></span>
+                    </div>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Needs you now</h3>
+                    <ul class="o_hq_todo">
+                        <li t-if="d.leads.payments.length" t-on-click="() => this.state.tab = 'leads'"><i class="fa fa-money"/><t t-esc="d.leads.payments.length"/> payment(s) to confirm</li>
+                        <li t-if="k.tickets_open" t-on-click="() => this.state.tab = 'support'"><i class="fa fa-comment-o"/><t t-esc="k.tickets_open"/> question(s) to answer</li>
+                        <li t-if="d.leads.trials_ending.length" t-on-click="() => this.state.tab = 'leads'"><i class="fa fa-hourglass-half"/><t t-esc="d.leads.trials_ending.length"/> trial(s) ending this week: call them</li>
+                        <li t-if="d.leads.abandoned.length" t-on-click="() => this.state.tab = 'leads'"><i class="fa fa-user-plus"/><t t-esc="d.leads.abandoned.length"/> sign-up(s) never confirmed their email</li>
+                        <li t-if="k.at_risk" t-on-click="() => this.state.tab = 'customers'"><i class="fa fa-heartbeat"/><t t-esc="k.at_risk"/> company(ies) going quiet</li>
+                        <li t-if="k.errors_24h" t-on-click="() => this.state.tab = 'tech'"><i class="fa fa-bug"/><t t-esc="k.errors_24h"/> error(s) in the logs today</li>
+                        <li t-if="d.support.missed and d.support.missed.length" t-on-click="() => this.state.tab = 'support'"><i class="fa fa-search"/><t t-esc="d.support.missed.length"/> search(es) the help could not answer</li>
+                        <li t-if="!d.leads.payments.length and !k.tickets_open and !k.at_risk and !k.errors_24h" class="ok"><i class="fa fa-check-circle"/>Nothing waiting. All good.</li>
+                    </ul>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Funnel</h3>
+                    <t t-call="sonador_saas.HqFunnel"/>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Where the companies are</h3>
+                    <div class="o_hq_split">
+                        <div><b>Country</b><div t-foreach="entries(d.countries)" t-as="c" t-key="c[0]" class="o_hq_kv"><span t-esc="c[0]"/><b t-esc="c[1]"/></div></div>
+                        <div><b>Industry</b><div t-foreach="entries(d.industries)" t-as="c" t-key="c[0]" class="o_hq_kv"><span t-esc="c[0]"/><b t-esc="c[1]"/></div></div>
+                    </div>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Server now</h3>
+                    <t t-call="sonador_saas.HqGauges"/>
+                </div>
+            </div>
+        </t>
+
+        <!-- ================================================= money -->
+        <t t-if="state.tab === 'money'">
+            <div class="o_hq_grid">
+                <div class="o_hq_card wide">
+                    <h3>Money received per month</h3>
+                    <t t-call="sonador_saas.HqBars"><t t-set="series" t-value="d.revenue"/><t t-set="key" t-value="'value'"/></t>
+                </div>
+                <div class="o_hq_card">
+                    <h3>How customers pay</h3>
+                    <div t-if="!d.by_method.length" class="text-muted">No payments yet.</div>
+                    <div t-foreach="d.by_method" t-as="m" t-key="m.label" class="o_hq_kv"><span t-esc="m.label"/><b t-esc="fmt(m.value)"/></div>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Recurring revenue by company</h3>
+                    <table class="table table-sm o_hq_table">
+                        <thead><tr><th>Company</th><th>Plan</th><th class="text-end">Users</th><th class="text-end">Monthly</th><th>Since</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="d.customers.filter((c) => c.mrr).sort((a, b) => b.mrr - a.mrr)" t-as="c" t-key="c.id" t-on-click="() => this.openTenant(c.id)">
+                                <td t-esc="c.name"/><td t-esc="c.plan"/><td class="text-end" t-esc="c.users"/><td class="text-end" t-esc="fmt(c.mrr)"/><td t-esc="c.since"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="text-muted small">Invoices, payments and the books: <a href="#" t-on-click.prevent="() => this.openModel('saas.payment', 'Payments')">Payments</a> · Accounting.</div>
+                </div>
+            </div>
+        </t>
+
+        <!-- ================================================= funnel and leads -->
+        <t t-if="state.tab === 'leads'">
+            <div class="o_hq_grid">
+                <div class="o_hq_card">
+                    <h3>Funnel, all time</h3>
+                    <t t-call="sonador_saas.HqFunnel"/>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Per week: forms, systems made, paying</h3>
+                    <div class="o_hq_legend"><span class="c1"/>forms <span class="c2"/>systems <span class="c3"/>paying</div>
+                    <svg viewBox="0 0 100 150" preserveAspectRatio="none" class="o_hq_svg">
+                        <t t-set="mx" t-value="weeksMax()"/>
+                        <t t-foreach="d.funnel_weeks" t-as="w" t-key="w_index">
+                            <t t-set="x" t-value="w_index * (100 / d.funnel_weeks.length)"/>
+                            <t t-set="bw" t-value="100 / d.funnel_weeks.length / 4"/>
+                            <rect class="c1" t-att-x="x + bw * 0.5" t-att-width="bw" t-att-y="130 - w.forms / mx * 120" t-att-height="w.forms / mx * 120"/>
+                            <rect class="c2" t-att-x="x + bw * 1.5" t-att-width="bw" t-att-y="130 - w.systems / mx * 120" t-att-height="w.systems / mx * 120"/>
+                            <rect class="c3" t-att-x="x + bw * 2.5" t-att-width="bw" t-att-y="130 - w.paying / mx * 120" t-att-height="w.paying / mx * 120"/>
+                        </t>
+                    </svg>
+                    <div class="o_hq_axis"><span t-foreach="d.funnel_weeks" t-as="w" t-key="w_index" t-esc="w.label"/></div>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Payments to confirm</h3>
+                    <p t-if="!d.leads.payments.length" class="text-muted">None waiting.</p>
+                    <table t-else="" class="table table-sm o_hq_table">
+                        <thead><tr><th>Company</th><th>Method</th><th>Reference</th><th class="text-end">Amount</th><th>Check</th><th/></tr></thead>
+                        <tbody><tr t-foreach="d.leads.payments" t-as="p" t-key="p.id">
+                            <td t-esc="p.company"/><td t-esc="p.method"/><td><code t-esc="p.reference"/></td><td class="text-end"><t t-esc="fmt(p.amount)"/> <t t-esc="p.currency"/></td>
+                            <td class="small text-muted" t-esc="p.check"/>
+                            <td class="text-end"><button class="btn btn-sm btn-success" t-on-click="() => this.confirmPayment(p)">Confirm</button>
+                                <button class="btn btn-sm btn-light ms-1" t-on-click="() => this.rejectPayment(p)">Reject</button></td>
+                        </tr></tbody>
+                    </table>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Trials ending in 7 days: call them</h3>
+                    <p t-if="!d.leads.trials_ending.length" class="text-muted">None this week.</p>
+                    <table t-else="" class="table table-sm o_hq_table">
+                        <thead><tr><th>Company</th><th>Email</th><th>Phone</th><th class="text-end">Days left</th><th>Health</th></tr></thead>
+                        <tbody><tr t-foreach="d.leads.trials_ending" t-as="t" t-key="t.id" t-on-click="() => this.openTenant(t.id)">
+                            <td t-esc="t.company"/><td t-esc="t.email"/><td t-esc="t.phone"/><td class="text-end" t-esc="t.days"/>
+                            <td><span t-attf-class="o_hq_health {{ healthClass(t.health) }}" t-esc="dash(t.health, '–')"/></td>
+                        </tr></tbody>
+                    </table>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Started signing up, never confirmed (30 days)</h3>
+                    <p t-if="!d.leads.abandoned.length" class="text-muted">None.</p>
+                    <table t-else="" class="table table-sm o_hq_table">
+                        <thead><tr><th>When</th><th>Company</th><th>Email</th><th>Phone</th><th>Industry</th><th>Country</th></tr></thead>
+                        <tbody><tr t-foreach="d.leads.abandoned" t-as="s" t-key="s_index">
+                            <td t-esc="s.when"/><td t-esc="s.company"/><td t-esc="s.email"/><td t-esc="s.phone"/><td t-esc="s.industry"/><td t-esc="s.country"/>
+                        </tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </t>
+
+        <!-- ================================================= customers -->
+        <t t-if="state.tab === 'customers'">
+            <div class="o_hq_card">
+                <div class="o_hq_tools">
+                    <input class="form-control" placeholder="Search companies" t-model="state.q"/>
+                    <select class="form-select" t-model="state.sort">
+                        <option value="health">Sort by health</option><option value="mrr">by revenue</option><option value="users">by users</option>
+                        <option value="records7">by activity</option><option value="db_mb">by database size</option><option value="name">by name</option>
+                    </select>
+                </div>
+                <table class="table table-sm o_hq_table">
+                    <thead><tr><th>Company</th><th>State</th><th>Health</th><th class="text-end">Users</th><th class="text-end">Active 7 d</th><th>Last login</th>
+                        <th class="text-end">Work 7 d</th><th class="text-end">Monthly</th><th>Paid until</th><th class="text-end">DB MB</th><th class="text-end">Files MB</th><th class="text-end">Studio</th><th class="text-end">Referred</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="customers" t-as="c" t-key="c.id" t-on-click="() => this.openTenant(c.id)">
+                            <td><b t-esc="c.name"/><div class="small text-muted"><t t-esc="c.industry"/> · <t t-esc="c.country"/></div></td>
+                            <td><span t-attf-class="badge {{ c.state === 'active' ? 'text-bg-success' : c.state === 'trial' ? 'text-bg-light' : 'text-bg-warning' }}" t-esc="c.state"/>
+                                <div class="small text-muted" t-if="c.trial_left !== null"><t t-esc="c.trial_left"/> days left</div></td>
+                            <td><div class="o_hq_bar"><span t-attf-class="{{ healthClass(c.health) }}" t-attf-style="width: {{ c.health || 0 }}%"/></div><small t-esc="dash(c.health, 'not measured')"/></td>
+                            <td class="text-end" t-esc="c.users"/><td class="text-end" t-esc="dash(c.active7, '–')"/><td class="small" t-esc="c.last_login or '–'"/>
+                            <td class="text-end" t-esc="dash(c.records7, '–')"/><td class="text-end" t-esc="fmt(c.mrr)"/><td class="small"><t t-esc="c.paid_until or '–'"/><div class="text-muted" t-if="c.billing === 'yearly'">yearly</div></td><td class="text-end" t-esc="dash(c.db_mb, '–')"/>
+                            <td class="text-end" t-esc="dash(c.files_mb, '–')"/><td class="text-end" t-esc="c.studio"/><td class="text-end" t-esc="c.referrals"/>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="text-muted small">Health: logins in the last 7 days, work recorded, and how recently anyone came in (0 to 100). Below 25 counts as at risk.</div>
+            </div>
+        </t>
+
+        <!-- ================================================= support -->
+        <t t-if="state.tab === 'support'">
+            <t t-set="s" t-value="d.support"/>
+            <div class="o_hq_grid">
+                <div class="o_hq_card">
+                    <h3>Support</h3>
+                    <div class="o_hq_kv"><span>Waiting for an answer</span><b t-esc="s.open"/></div>
+                    <div class="o_hq_kv"><span>Answered (30 days)</span><b t-esc="s.answered_30d"/></div>
+                    <div class="o_hq_kv"><span>Average first answer</span><b><t t-if="s.avg_minutes !== null and s.avg_minutes !== undefined"><t t-esc="s.avg_minutes"/> min</t><t t-else="">–</t></b></div>
+                    <div class="o_hq_kv"><span>Help articles</span><b t-esc="s.articles"/></div>
+                    <a href="#" t-on-click.prevent="() => this.openModel('saas.article', 'Help articles')">Edit the help articles</a>
+                </div>
+                <t t-call="sonador_saas.HqAi"/>
+                <div class="o_hq_card wide">
+                    <h3>Guided tours (90 days)</h3>
+                    <p t-if="!s.tours or !s.tours.length" class="text-muted">No tours taken yet.</p>
+                    <table t-else="" class="table table-sm o_hq_table">
+                        <thead><tr><th>Tour</th><th class="text-end">Offered</th><th class="text-end">Not now</th><th class="text-end">Started</th><th class="text-end">Finished</th><th class="text-end">Skipped</th><th class="text-end">Most leave at step</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="s.tours" t-as="r" t-key="r.tour">
+                                <td t-esc="r.tour"/><td class="text-end" t-esc="r.offer"/><td class="text-end" t-esc="r.decline"/><td class="text-end" t-esc="r.start"/>
+                                <td class="text-end"><t t-esc="r.done"/><small t-if="r.finish_pct !== null" class="text-muted"> (<t t-esc="r.finish_pct"/>%)</small></td>
+                                <td class="text-end" t-esc="r.skip"/><td class="text-end"><t t-if="r.stop_step" t-esc="r.stop_step"/><t t-else="">–</t></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Most searched (30 days)</h3>
+                    <p t-if="!s.top or !s.top.length" class="text-muted">No searches yet.</p>
+                    <div t-foreach="s.top or []" t-as="q" t-key="q.query" class="o_hq_kv"><span t-esc="q.query"/><b t-esc="q.n"/></div>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Searches the help could not answer</h3>
+                    <p class="text-muted small">Write an article for these.</p>
+                    <div t-foreach="s.missed or []" t-as="q" t-key="q_index" class="o_hq_kv"><span>"<t t-esc="q.query"/>"</span><small class="text-muted" t-esc="q.company"/></div>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Questions</h3>
+                    <p t-if="!s.tickets or !s.tickets.length" class="text-muted">No questions yet.</p>
+                    <div t-foreach="s.tickets or []" t-as="t" t-key="t.id" class="o_hq_ticket" t-att-class="{'new': t.state === 'new'}">
+                        <div class="d-flex justify-content-between"><b t-esc="t.subject"/><span class="small text-muted"><t t-esc="t.company"/> · <t t-esc="t.who"/> · <t t-esc="t.date"/></span></div>
+                        <div class="o_hq_q" t-esc="t.question"/>
+                        <div class="small text-muted" t-if="t.page">On: <t t-esc="t.page"/></div>
+                        <div t-if="t.answer" class="o_hq_a" t-out="markup(t.answer)"/>
+                        <div t-if="t.state === 'new'" class="o_hq_answer">
+                            <textarea class="form-control form-control-sm" rows="3" placeholder="Your answer (they get it in their help panel and by email)"
+                                      t-att-value="state.answers[t.id] or ''" t-on-input="(ev) => this.state.answers[t.id] = ev.target.value"/>
+                            <button class="btn btn-primary btn-sm mt-1" t-on-click="() => this.answer(t)">Send answer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+
+        <!-- ================================================= server and data -->
+        <t t-if="state.tab === 'tech'">
+            <t t-set="x" t-value="d.tech"/>
+            <div class="o_hq_grid">
+                <div class="o_hq_card">
+                    <h3>Server now <small class="text-muted" t-esc="x.now.at"/></h3>
+                    <t t-call="sonador_saas.HqGauges"/>
+                    <div t-if="x.now.detail and x.now.detail.containers" class="mt-2">
+                        <div t-foreach="entries(x.now.detail.containers)" t-as="c" t-key="c[0]" class="o_hq_kv small"><span t-esc="c[0]"/><b><t t-esc="c[1].cpu"/> CPU · <t t-esc="c[1].mem"/></b></div>
+                    </div>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Last 24 hours <span class="o_hq_legend"><span class="c2"/>CPU <span class="c3"/>memory</span></h3>
+                    <p t-if="!x.series.length" class="text-muted">No measures yet: the server agent reports every 5 minutes once installed.</p>
+                    <svg t-else="" viewBox="0 0 100 120" preserveAspectRatio="none" class="o_hq_svg">
+                        <polyline class="l1" t-att-points="line(x.series, 'cpu')"/>
+                        <polyline class="l2" t-att-points="line(x.series, 'mem')"/>
+                    </svg>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Backups</h3>
+                    <p class="small" style="white-space: pre-line" t-esc="x.backup or 'No report yet.'"/>
+                    <small class="text-muted" t-esc="x.backup_at"/>
+                    <h3 class="mt-3">Certificates</h3>
+                    <p class="small" style="white-space: pre-line" t-esc="x.certs or 'No report yet.'"/>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Databases</h3>
+                    <div t-foreach="x.dbs" t-as="db" t-key="db.name" class="o_hq_kv small"><span t-esc="db.name"/><b><t t-esc="db.mb"/> MB</b></div>
+                </div>
+                <div class="o_hq_card">
+                    <h3>Releases</h3>
+                    <p t-if="!x.releases.length" class="text-muted small">Recorded from the next release on.</p>
+                    <div t-foreach="x.releases" t-as="r" t-key="r_index" class="small mb-1"><b t-esc="r.ts"/> <t t-esc="r.message"/></div>
+                </div>
+                <div class="o_hq_card wide">
+                    <h3>Errors and events</h3>
+                    <p t-if="!x.events.length" class="text-muted">Nothing reported.</p>
+                    <div t-foreach="x.events" t-as="e" t-key="e.id" class="o_hq_event" t-att-class="{'done': e.done}">
+                        <span t-attf-class="badge {{ e.kind === 'error' ? 'text-bg-danger' : e.kind === 'warning' ? 'text-bg-warning' : 'text-bg-light' }}" t-esc="e.kind"/>
+                        <span class="small text-muted"><t t-esc="e.ts"/> <t t-esc="e.db"/></span>
+                        <pre t-esc="e.message"/>
+                        <button t-if="!e.done and e.kind === 'error'" class="btn btn-sm btn-link" t-on-click="() => this.eventDone(e)">Dealt with</button>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+
+<t t-name="sonador_saas.HqAi">
+                <div class="o_hq_card wide o_hq_ai" t-if="d.support and d.support.ai">
+                    <t t-set="ai" t-value="d.support.ai"/>
+                    <h3>Unio AI this week <small class="text-muted fw-normal">from <t t-esc="ai.week_start"/>, resets Monday 00:00 East Africa time</small></h3>
+                    <div class="o_hq_grid">
+                        <div>
+                            <div class="o_hq_kv"><span>Status</span><b t-att-class="ai.paused ? 'text-danger' : (ai.enabled ? 'text-success' : 'text-muted')"
+                                t-esc="ai.paused ? 'Paused: weekly budget used' : (ai.enabled ? 'On' : 'Off: add the key')"/></div>
+                            <div class="o_hq_kv"><span>Spent this week</span><b>$<t t-esc="fmt(ai.cost, 2)"/> of $<t t-esc="fmt(ai.week_cap, 2)"/></b></div>
+                            <div class="o_hq_ai_bar"><i t-attf-style="width: {{ Math.min(100, ai.week_cap ? 100 * ai.cost / ai.week_cap : 0) }}%"/></div>
+                            <div class="o_hq_kv"><span>Calls this week</span><b t-esc="ai.calls"/></div>
+                            <div class="o_hq_kv"><span>Spent this month</span><b>$<t t-esc="fmt(ai.month, 2)"/></b></div>
+                            <div class="o_hq_kv"><span>Files and photos in chats <small class="text-muted">(cost more than text)</small></span>
+                                <span class="form-check form-switch m-0"><input type="checkbox" class="form-check-input" t-att-checked="ai.files"
+                                    t-on-change="(ev) => this.aiFiles(ev.target.checked)"/></span></div>
+                            <div class="mt-2 small"><b>Anthropic key</b> <span class="text-muted">(never shown again once saved)</span></div>
+                            <div class="d-flex gap-1 mt-1">
+                                <input type="password" autocomplete="off" class="form-control form-control-sm" placeholder="Paste the key"
+                                    t-att-value="state.aiKey" t-on-input="(ev) => this.state.aiKey = ev.target.value"/>
+                                <button class="btn btn-primary btn-sm" t-att-disabled="!state.aiKey" t-on-click="aiSaveKey">Save</button>
+                                <button t-if="ai.enabled" class="btn btn-light border btn-sm" t-on-click="aiTest">Test</button>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center"><b class="small">Caps (US dollars a week)</b>
+                                <a t-if="!state.aiCaps" href="#" class="ms-auto small" t-on-click.prevent="aiCapsEdit">Change</a></div>
+                            <t t-if="!state.aiCaps">
+                                <div class="o_hq_kv"><span>Everyone together</span><b>$<t t-esc="fmt(ai.week_cap, 2)"/></b></div>
+                                <div t-foreach="ai.plans" t-as="p" t-key="p.id" class="o_hq_kv"><span><t t-esc="p.name"/>, per company</span><b>$<t t-esc="fmt(ai.caps[p.id], 2)"/></b></div>
+                                <div class="o_hq_kv"><span>One person, at most</span><b><t t-esc="ai.user_share"/>% of the company's week</b></div>
+                            </t>
+                            <t t-else="">
+                                <label class="o_hq_ai_in">Everyone together<input type="number" step="0.5" class="form-control form-control-sm" t-att-value="state.aiCaps.week" t-on-change="(ev) => this.state.aiCaps.week = ev.target.value"/></label>
+                                <label t-foreach="ai.plans" t-as="p" t-key="p.id" class="o_hq_ai_in"><t t-esc="p.name"/>, per company<input type="number" step="0.5" class="form-control form-control-sm" t-att-value="state.aiCaps[p.id]" t-on-change="(ev) => this.state.aiCaps[p.id] = ev.target.value"/></label>
+                                <label class="o_hq_ai_in">One person, % of the company<input type="number" class="form-control form-control-sm" t-att-value="state.aiCaps.user_share" t-on-change="(ev) => this.state.aiCaps.user_share = ev.target.value"/></label>
+                                <div class="d-flex gap-1 mt-1"><button class="btn btn-primary btn-sm" t-on-click="aiSaveCaps">Save caps</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.aiCaps = null">Cancel</button></div>
+                            </t>
+                            <div class="small text-muted mt-2">Help answers run on Haiku; the assistant and Studio on Sonnet (Standard, Pro) or Opus (Max).</div>
+                        </div>
+                    </div>
+                    <table class="table table-sm o_hq_table mt-2">
+                        <thead><tr><th>Company</th><th>AI plan</th><th class="text-end">Calls</th><th class="text-end">This week</th><th class="text-end">Cap</th><th style="width: 22%"/></tr></thead>
+                        <tbody><tr t-foreach="ai.companies" t-as="c" t-key="c.kind + c.database">
+                            <td><t t-esc="c.company"/><small t-if="c.kind === 'client'" class="text-muted"> · own server</small></td>
+                            <td><select t-if="c.id" class="form-select form-select-sm w-auto" t-on-change="(ev) => this.aiPlan(c, ev.target.value)">
+                                <option t-foreach="ai.plans" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id === c.plan" t-esc="p.name"/></select>
+                                <span t-else="" class="text-muted small">Standard</span></td>
+                            <td class="text-end" t-esc="c.calls"/><td class="text-end">$<t t-esc="fmt(c.cost, 2)"/></td><td class="text-end">$<t t-esc="fmt(c.cap, 2)"/></td>
+                            <td><div class="o_hq_ai_bar"><i t-attf-style="width: {{ Math.min(100, c.cap ? 100 * c.cost / c.cap : 0) }}%"/></div></td></tr></tbody>
+                    </table>
+                    <div class="small"><b>A system on its own server</b> (AfyaSoft and the like): add it to get its token, then paste the token into that system.</div>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        <input class="form-control form-control-sm w-auto" placeholder="Company" t-att-value="state.aiClient.name" t-on-input="(ev) => this.state.aiClient.name = ev.target.value"/>
+                        <input class="form-control form-control-sm w-auto" placeholder="Short key, e.g. afyasoft" t-att-value="state.aiClient.database" t-on-input="(ev) => this.state.aiClient.database = ev.target.value"/>
+                        <button class="btn btn-light border btn-sm" t-att-disabled="!state.aiClient.name or !state.aiClient.database" t-on-click="aiAddClient">Add and get the token</button>
+                    </div>
+                    <div t-if="state.aiToken" class="o_hq_ai_token mt-2"><span class="small">Token (shown once; a new one replaces it):</span>
+                        <code t-esc="state.aiToken"/><button class="btn btn-link btn-sm" t-on-click="copyToken">Copy</button></div>
+                </div>
+</t>
+
+<t t-name="sonador_saas.HqBars">
+    <svg viewBox="0 0 100 150" preserveAspectRatio="none" class="o_hq_svg">
+        <t t-foreach="bars(series, key)" t-as="b" t-key="b_index">
+            <rect class="c2" t-att-x="b.x" t-att-y="b.y" t-att-width="b.w" t-att-height="b.h" rx="0.6"><title><t t-esc="b.label"/>: <t t-esc="fmt(b.value)"/></title></rect>
+        </t>
+    </svg>
+    <div class="o_hq_axis"><span t-foreach="series" t-as="s" t-key="s_index" t-esc="s.label"/></div>
+</t>
+
+<t t-name="sonador_saas.HqFunnel">
+    <div t-foreach="state.d.funnel" t-as="f" t-key="f_index" class="o_hq_funnel">
+        <div class="o_hq_kv"><span t-esc="f.step"/><b><t t-esc="f.n"/> <small class="text-muted">(<t t-esc="funnelPct(f_index)"/>%)</small></b></div>
+        <div class="o_hq_bar"><span class="good" t-attf-style="width: {{ funnelPct(f_index) }}%"/></div>
+    </div>
+</t>
+
+<t t-name="sonador_saas.HqGauges">
+    <t t-set="n" t-value="state.d.tech.now"/>
+    <p t-if="!state.d.tech.agent" class="text-muted small">The server agent has not reported yet.</p>
+    <t t-foreach="[['CPU', n.cpu], ['Memory', n.mem], ['Disk', n.disk]]" t-as="g" t-key="g[0]">
+        <div class="o_hq_kv"><span t-esc="g[0]"/><b t-esc="pct(g[1])"/></div>
+        <div class="o_hq_bar"><span t-attf-class="{{ gaugeClass(g[1] || 0) }}" t-attf-style="width: {{ g[1] || 0 }}%"/></div>
+    </t>
+    <div class="o_hq_kv small mt-1" t-if="n.load1 !== null and n.load1 !== undefined"><span>Load (1 min)</span><b t-esc="n.load1"/></div>
+</t>
+
+</templates>

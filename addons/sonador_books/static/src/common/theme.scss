@@ -1,0 +1,66 @@
+.o_sb_card {
+    background: #fff;
+    border: 1px solid $sb-line;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(31, 45, 54, 0.04);
+}
+.o_sb_card_head {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .7rem 1rem;
+    border-bottom: 1px solid $sb-line;
+    font-weight: 600;
+    color: $sb-ink;
+    .o_sb_card_link { margin-left: auto; font-weight: 400; font-size: .85rem; }
+}
+.o_sb_kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: .75rem;
+}
+.o_sb_kpi_card {
+    @extend .o_sb_card;
+    padding: .8rem 1rem;
+    .o_sb_kpi_label { font-size: .78rem; color: $sb-muted; text-transform: uppercase; letter-spacing: .03em; }
+    .o_sb_kpi_value { font-size: 1.35rem; font-weight: 700; color: $sb-ink; font-variant-numeric: tabular-nums; line-height: 1.3; }
+    .o_sb_kpi_hint { font-size: .8rem; color: $sb-muted; }
+    &.o_sb_good .o_sb_kpi_value { color: $sb-good; }
+    &.o_sb_bad .o_sb_kpi_value { color: $sb-bad; }
+    &.o_sb_warn .o_sb_kpi_value { color: darken($sb-amber, 12%); }
+    .o_sb_badge { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .95rem; }
+    &.o_sb_good .o_sb_badge { background: rgba($sb-good, .12); }
+    &.o_sb_bad .o_sb_badge { background: rgba($sb-bad, .12); }
+    .o_sb_delta_up { color: $sb-good; font-size: .8rem; }
+    .o_sb_delta_down { color: $sb-bad; font-size: .8rem; }
+}
+.o_sb_chip {
+    border: 1px solid $sb-line;
+    background: #fff;
+    border-radius: 999px;
+    padding: .2rem .75rem;
+    font-size: .85rem;
+    color: $sb-ink;
+    cursor: pointer;
+    white-space: nowrap;
+    &:hover { border-color: $sb-steel; color: $sb-navy; }
+    &.active { background: $sb-navy; border-color: $sb-navy; color: #fff; }
+}
+.o_sb_skeleton {
+    background: linear-gradient(90deg, $sb-band 25%, #edf2f5 37%, $sb-band 63%);
+    background-size: 400% 100%;
+    animation: o_sb_shimmer 1.2s ease infinite;
+    border-radius: 6px;
+}
+@keyframes o_sb_shimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+
+// receipt / payment apply grid: compact cells, so the whole grid fits the form beside the chatter (1440px screens)
+.o_sb_apply_grid .o_list_table {
+    > thead > tr > th, > tbody > tr > td, > tfoot > tr > td {
+        padding-left: 0.3rem;
+        padding-right: 0.3rem;
+    }
+}

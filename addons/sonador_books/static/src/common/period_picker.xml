@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.SbPeriodPicker">
+        <div class="o_sb_pp position-relative" t-ref="root">
+            <button class="o_sb_pp_btn" t-on-click="() => this.state.open = !state.open">
+                <i class="fa fa-calendar me-2"/>
+                <span class="fw-semibold" t-esc="label"/>
+                <i class="fa fa-caret-down ms-2 text-muted"/>
+            </button>
+            <div t-if="state.open" class="o_sb_pp_pop">
+                <div class="d-flex flex-wrap gap-1 mb-3">
+                    <t t-foreach="chips" t-as="c" t-key="c[0]">
+                        <span class="o_sb_chip" t-on-click="() => this.chip(c[0])" t-esc="c[1]"/>
+                    </t>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <button class="btn btn-sm btn-link px-1" t-on-click="() => this.state.fy = state.fy - 1"
+                            t-att-disabled="state.fy &lt;= years[0].fy" title="Previous year"><i class="fa fa-chevron-left"/></button>
+                    <a href="#" class="fw-bold mx-2 text-reset" t-on-click.prevent="pickYear" t-esc="year.name" title="Whole fiscal year"/>
+                    <button class="btn btn-sm btn-link px-1" t-on-click="() => this.state.fy = state.fy + 1"
+                            t-att-disabled="state.fy &gt;= years[years.length - 1].fy" title="Next year"><i class="fa fa-chevron-right"/></button>
+                    <span class="ms-auto small text-muted" t-if="!props.asOf">Shift-click a second month for a range</span>
+                </div>
+                <div class="o_sb_pp_grid">
+                    <t t-foreach="year.months" t-as="m" t-key="m.id">
+                        <button t-attf-class="o_sb_pp_month {{ isSelected(m) ? 'selected' : '' }} {{ isCurrent(m) ? 'current' : '' }}"
+                                t-on-click="(ev) => this.pick(m, ev)" t-att-title="m.label">
+                            <div class="fw-semibold" t-esc="m.name.split(' ')[0]"/>
+                            <div class="small" t-esc="fmt(m.date_from).slice(0, 6)"/>
+                        </button>
+                    </t>
+                </div>
+                <div class="d-flex gap-1 mt-2">
+                    <t t-foreach="year.quarters" t-as="q" t-key="q.id">
+                        <span class="o_sb_chip flex-fill text-center" t-on-click="() => this.pickQuarter(q)" t-esc="'Q' + (q_index + 1)"/>
+                    </t>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-3 pt-2 border-top small">
+                    <span class="text-muted">Dates</span>
+                    <input t-if="!props.asOf" type="date" class="form-control form-control-sm" t-att-value="props.dateFrom"
+                           t-on-change="(ev) => this.onDate('from', ev)"/>
+                    <span t-if="!props.asOf">–</span>
+                    <input type="date" class="form-control form-control-sm" t-att-value="props.dateTo"
+                           t-on-change="(ev) => this.onDate('to', ev)"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

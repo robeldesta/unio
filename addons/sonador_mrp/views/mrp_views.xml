@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Build voucher on the inventory voucher form -->
+    <record id="sb_stock_voucher_form_build" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.build</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_void']" position="attributes">
+                <attribute name="invisible">(state != 'posted' and not (state == 'draft' and sb_correction_before)) or sb_migrated or sb_void_effect</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_void']" position="after">
+                <button name="action_void" type="object" string="Void" invisible="state != 'posted' or sb_migrated or not sb_void_effect"
+                        groups="sonador_books.group_sb_accountant"
+                        help="This GIV is part of the cost of finished goods already received (see the note at the top). Voiding it takes its cost out of them, and out of the cost of sales of what was sold since."/>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <field name="sb_void_effect" invisible="1"/>
+                <div class="alert alert-info mb-0" role="alert" invisible="not sb_void_effect">
+                    <field name="sb_void_effect" readonly="1"/>
+                </div>
+            </xpath>
+            <xpath expr="//header/button[@name='action_post']" position="after">
+                <button name="action_load_recipe" type="object" string="Load recipe" invisible="voucher_type != 'build' or state != 'draft'"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="build_product_id" invisible="voucher_type != 'build'" required="voucher_type == 'build'"
+                       readonly="state != 'draft'" options="{'no_create': True}"/>
+                <field name="build_kind" invisible="voucher_type != 'build'" readonly="state != 'draft'"/>
+                <label for="build_qty" invisible="voucher_type != 'build'"/>
+                <div class="o_row" invisible="voucher_type != 'build'">
+                    <field name="build_qty" readonly="state != 'draft'"/>
+                    <field name="build_uom_id" nolabel="1"/>
+                </div>
+                <field name="build_bom_id" invisible="voucher_type != 'build'" readonly="state != 'draft'" options="{'no_create': True}"
+                       placeholder="The version valid on the voucher date"/>
+                <field name="warehouse_id" string="Warehouse" invisible="voucher_type != 'build'" readonly="state != 'draft'"
+                       options="{'no_create': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='amount_total']" position="attributes">
+                <attribute name="invisible">voucher_type == 'build'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="material_value" invisible="voucher_type != 'build'"/>
+                <field name="labour_value" invisible="voucher_type != 'build' or state == 'draft'"/>
+                <field name="overhead_value" invisible="voucher_type != 'build' or state == 'draft'"/>
+                <field name="build_value" invisible="voucher_type != 'build' or state == 'draft'" class="fw-bold"/>
+                <field name="build_unit_cost" invisible="voucher_type != 'build' or state == 'draft'"/>
+                <field name="production_id" invisible="not production_id" groups="base.group_no_one"/>
+                <field name="sb_migrated" invisible="not sb_migrated"/>
+                <field name="sb_wip_costed" invisible="voucher_type != 'fprr'" readonly="state != 'draft'" widget="boolean_toggle"/>
+                <field name="sb_labour_total" invisible="voucher_type != 'fprr' or not sb_wip_costed" readonly="state != 'draft'"/>
+                <field name="sb_overhead_total" invisible="voucher_type != 'fprr' or not sb_wip_costed" readonly="state != 'draft'"/>
+                <field name="build_value" string="Cost of production" invisible="voucher_type != 'fprr' or not sb_wip_costed or state == 'draft'"/>
+                <field name="sb_fprr_id" invisible="not sb_fprr_id"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <group string="Materials taken from work in process" invisible="voucher_type != 'fprr' or not sb_wip_giv_ids">
+                    <field name="sb_wip_giv_ids" nolabel="1" colspan="2" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="date"/>
+                            <field name="department"/>
+                            <field name="amount_total" string="Value"/>
+                        </list>
+                    </field>
+                </group>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='qty_on_hand']" position="before">
+                <field name="qty_standard" column_invisible="parent.voucher_type != 'build'" readonly="1" force_save="1"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='uom_id']" position="after">
+                <field name="qty_variance" column_invisible="parent.voucher_type != 'build'" decoration-danger="qty_variance &gt; 0"
+                       decoration-success="qty_variance &lt; 0"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_sb_build" model="ir.actions.act_window">
+        <field name="name">Production (Build)</field>
+        <field name="res_model">sb.stock.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'build')]</field>
+        <field name="context">{'default_voucher_type': 'build'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Record what you produced</p>
+            <p>Choose the item and quantity: the recipe valid on that date fills in the components. Change the quantities to what was really used.
+               Posting consumes them at FIFO / average cost and puts the finished goods into stock at their real cost, plus labour and overhead.</p></field>
+    </record>
+
+    <record id="action_sb_fprr" model="ir.actions.act_window">
+        <field name="name">Finished Product Receipts (FPRR)</field>
+        <field name="res_model">sb.stock.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">['|', ('voucher_type', '=', 'fprr'), '&amp;', ('voucher_type', '=', 'build'), ('build_kind', '=', 'fprr')]</field>
+        <field name="context">{'default_voucher_type': 'fprr'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Receive finished products from production</p>
+            <p>Products and quantities at cost, credited to work in process. With recipes, use Production (Build) instead: it consumes the materials too.</p></field>
+    </record>
+
+    <!-- Recipes: labour, overhead and validity on the BOM -->
+    <record id="mrp_bom_form_sb" model="ir.ui.view">
+        <field name="name">mrp.bom.form.sb</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='code']" position="after">
+                <field name="sb_date_from"/>
+                <field name="sb_date_to"/>
+                <field name="sb_labour_cost"/>
+                <field name="sb_overhead_cost"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_sb_recipes" model="ir.actions.act_window">
+        <field name="name">Recipes (Bills of Materials)</field>
+        <field name="res_model">mrp.bom</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_consumption': 'flexible'}</field>
+    </record>
+
+    <record id="sb_company_settings_mrp" model="ir.ui.view">
+        <field name="name">res.company.form.sb.settings.mrp</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="sonador_books.sb_company_settings_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='account_stock_valuation_id']/.." position="after">
+                <group string="Production">
+                    <field name="sb_labour_absorbed_account_id" options="{'no_create': True}"/>
+                    <field name="sb_overhead_absorbed_account_id" options="{'no_create': True}"/>
+                    <field name="sb_fprr_cost_source"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_sb_production" name="Production" parent="sonador_books.menu_sb_inventory" sequence="5"/>
+    <menuitem id="menu_sb_build" name="Production (Build)" parent="menu_sb_production" action="action_sb_build" sequence="10"/>
+    <menuitem id="menu_sb_fprr" name="Finished Product Receipts (FPRR)" parent="menu_sb_production" action="action_sb_fprr" sequence="15"/>
+    <menuitem id="menu_sb_recipes" name="Recipes (Bills of Materials)" parent="menu_sb_production" action="action_sb_recipes" sequence="20"/>
+</odoo>

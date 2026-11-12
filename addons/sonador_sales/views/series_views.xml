@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sale_order_form_sb_series" model="ir.ui.view">
+        <field name="name">sale.order.form.sb.series</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="sb_confirm_date" invisible="1"/>
+                <field name="sb_series_id" invisible="state not in ('draft', 'sent') and not sb_series_id"
+                       readonly="state not in ('draft', 'sent') or sb_confirm_date" options="{'no_create': True, 'no_open': True}"/>
+                <field name="sb_pad_number" invisible="state not in ('draft', 'sent') or sb_confirm_date" placeholder="as printed on the pad (optional)"/>
+                <field name="sb_quotation_number" invisible="not sb_quotation_number"/>
+            </xpath>
+        </field>
+    </record>
+    <function model="sb.doc.series" name="_ensure_defaults"/>
+</odoo>

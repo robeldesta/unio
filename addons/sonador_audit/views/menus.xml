@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_root" name="Audit Room" sequence="13" web_icon="sonador_audit,static/description/icon.png"
+              action="action_room" groups="group_auditor,sonador_books.group_sb_accountant"/>
+    <menuitem id="menu_room" name="Audit Room" parent="menu_root" action="action_room" sequence="1"/>
+    <menuitem id="menu_findings" name="All findings" parent="menu_root" action="action_findings" sequence="2"/>
+    <menuitem id="menu_visits" name="Visits" parent="menu_root" action="action_visits" sequence="3"/>
+</odoo>

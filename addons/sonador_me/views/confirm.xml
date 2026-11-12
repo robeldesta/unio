@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- texts: one line per step, switch each on when the lawyer approves it -->
+    <record id="view_confirm_text_list" model="ir.ui.view">
+        <field name="name">sb.confirm.text.list</field>
+        <field name="model">sb.confirm.text</field>
+        <field name="arch" type="xml">
+            <list string="Confirmation texts">
+                <header>
+                    <button name="action_switch" type="object" string="Switch on / off"/>
+                </header>
+                <field name="step_no" string="#"/>
+                <field name="step"/>
+                <field name="name"/>
+                <field name="who" optional="show"/>
+                <field name="control" optional="show"/>
+                <field name="version"/>
+                <field name="legal_state" widget="badge" decoration-warning="legal_state == 'draft'" decoration-success="legal_state == 'approved'"/>
+                <field name="point_count"/>
+                <field name="confirmation_count" optional="show"/>
+                <field name="enabled" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_confirm_text_form" model="ir.ui.view">
+        <field name="name">sb.confirm.text.form</field>
+        <field name="model">sb.confirm.text</field>
+        <field name="arch" type="xml">
+            <form string="Confirmation text">
+                <header>
+                    <field name="legal_state" widget="statusbar" options="{'clickable': '1'}"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_confirmations" type="object" class="oe_stat_button" icon="fa-pencil-square-o">
+                            <field name="confirmation_count" widget="statinfo" string="Confirmations"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Off" bg_color="text-bg-secondary" invisible="enabled"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="step_no"/>
+                            <field name="step"/>
+                            <field name="who"/>
+                            <field name="code"/>
+                        </group>
+                        <group>
+                            <field name="enabled" widget="boolean_toggle"/>
+                            <field name="control"/>
+                            <field name="phrase" invisible="control != 'phrase'"/>
+                            <field name="fresh_signature"/>
+                            <field name="version"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Text" name="text">
+                            <field name="body" nolabel="1" placeholder="By ticking this box and continuing, I confirm that: ..."/>
+                            <p class="text-muted small mt-2">Changing the title or the text makes a new version. Everyone confirms the new version from then on; earlier confirmations keep the exact text that was accepted.</p>
+                        </page>
+                        <page string="Where it is asked" name="points">
+                            <field name="point_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                    <field name="name"/>
+                                    <field name="model"/>
+                                    <field name="method"/>
+                                    <field name="record_model" optional="hide"/>
+                                    <field name="record_arg" optional="hide"/>
+                                    <field name="only_if_arg" optional="hide"/>
+                                    <field name="domain" optional="show"/>
+                                    <field name="group_id" optional="show"/>
+                                    <field name="not_group_id" optional="hide"/>
+                                    <field name="amount_field" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Versions" name="versions">
+                            <field name="version_ids" readonly="1">
+                                <list>
+                                    <field name="version"/>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="user_id"/>
+                                </list>
+                                <form><group><field name="version"/><field name="name"/><field name="date"/><field name="user_id"/></group>
+                                    <field name="body"/></form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_confirm_texts" model="ir.actions.act_window">
+        <field name="name">Confirmation texts</field>
+        <field name="res_model">sb.confirm.text</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No confirmation texts yet</p>
+            <p>A text is read, ticked and signed before its approval step. Switch confirmations on for the company in Settings, then each text here.</p></field>
+    </record>
+
+    <!-- the permanent record -->
+    <record id="view_confirmation_list" model="ir.ui.view">
+        <field name="name">sb.confirmation.list</field>
+        <field name="model">sb.confirmation</field>
+        <field name="arch" type="xml">
+            <list string="Confirmations" create="0" edit="0" delete="0">
+                <field name="date"/>
+                <field name="user_name"/>
+                <field name="doc_type"/>
+                <field name="doc_number"/>
+                <field name="action"/>
+                <field name="text_title" optional="show"/>
+                <field name="text_version" string="Version" optional="show"/>
+                <field name="channel" optional="show"/>
+                <field name="ip_address" optional="hide"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_confirmation_form" model="ir.ui.view">
+        <field name="name">sb.confirmation.form</field>
+        <field name="model">sb.confirmation</field>
+        <field name="arch" type="xml">
+            <form string="Confirmation" create="0" edit="0" delete="0">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group string="Who and when">
+                            <field name="user_name"/>
+                            <field name="user_id"/>
+                            <field name="login"/>
+                            <field name="date"/>
+                            <field name="channel"/>
+                            <field name="telegram_ref" invisible="channel != 'telegram'"/>
+                            <field name="note" invisible="not note"/>
+                        </group>
+                        <group string="What">
+                            <field name="doc_type"/>
+                            <field name="doc_number"/>
+                            <field name="action"/>
+                            <field name="amount"/>
+                            <field name="text_title"/>
+                            <field name="text_version"/>
+                        </group>
+                        <group string="How">
+                            <field name="ticked"/>
+                            <field name="phrase_typed"/>
+                            <field name="password_checked"/>
+                            <field name="signature_reused"/>
+                        </group>
+                        <group string="From where">
+                            <field name="ip_address"/>
+                            <field name="user_agent"/>
+                            <field name="session_ref"/>
+                        </group>
+                    </group>
+                    <group string="Signature">
+                        <field name="signature" widget="image" nolabel="1" options="{'size': [360, 120]}" colspan="2"/>
+                        <field name="seal"/>
+                        <field name="seal_ok"/>
+                    </group>
+                    <separator string="Exact text accepted"/>
+                    <field name="text_copy"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_confirmation_search" model="ir.ui.view">
+        <field name="name">sb.confirmation.search</field>
+        <field name="model">sb.confirmation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="doc_number"/><field name="user_name"/><field name="text_title"/>
+                <filter name="telegram" string="Via Telegram" domain="[('channel', '=', 'telegram')]"/>
+                <group><filter name="by_user" string="Person" context="{'group_by': 'user_id'}"/>
+                    <filter name="by_text" string="Text" context="{'group_by': 'text_id'}"/>
+                    <filter name="by_day" string="Day" context="{'group_by': 'date:day'}"/></group>
+            </search>
+        </field>
+    </record>
+    <record id="action_confirmations" model="ir.actions.act_window">
+        <field name="name">Confirmations</field>
+        <field name="res_model">sb.confirmation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- company switch -->
+    <record id="view_settings_confirm" model="ir.ui.view">
+        <field name="name">res.config.settings.sb.confirm</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Approvals" name="sonador_me" logo="/sonador_me/static/description/icon.png">
+                    <block title="Approval confirmations" name="sb_confirm">
+                        <setting string="Confirmations on" help="Before each approval step whose text is switched on, people read the text, tick, sign, and type the phrase or their password where the step asks.">
+                            <field name="sb_confirm_on"/>
+                            <div class="mt8"><button name="%(sonador_me.action_confirm_texts)d" type="action" string="Texts, one switch per step" class="btn-link" icon="oi-arrow-right"/></div>
+                        </setting>
+                        <setting string="Typed phrase above" help="Steps with a typed phrase ask for it above this amount.">
+                            <field name="sb_confirm_amount"/>
+                        </setting>
+                        <setting string="Reuse a signature within a session" help="Off: every confirmation is signed by hand. On: after the first signature, people may reuse it until they log out.">
+                            <field name="sb_confirm_reuse_signature"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_me_confirm_texts" name="Confirmation texts" parent="menu_me_config" action="action_confirm_texts" sequence="20"/>
+    <menuitem id="menu_me_confirmations" name="Confirmations" parent="menu_me_config" action="action_confirmations" sequence="25"/>
+</odoo>

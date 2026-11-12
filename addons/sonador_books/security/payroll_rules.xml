@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Pay is for the HR role (HR Officer). The accounting roles (auditor, clerk, accountant, manager)
+         see the payroll's journal entries in the ledger, not the employees' pay: their access rights stay, these rules
+         leave them no record. A user with both roles sees everything (rules of a user's groups add up). -->
+    <record id="rule_sb_employee_accounting" model="ir.rule">
+        <field name="name">Employees' pay: not for the accounting roles</field>
+        <field name="model_id" ref="model_sb_employee"/>
+        <field name="domain_force">[(0, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_auditor'))]"/>
+    </record>
+    <record id="rule_sb_employee_hr" model="ir.rule">
+        <field name="name">Employees' pay: HR</field>
+        <field name="model_id" ref="model_sb_employee"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_hr')),]"/>
+    </record>
+    <record id="rule_sb_payroll_run_accounting" model="ir.rule">
+        <field name="name">Payroll runs: not for the accounting roles</field>
+        <field name="model_id" ref="model_sb_payroll_run"/>
+        <field name="domain_force">[(0, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_auditor'))]"/>
+    </record>
+    <record id="rule_sb_payroll_run_hr" model="ir.rule">
+        <field name="name">Payroll runs: HR</field>
+        <field name="model_id" ref="model_sb_payroll_run"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_hr')),]"/>
+    </record>
+    <record id="rule_sb_payroll_line_accounting" model="ir.rule">
+        <field name="name">Payslip lines: not for the accounting roles</field>
+        <field name="model_id" ref="model_sb_payroll_line"/>
+        <field name="domain_force">[(0, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_auditor'))]"/>
+    </record>
+    <record id="rule_sb_payroll_line_hr" model="ir.rule">
+        <field name="name">Payslip lines: HR</field>
+        <field name="model_id" ref="model_sb_payroll_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_hr')),]"/>
+    </record>
+
+    <!-- the Payroll menus of Accounting: HR only -->
+    <record id="menu_sb_payroll_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[(6, 0, [ref('group_sb_hr')])]"/>
+    </record>
+</odoo>

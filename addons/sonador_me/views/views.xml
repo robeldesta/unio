@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_me" model="ir.actions.client">
+        <field name="name">Me</field>
+        <field name="tag">sonador_me.app</field>
+    </record>
+    <menuitem id="menu_me_root" name="Me" sequence="0" action="action_me" web_icon="sonador_me,static/description/icon.png"/>
+    <menuitem id="menu_me_home" name="Me" parent="menu_me_root" action="action_me" sequence="1"/>
+</odoo>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.SbPdfPreview">
+        <Dialog title="props.title" size="'xl'" contentClass="'sb-pdf-preview'">
+            <div class="position-relative" style="height: 78vh">
+                <div class="position-absolute top-50 start-50 translate-middle text-muted">
+                    <i class="fa fa-circle-o-notch fa-spin me-2"/>Preparing the PDF…
+                </div>
+                <iframe t-att-src="props.url" class="position-relative w-100 h-100 border-0" title="PDF preview"/>
+            </div>
+            <t t-set-slot="footer">
+                <a class="btn btn-primary" t-att-href="props.url" target="_blank">
+                    <i class="fa fa-external-link me-1"/>Open in a new tab
+                </a>
+                <a class="btn btn-secondary" t-att-href="props.url" download="">
+                    <i class="fa fa-download me-1"/>Download
+                </a>
+                <button class="btn btn-secondary" t-on-click="props.close">Close</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

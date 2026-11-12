@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_request_policy_list" model="ir.ui.view">
+        <field name="name">sb.request.policy.list</field>
+        <field name="model">sb.request.policy</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="kind"/>
+                <field name="dept_step"/>
+                <field name="finance_step"/>
+                <field name="gm_step"/>
+                <field name="gm_above" invisible="gm_step != 'above'"/>
+                <field name="gm_delegate_id" invisible="gm_step == 'never'"/>
+                <field name="gm_delegate_limit" invisible="not gm_delegate_id"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_request_policy" model="ir.actions.act_window">
+        <field name="name">Approval rules</field>
+        <field name="res_model">sb.request.policy</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="view_request_category_list" model="ir.ui.view">
+        <field name="name">sb.request.category.list</field>
+        <field name="model">sb.request.category</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="parent_id"/>
+                <field name="name"/>
+                <field name="request_type"/>
+                <field name="account_id" options="{'no_create': True}"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_request_category" model="ir.actions.act_window">
+        <field name="name">Categories</field>
+        <field name="res_model">sb.request.category</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+</odoo>

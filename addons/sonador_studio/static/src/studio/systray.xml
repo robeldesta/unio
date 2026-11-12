@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_studio.Systray">
+        <div class="o_sbs_systray d-flex align-items-center">
+            <button class="btn btn-link px-2" title="Change this screen with Studio" t-on-click="open"><i class="fa fa-magic"/></button>
+        </div>
+    </t>
+</templates>

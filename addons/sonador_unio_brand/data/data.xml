@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- again on every upgrade: companies created since get the Unio look too -->
+    <function model="unio.brand" name="apply"/>
+</odoo>

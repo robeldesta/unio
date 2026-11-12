@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_tours" model="ir.actions.client">
+        <field name="name">Guided tours</field>
+        <field name="tag">unio_tours.list</field>
+    </record>
+</odoo>

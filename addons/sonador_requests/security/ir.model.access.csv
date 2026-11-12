@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pr_user,payment request user,model_sb_payment_request,base.group_user,1,1,1,1
+access_prl_user,payment order line user,model_sb_payment_request_line,base.group_user,1,1,1,1
+access_pur_user,purchase request user,model_sb_purchase_request,base.group_user,1,1,1,1
+access_purl_user,purchase request line user,model_sb_purchase_request_line,base.group_user,1,1,1,1
+access_cat_user,request category user,model_sb_request_category,base.group_user,1,0,0,0
+access_cat_fin,request category finance,model_sb_request_category,group_request_finance,1,1,1,1
+access_cat_admin,request category admin,model_sb_request_category,group_request_admin,1,1,1,1
+access_pol_user,request policy user,model_sb_request_policy,base.group_user,1,0,0,0
+access_pol_admin,request policy admin,model_sb_request_policy,group_request_admin,1,1,1,1

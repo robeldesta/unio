@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_request_list" model="ir.ui.view">
+        <field name="name">sb.purchase.request.list</field>
+        <field name="model">sb.purchase.request</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'cancel'" decoration-info="state in ('dept', 'finance', 'gm')">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="requester_id" widget="many2one_avatar_user"/>
+                <field name="department_id" optional="show"/>
+                <field name="description" optional="show"/>
+                <field name="date_required" optional="show"/>
+                <field name="vendor_id" optional="hide"/>
+                <field name="amount" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="sb_waiting_for" optional="show"/>
+                <field name="state" widget="badge" decoration-info="state in ('dept', 'finance', 'gm')" decoration-success="state in ('approved', 'ordered')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_purchase_request_search" model="ir.ui.view">
+        <field name="name">sb.purchase.request.search</field>
+        <field name="model">sb.purchase.request</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="requester_id"/>
+                <field name="description"/>
+                <field name="line_ids" string="Item" filter_domain="[('line_ids.name', 'ilike', self)]"/>
+                <filter name="waiting_me" string="Waiting for me" domain="[('sb_waiting_me', '=', True)]"/>
+                <filter name="mine" string="My requests" domain="[('requester_id', '=', uid)]"/>
+                <separator/>
+                <filter name="in_approval" string="In approval" domain="[('state', 'in', ('dept', 'finance', 'gm'))]"/>
+                <filter name="to_order" string="To order" domain="[('state', '=', 'approved')]"/>
+                <filter name="ordered" string="Ordered" domain="[('state', '=', 'ordered')]"/>
+                <filter name="migrated" string="Brought over" domain="[('sb_migrated', '=', True)]"/>
+                <group>
+                    <filter name="g_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="g_dept" string="Department" context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_purchase_request_form" model="ir.ui.view">
+        <field name="name">sb.purchase.request.form</field>
+        <field name="model">sb.purchase.request</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" type="object" string="Submit for approval" class="btn-primary" invisible="state != 'draft' or not sb_is_owner"/>
+                    <!-- each person sees only their own step: the department head approves, finance checks, the general
+                         manager authorizes; the requester submits, cancels and reopens -->
+                    <button name="action_approve" type="object" string="Approve" class="btn-primary" invisible="not sb_can_decide or state != 'dept'"/>
+                    <button name="action_approve" type="object" string="Check" class="btn-primary" invisible="not sb_can_decide or state != 'finance'"/>
+                    <button name="action_approve" type="object" string="Authorize" class="btn-primary" invisible="not sb_can_decide or state != 'gm'"/>
+                    <button name="action_send_back" type="object" string="Send back" invisible="not sb_can_decide"/>
+                    <button name="action_create_rfq" type="object" string="Make request for quotation" class="btn-primary"
+                            invisible="state != 'approved'" groups="purchase.group_purchase_user"/>
+                    <button name="action_cancel" type="object" string="Cancel request" invisible="state in ('cancel', 'ordered') or not sb_can_cancel"/>
+                    <button name="action_draft" type="object" string="Reopen" invisible="state != 'cancel' or not sb_is_owner"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,dept,finance,gm,approved,ordered"/>
+                </header>
+                <div class="alert alert-warning mb-0" role="alert" invisible="state != 'draft' or not sent_back_reason">
+                    Sent back by <field name="sent_back_by" readonly="1" class="d-inline fw-bold"/>: <field name="sent_back_reason" class="d-inline"/>
+                </div>
+                <div class="alert alert-secondary mb-0" role="alert" invisible="state != 'cancel' or not cancel_reason">
+                    Cancelled: <field name="cancel_reason" class="d-inline"/>
+                </div>
+                <div class="alert alert-info mb-0" role="alert" invisible="not sb_waiting_for">
+                    Waiting for <field name="sb_waiting_for" class="d-inline fw-bold"/>. Approval path: <field name="route" class="d-inline"/>
+                </div>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_purchases" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="purchase_count == 0">
+                            <field name="purchase_count" widget="statinfo" string="Purchase orders"/>
+                        </button>
+                    </div>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="description" readonly="state != 'draft'"/>
+                            <field name="date_required" readonly="state not in ('draft', 'approved')"/>
+                            <field name="vendor_id" readonly="state not in ('draft', 'dept', 'finance', 'gm', 'approved')"/>
+                            <field name="amount"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="requester_id" readonly="state != 'draft'" widget="many2one_avatar_user"/>
+                            <field name="department_id" readonly="state != 'draft'"/>
+                            <field name="dept_approver_id" readonly="state != 'draft'" widget="many2one_avatar_user"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="sb_can_decide" invisible="1"/>
+                            <field name="sb_is_owner" invisible="1"/>
+                            <field name="sb_can_cancel" invisible="1"/>
+                            <field name="sb_legacy_ref" invisible="not sb_migrated"/>
+                            <field name="sb_migrated" invisible="not sb_migrated"/>
+                        </group>
+                    </group>
+                    <group invisible="state not in ('dept', 'finance', 'gm')">
+                        <field name="reason" placeholder="Why it goes back or is cancelled (the requester sees it)"/>
+                    </group>
+                    <notebook>
+                        <page string="Items" name="items">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="name"/>
+                                    <field name="specifications" optional="hide"/>
+                                    <field name="qty"/>
+                                    <field name="uom_id" optional="show"/>
+                                    <field name="price_unit"/>
+                                    <field name="subtotal" sum="Total"/>
+                                    <field name="vendor_id" optional="show"/>
+                                    <field name="purchase_state" optional="show"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Approvals" name="approvals">
+                            <group>
+                                <group>
+                                    <field name="submitted_at"/>
+                                    <field name="dept_by"/>
+                                    <field name="dept_at"/>
+                                </group>
+                                <group>
+                                    <field name="finance_by"/>
+                                    <field name="finance_at"/>
+                                    <field name="gm_by"/>
+                                    <field name="gm_at"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_purchase_requests" model="ir.actions.act_window">
+        <field name="name">Purchase requests</field>
+        <field name="res_model">sb.purchase.request</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Ask for something to be bought</p>
+            <p>Once approved, purchasing makes the request for quotation from it.</p></field>
+    </record>
+</odoo>

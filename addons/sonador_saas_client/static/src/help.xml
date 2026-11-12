@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_saas_client.Help">
+        <div t-if="state.on" class="o_saas_help_wrap d-flex align-items-center">
+            <button class="btn btn-link px-2 position-relative" title="Help" t-on-click="toggle">
+                <i class="fa fa-question-circle-o"/>
+                <span t-if="state.unread" class="badge rounded-pill text-bg-danger o_saas_help_badge" t-esc="state.unread"/>
+            </button>
+            <div t-if="state.open" class="o_saas_help">
+                <div class="o_saas_help_head">
+                    <b>Help</b>
+                    <span>
+                        <button class="btn btn-sm btn-link" t-on-click="showMine">My questions<t t-if="state.unread"> (<t t-esc="state.unread"/>)</t></button>
+                        <button class="btn btn-sm btn-link" t-on-click="toggle"><i class="fa fa-times"/></button>
+                    </span>
+                </div>
+                <input class="form-control" placeholder="Search: e.g. VAT report, add a user, print an invoice" t-att-value="state.q" t-on-input="onInput" autofocus="1"/>
+                <div class="o_saas_help_body">
+                    <t t-if="state.view === 'search'">
+                        <t t-if="state.results === null">
+                            <p class="text-muted small mt-2">Type what you want to do. The answers come from Unio's guides; if they do not help, ask us.</p>
+                        </t>
+                        <div t-if="tours and matchingTours.length" class="o_saas_help_tours">
+                            <div class="o_saas_help_label">Show me how <a t-if="state.results === null" href="#" class="float-end fw-normal" t-on-click.prevent="allTours">All tours</a></div>
+                            <t t-foreach="matchingTours" t-as="tr" t-key="tr.key">
+                                <button t-if="tr_index lt 4" class="o_saas_help_tour" t-on-click="() => this.startTour(tr.key)">
+                                    <i t-attf-class="fa {{ tr.done ? 'fa-check-circle' : 'fa-play-circle' }}"/> <span t-esc="tr.name"/> <small t-esc="tr.minutes + ' min'"/>
+                                </button>
+                            </t>
+                        </div>
+                        <div t-if="state.ai and state.results !== null" class="o_saas_help_ai">
+                            <button t-if="!state.aiAnswer" class="btn btn-sm btn-light w-100" t-on-click="askAi" t-att-disabled="state.aiBusy">
+                                <i class="fa fa-magic me-1"/><t t-if="state.aiBusy">Writing an answer…</t><t t-else="">Get a direct answer</t></button>
+                            <div t-else="" class="o_saas_help_answer" style="white-space: pre-line" t-esc="state.aiAnswer.answer"/>
+                        </div>
+                        <t t-if="state.results === null"/>
+                        <t t-elif="state.results.length">
+                            <div t-foreach="state.results" t-as="r" t-key="r.id" class="o_saas_help_result" t-on-click="() => this.open(r)">
+                                <div class="fw-bold" t-esc="r.title"/>
+                                <div class="small text-muted" t-esc="r.snippet"/>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <p class="mt-2">Nothing found for "<t t-esc="state.q"/>".</p>
+                        </t>
+                        <button class="btn btn-light btn-sm mt-2 w-100" t-on-click="startAsk"><i class="fa fa-comment-o me-1"/>Ask Unio support</button>
+                    </t>
+                    <t t-elif="state.view === 'article' and state.article">
+                        <button class="btn btn-sm btn-link px-0" t-on-click="() => this.state.view = 'search'"><i class="fa fa-arrow-left me-1"/>Back</button>
+                        <h4 t-esc="state.article.title"/>
+                        <button t-if="tourFor(state.article)" class="btn btn-primary btn-sm mb-2" t-on-click="() => this.startTour(state.article.tour)"><i class="fa fa-play-circle me-1"/>Show me on screen</button>
+                        <div class="o_saas_help_article" t-out="markup(state.article.body)"/>
+                        <div class="o_saas_help_vote" t-if="!state.voted">Did this answer it?
+                            <button class="btn btn-sm btn-light" t-on-click="() => this.vote(true)">Yes</button>
+                            <button class="btn btn-sm btn-light" t-on-click="() => this.vote(false)">No, ask support</button>
+                        </div>
+                        <div class="small text-success" t-elif="state.view === 'article'">Thank you.</div>
+                    </t>
+                    <t t-elif="state.view === 'ask'">
+                        <t t-if="!state.sent">
+                            <p class="small text-muted mt-2">We answer here and by email, usually within the working day.</p>
+                            <input class="form-control form-control-sm mb-2" placeholder="Subject" t-model="state.ask.subject"/>
+                            <textarea class="form-control form-control-sm" rows="5" placeholder="What are you trying to do, and what happens?" t-model="state.ask.question"/>
+                            <button class="btn btn-primary btn-sm mt-2" t-on-click="send" t-att-disabled="state.busy or !state.ask.question">Send</button>
+                        </t>
+                        <t t-else="">
+                            <p class="mt-3"><i class="fa fa-check-circle text-success me-1"/>Sent. The answer will appear under "My questions" and in your email.</p>
+                        </t>
+                    </t>
+                    <t t-elif="state.view === 'mine'">
+                        <p t-if="!state.mine.length" class="text-muted small mt-2">No questions yet.</p>
+                        <div t-foreach="state.mine" t-as="t" t-key="t.id" class="o_saas_help_ticket">
+                            <div class="d-flex justify-content-between"><b t-esc="t.subject"/><span t-attf-class="badge {{ t.state === 'new' ? 'text-bg-light' : 'text-bg-success' }}" t-esc="t.state === 'new' ? 'Waiting' : 'Answered'"/></div>
+                            <div class="small text-muted" t-esc="t.date"/>
+                            <div class="small" t-esc="t.question"/>
+                            <div t-if="t.answer" class="o_saas_help_answer" t-out="markup(t.answer)"/>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_price_rule_list" model="ir.ui.view">
+        <field name="name">sb.price.rule.list</field>
+        <field name="model">sb.price.rule</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="level_id" placeholder="Any level"/>
+                <field name="product_id" placeholder="Item"/>
+                <field name="group_id" placeholder="or equivalent items" optional="show"/>
+                <field name="categ_id" placeholder="or item class" optional="show"/>
+                <field name="channel" placeholder="Any delivery"/>
+                <field name="distance_min" optional="show"/>
+                <field name="distance_max" optional="show"/>
+                <field name="qty_min" optional="show"/>
+                <field name="qty_max" optional="show"/>
+                <field name="date_from" optional="show"/>
+                <field name="date_to" optional="show"/>
+                <field name="price"/>
+                <field name="company_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_price_rule_search" model="ir.ui.view">
+        <field name="name">sb.price.rule.search</field>
+        <field name="model">sb.price.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="level_id"/>
+                <field name="group_id"/>
+                <group>
+                    <filter name="by_level" string="Price level" context="{'group_by': 'level_id'}"/>
+                    <filter name="by_item" string="Item" context="{'group_by': 'product_id'}"/>
+                    <filter name="by_channel" string="Delivery" context="{'group_by': 'channel'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_sb_price_rules" model="ir.actions.act_window">
+        <field name="name">Prices</field>
+        <field name="res_model">sb.price.rule</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_by_item': 1}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Set your prices</p>
+            <p>One line per price: item (or equivalent items or item class), price level, delivery channel, distance band,
+               quantity tier and dates. On a sales order the most specific matching line sets the price; without a match the item's sales price is used.</p></field>
+    </record>
+    <record id="sb_price_level_list" model="ir.ui.view">
+        <field name="name">sb.price.level.list</field>
+        <field name="model">sb.price.level</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_sb_price_levels" model="ir.actions.act_window">
+        <field name="name">Price Levels</field>
+        <field name="res_model">sb.price.level</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="sb_price_group_list" model="ir.ui.view">
+        <field name="name">sb.price.group.list</field>
+        <field name="model">sb.price.group</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="name"/>
+                <field name="product_ids" widget="many2many_tags"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_sb_price_groups" model="ir.actions.act_window">
+        <field name="name">Equivalent Items (pricing)</field>
+        <field name="res_model">sb.price.group</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <record id="res_partner_form_sb_sales" model="ir.ui.view">
+        <field name="name">res.partner.form.sb.sales</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="sb_price_level_id" invisible="not is_company and parent_id"/>
+                <field name="sb_distance_km" invisible="not is_company and parent_id"/>
+                <field name="credit_limit" string="Credit limit" invisible="not is_company and parent_id" groups="sonador_books.group_sb_accountant"/>
+                <field name="sb_hold_released_until" invisible="not is_company and parent_id" groups="sonador_books.group_sb_accountant"/>
+                <field name="sb_hold_note" invisible="not sb_hold_released_until" groups="sonador_books.group_sb_accountant"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="sale_order_form_sb_pricing" model="ir.ui.view">
+        <field name="name">sale.order.form.sb.pricing</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_term_id']" position="before">
+                <field name="sb_price_level_id" readonly="state not in ('draft', 'sent')"/>
+                <field name="sb_channel" readonly="state not in ('draft', 'sent')"/>
+                <field name="sb_distance_km" readonly="state not in ('draft', 'sent')" invisible="sb_channel == 'pickup'"/>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_sb_update_prices" type="object" string="Update prices" invisible="state not in ('draft', 'sent')"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_company_settings_sales" model="ir.ui.view">
+        <field name="name">res.company.form.sb.settings.sales</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="sonador_books.sb_company_settings_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='account_stock_valuation_id']/.." position="after">
+                <group string="Sales">
+                    <field name="sb_credit_check" widget="radio" options="{'horizontal': true}"/>
+                    <field name="sb_overdue_hold_days"/>
+                    <field name="sb_so_numbering" widget="radio"/>
+                    <field name="sb_delivery_strict"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_sb_pricing" name="Pricing" parent="sonador_books.menu_sb_customers" sequence="40"/>
+    <menuitem id="menu_sb_price_rules" name="Prices" parent="menu_sb_pricing" action="action_sb_price_rules" sequence="1"/>
+    <menuitem id="menu_sb_price_levels" name="Price Levels" parent="menu_sb_pricing" action="action_sb_price_levels" sequence="2"/>
+    <menuitem id="menu_sb_price_groups" name="Equivalent Items" parent="menu_sb_pricing" action="action_sb_price_groups" sequence="3"/>
+</odoo>

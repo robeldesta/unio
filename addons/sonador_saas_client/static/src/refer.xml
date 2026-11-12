@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_saas_client.Refer">
+        <div class="o_saas_apps">
+            <h1>Refer a business, earn free months</h1>
+            <t t-if="state.r and state.r.code">
+                <p class="text-muted">Share your link. The business you invite gets <b><t t-esc="state.r.offer_pct"/>% off its first <t t-esc="state.r.offer_months"/> months</b>;
+                    you get <b><t t-esc="state.r.reward_months"/> free month</b> of Unio as soon as it starts paying. No limit.</p>
+                <div class="o_saas_refer_link">
+                    <input class="form-control" readonly="1" t-att-value="state.r.link" onclick="this.select()"/>
+                    <button class="btn btn-primary" t-on-click="copy"><i class="fa fa-copy me-1"/><t t-if="state.copied">Copied</t><t t-else="">Copy</t></button>
+                </div>
+                <div class="o_saas_refer_share">
+                    <a class="btn btn-light" target="_blank" t-attf-href="https://t.me/share/url?url={{ state.r.link }}&amp;text={{ shareText }}"><i class="fa fa-telegram me-1"/>Telegram</a>
+                    <a class="btn btn-light" target="_blank" t-attf-href="https://wa.me/?text={{ shareText }}"><i class="fa fa-whatsapp me-1"/>WhatsApp</a>
+                    <a class="btn btn-light" t-attf-href="mailto:?subject=Unio&amp;body={{ shareText }}"><i class="fa fa-envelope-o me-1"/>Email</a>
+                    <span class="text-muted small ms-2">Your code: <b t-esc="state.r.code"/></span>
+                </div>
+                <div class="o_saas_refer_stats">
+                    <div><b t-esc="state.r.signed_up"/><span>signed up</span></div>
+                    <div><b t-esc="state.r.paying"/><span>paying</span></div>
+                    <div><b t-esc="state.r.credit_months"/><span>free months to use</span></div>
+                </div>
+                <table class="table table-sm" t-if="state.r.companies.length">
+                    <thead><tr><th>Business</th><th>Joined</th><th>Status</th></tr></thead>
+                    <tbody><tr t-foreach="state.r.companies" t-as="c" t-key="c_index"><td t-esc="c.name"/><td t-esc="c.since"/>
+                        <td><span t-attf-class="badge {{ c.paying ? 'text-bg-success' : 'text-bg-light' }}" t-esc="c.paying ? 'Paying: month earned' : 'On trial'"/></td></tr></tbody>
+                </table>
+            </t>
+            <p t-else="" class="text-muted">Your referral link is being prepared; it appears here within a day.</p>
+        </div>
+    </t>
+</templates>

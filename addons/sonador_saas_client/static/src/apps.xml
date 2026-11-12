@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_saas_client.Apps">
+        <div class="o_saas_apps">
+            <h1>Your apps</h1>
+            <p class="text-muted">Every app is included in your subscription. Switch on the ones your business uses; switching one off only hides it, nothing is lost. An app you have never used is added the first time you switch it on.</p>
+            <div class="o_saas_apps_grid">
+                <t t-foreach="state.apps" t-as="app" t-key="app.key">
+                    <div class="o_saas_app" t-att-class="{'off': !app.on}">
+                        <img t-if="app.icon" t-att-src="icon(app)" alt=""/>
+                        <div class="o_saas_app_text">
+                            <div class="o_saas_app_name"><t t-esc="app.name"/><span t-if="app.industry" class="o_saas_app_tag">for your business</span></div>
+                            <div class="text-muted small" t-esc="app.what"/>
+                            <div t-if="state.busy === app.key and !app.added" class="o_saas_app_adding small">Adding <t t-esc="app.name"/>… this takes about a minute.</div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" t-att-checked="app.on" t-att-disabled="state.busy"
+                                   t-on-change="() => this.toggle(app)" t-att-aria-label="'Show ' + app.name"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,14 @@
+.o_sb_setup {
+    background: $sb-band;
+    color: $sb-ink;
+    .o_sb_setup_inner { max-width: 60rem; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
+    .o_sb_setup_title { font-size: 1.8rem; font-weight: 700; color: $sb-navy; margin: 0; }
+    .o_sb_setup_bar { height: .55rem; background: $sb-line; border-radius: 999px; overflow: hidden;
+        div { height: 100%; background: $sb-teal; transition: width .3s; } }
+    .o_sb_setup_step { display: flex; align-items: center; gap: 1rem; background: #fff; border: 1px solid $sb-line; border-radius: 10px;
+        padding: .9rem 1.1rem; margin-bottom: .6rem;
+        &.done { opacity: .8; .o_sb_setup_num { background: $sb-teal; color: #fff; border-color: $sb-teal; } } }
+    .o_sb_setup_num { width: 2rem; height: 2rem; border-radius: 50%; border: 2px solid $sb-steel; color: $sb-navy; flex: none;
+        display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    .o_sb_setup_note { font-size: .8rem; color: $sb-muted; background: $sb-band; border-radius: 999px; padding: .15rem .6rem; white-space: nowrap; }
+}

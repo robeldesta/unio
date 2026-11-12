@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pulse_hr,pulse,model_sb_pulse,sonador_books.group_sb_hr,1,1,1,1
+access_pq_hr,pq,model_sb_pulse_question,sonador_books.group_sb_hr,1,1,1,1
+access_pt_hr,pt,model_sb_pulse_taken,sonador_books.group_sb_hr,1,0,0,0
+access_pr_hr,pr,model_sb_pulse_response,sonador_books.group_sb_hr,1,0,0,0
+access_pa_hr,pa,model_sb_pulse_answer,sonador_books.group_sb_hr,1,0,0,0

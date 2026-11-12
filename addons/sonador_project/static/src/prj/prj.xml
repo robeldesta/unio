@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_project.App">
+        <div class="o_pp o_pj o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.company"/> · <t t-esc="ctx.today_ec"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-briefcase me-2"/>Projects</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="state.page === 'portfolio' or state.page === 'job' ? 'active' : ''" t-on-click="() => this.go('portfolio')"><i class="fa fa-th-large"/> Jobs</button>
+                        <button t-att-class="state.page === 'timesheet' ? 'active' : ''" t-on-click="() => this.go('timesheet')"><i class="fa fa-clock-o"/> My timesheet</button>
+                        <button t-att-class="state.page === 'approvals' ? 'active' : ''" t-on-click="() => this.go('approvals')"><i class="fa fa-check-square-o"/> Approve hours</button>
+                        <button t-if="ctx.is_manager" t-att-class="state.page === 'settings' ? 'active' : ''" t-on-click="() => this.go('settings')"><i class="fa fa-cog"/></button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'portfolio' and state.pf" t-call="sonador_project.Portfolio"/>
+                <t t-if="state.page === 'job'" t-call="sonador_project.Job"/>
+                <t t-if="state.page === 'timesheet' and state.ts" t-call="sonador_project.Timesheet"/>
+                <t t-if="state.page === 'approvals' and state.appr" t-call="sonador_project.Approvals"/>
+                <t t-if="state.page === 'settings' and state.set" t-call="sonador_project.Settings"/>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ portfolio -->
+    <t t-name="sonador_project.Portfolio">
+        <t t-set="P" t-value="state.pf"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group btn-group-sm">
+                <button t-foreach="[['open', 'Open'], ['done', 'Completed'], ['', 'All']]" t-as="k" t-key="k[0]" t-att-class="'btn border ' + (state.f.state === k[0] ? 'btn-primary' : 'btn-light')"
+                        t-on-click="() => this.setF('state', k[0])" t-esc="k[1]"/>
+            </div>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setF('kind', ev.target.value)"><option value="">All types</option>
+                <option t-foreach="ctx.kinds" t-as="k" t-key="k.id" t-att-value="k.id" t-esc="k.name"/></select>
+            <input class="form-control form-control-sm o_pp_search" placeholder="Job, code or customer" t-on-change="(ev) => this.setF('search', ev.target.value)"/>
+            <button class="btn btn-light border btn-sm ms-auto" t-on-click="exportCsv"><i class="fa fa-download me-1"/>CSV</button>
+            <button t-if="ctx.is_manager" class="btn btn-primary btn-sm" t-on-click="newJob"><i class="fa fa-plus me-1"/>Job</button>
+        </div>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>Contract value</span><b t-esc="money(P.totals.contract)"/><small><t t-esc="P.rows.length"/> jobs</small></div>
+            <div class="o_pp_kpi"><span>Cost to date</span><b t-esc="money(P.totals.cost)"/><small>budget <t t-esc="money(P.totals.budget)"/></small></div>
+            <div class="o_pp_kpi"><span>Forecast cost at completion</span><b t-att-class="P.totals.eac &gt; P.totals.budget and P.totals.budget ? 'o_pp_badtxt' : ''" t-esc="money(P.totals.eac)"/></div>
+            <div class="o_pp_kpi"><span>Certified / billed</span><b t-esc="money(P.totals.certified)"/><small>revenue posted <t t-esc="money(P.totals.revenue)"/></small></div>
+            <div class="o_pp_kpi"><span>Retention held by customers</span><b t-esc="money(P.totals.retention)"/></div>
+            <div class="o_pp_kpi"><span>Jobs in trouble</span><b t-att-class="P.red ? 'o_pp_badtxt' : 'o_pp_good'" t-esc="P.red"/><small>red on cost or time</small></div>
+        </div>
+        <div class="o_pp_card o_pj_wrap">
+            <table class="o_pp_table">
+                <thead><tr><th>Job</th><th>Customer</th><th>Status</th><th class="text-end">Contract</th><th class="text-end">Cost to date</th><th class="text-end">Forecast cost</th>
+                    <th class="text-end">Margin at end</th><th style="width:9rem">Complete</th><th class="text-end">Over / under billed</th><th>Health</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="P.rows" t-as="r" t-key="r.id" class="o_pj_click" t-on-click="() => this.openJob(r.id)">
+                        <td><b t-esc="r.name"/><div class="small text-muted"><t t-esc="r.code"/> · <t t-esc="kindLabel(r.kind)"/><t t-if="r.manager"> · <t t-esc="r.manager"/></t></div></td>
+                        <td class="small" t-esc="r.customer"/>
+                        <td><span t-att-class="'o_pj_st ' + r.state" t-esc="stateLabel(r.state)"/><div class="small text-muted" t-if="r.end">due <t t-esc="r.end"/></div></td>
+                        <td class="text-end" t-esc="money(r.contract)"/><td class="text-end" t-esc="money(r.cost)"/>
+                        <td class="text-end" t-att-class="r.budget and r.eac &gt; r.budget ? 'o_pp_badtxt' : ''" t-esc="money(r.eac)"/>
+                        <td class="text-end"><t t-esc="money(r.margin_eac)"/><div t-if="r.margin_pct !== null" class="small text-muted"><t t-esc="r.margin_pct"/>%</div></td>
+                        <td><div t-if="r.pct !== null" class="o_pj_bar"><div t-att-style="'width:' + r.pct + '%'"/></div><span class="small" t-esc="r.pct === null ? 'T&amp;M' : r.pct + '%'"/></td>
+                        <td class="text-end" t-att-class="r.over_under &lt; 0 ? 'o_pp_badtxt' : ''" t-esc="money(r.over_under)"/>
+                        <td class="text-nowrap"><span t-att-class="'o_pj_rag ' + r.cost_rag" title="Cost"><i class="fa fa-money"/></span><span t-att-class="'o_pj_rag ' + r.sched_rag" title="Time"><i class="fa fa-clock-o"/></span></td>
+                    </tr>
+                    <tr t-if="!P.rows.length"><td colspan="10" class="o_pp_empty">No jobs yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="small text-muted mt-2">Over / under billed: billed or certified minus what the work done is worth (% complete × contract). Negative = work done but not yet billed.</div>
+    </t>
+
+    <!-- ============================================================ job -->
+    <t t-name="sonador_project.Job">
+        <t t-if="state.jedit" t-call="sonador_project.JobEdit"/>
+        <t t-elif="state.job">
+            <t t-set="J" t-value="state.job"/>
+            <t t-set="F" t-value="J.fin"/>
+            <div class="d-flex align-items-center gap-2 mb-2"><button class="btn btn-link btn-sm px-0" t-on-click="() => this.go('portfolio')"><i class="fa fa-arrow-left me-1"/>Jobs</button></div>
+            <div class="o_pj_head">
+                <div class="me-auto">
+                    <div class="small text-muted"><t t-esc="J.code"/> · <t t-esc="kindLabel(J.kind)"/> · <span t-att-class="'o_pj_st ' + J.state" t-esc="stateLabel(J.state)"/></div>
+                    <h2 t-esc="J.name"/>
+                    <div class="small"><t t-esc="J.customer"/><t t-if="J.site"> · <i class="fa fa-map-marker"/> <t t-esc="J.site"/></t><t t-if="J.manager"> · PM <t t-esc="J.manager"/></t>
+                        <t t-if="J.start"> · <t t-esc="J.start"/> → <t t-esc="J.end"/></t></div>
+                </div>
+                <button t-if="J.can_edit" class="btn btn-light border btn-sm" t-on-click="editJob"><i class="fa fa-pencil me-1"/>Edit</button>
+            </div>
+            <div class="o_pp_tabs">
+                <button t-foreach="[['overview', 'Overview'], ['plan', 'Plan and tasks'], ['budget', 'Budget'], ['boq', 'Bill of quantities'], ['billing', 'Billing'], ['costs', 'Costs'], ['subs', 'Subcontractors'], ['team', 'Team hours']]" t-as="k" t-key="k[0]"
+                        t-if="k[0] !== 'boq' or J.kind === 'construction'" t-att-class="state.tab === k[0] ? 'active' : ''" t-on-click="() => this.setTab(k[0])" t-esc="k[1]"/>
+            </div>
+            <t t-if="state.tab === 'overview'" t-call="sonador_project.Overview"/>
+            <t t-if="state.tab === 'plan'" t-call="sonador_project.Plan"/>
+            <t t-if="state.tab === 'budget'" t-call="sonador_project.Budget"/>
+            <t t-if="state.tab === 'boq'" t-call="sonador_project.Boq"/>
+            <t t-if="state.tab === 'billing'" t-call="sonador_project.Billing"/>
+            <t t-if="state.tab === 'costs'" t-call="sonador_project.Costs"/>
+            <t t-if="state.tab === 'subs'" t-call="sonador_project.Subs"/>
+            <t t-if="state.tab === 'team'" t-call="sonador_project.Team"/>
+        </t>
+    </t>
+
+    <t t-name="sonador_project.JobEdit">
+        <t t-set="E" t-value="state.jedit"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-briefcase"/><t t-esc="state.jobId ? 'Edit job' : 'New job'"/></div>
+            <div class="o_pp_formgrid">
+                <label class="wide">Job name<input class="form-control" t-att-value="E.name" t-on-change="(ev) => this.setJ('name', ev.target.value)" placeholder="e.g. G+4 residential building, Bole"/></label>
+                <label class="position-relative">Customer<input class="form-control" t-att-value="E.partner" t-on-input="(ev) => this.findCust(ev.target.value)" placeholder="type a name"/>
+                    <div t-if="state.custHits.length" class="o_pj_hits"><div t-foreach="state.custHits" t-as="c" t-key="c.id" t-on-click="() => this.pickCust(c)" t-esc="c.name"/></div></label>
+                <label>Type<select class="form-select" t-on-change="(ev) => this.setJ('kind', ev.target.value)"><option t-foreach="ctx.kinds" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="E.kind === k.id" t-esc="k.name"/></select></label>
+                <label>Status<select class="form-select" t-on-change="(ev) => this.setJ('state', ev.target.value)"><option t-foreach="ctx.states" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="E.state === k.id" t-esc="k.name"/></select></label>
+                <label>Project manager<select class="form-select" t-on-change="(ev) => this.setJ('manager_id', ev.target.value)"><option value="">—</option>
+                    <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == E.manager_id" t-esc="p.name"/></select></label>
+                <label>Site / location<input class="form-control" t-att-value="E.site" t-on-change="(ev) => this.setJ('site', ev.target.value)"/></label>
+                <label>Start<input type="date" class="form-control" t-att-value="E.date_start" t-on-change="(ev) => this.setJ('date_start', ev.target.value)"/></label>
+                <label>Planned finish<input type="date" class="form-control" t-att-value="E.date_end" t-on-change="(ev) => this.setJ('date_end', ev.target.value)"/></label>
+                <label>Contract value (excl. VAT)<input type="number" class="form-control" t-att-value="E.contract_value" t-on-change="(ev) => this.setJ('contract_value', ev.target.value)"/></label>
+                <label class="d-flex flex-row align-items-center gap-2 pt-4"><input type="checkbox" t-att-checked="E.vat" t-on-change="(ev) => this.setJ('vat', ev.target.checked)"/> Charge VAT (15%)</label>
+                <label t-if="E.kind === 'construction'">Retention %<input type="number" class="form-control" t-att-value="E.retention_pct" t-on-change="(ev) => this.setJ('retention_pct', ev.target.value)"/></label>
+                <label t-if="E.kind === 'construction' or E.kind === 'fixed'">Advance / mobilisation received<input type="number" class="form-control" t-att-value="E.advance_amount" t-on-change="(ev) => this.setJ('advance_amount', ev.target.value)"/></label>
+                <label t-if="E.kind === 'construction' or E.kind === 'fixed'">Advance recovered per bill %<input type="number" class="form-control" t-att-value="E.advance_recovery_pct" t-on-change="(ev) => this.setJ('advance_recovery_pct', ev.target.value)"/></label>
+                <label t-if="E.kind === 'tm'">Billing rate per hour<input type="number" class="form-control" t-att-value="E.bill_rate" t-on-change="(ev) => this.setJ('bill_rate', ev.target.value)"/></label>
+                <div class="wide small">Team (can log hours): <t t-foreach="ctx.people" t-as="p" t-key="p.id"><span t-att-class="'o_pj_tag ' + (E.member_ids.includes(p.id) ? 'on' : '')" t-on-click="() => this.toggleMember(p.id)" t-esc="p.name"/></t></div>
+                <label class="wide">Notes<textarea class="form-control" rows="2" t-att-value="E.description" t-on-change="(ev) => this.setJ('description', ev.target.value)"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveJob">Save</button><button class="btn btn-light border btn-sm" t-on-click="cancelJob">Cancel</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_project.Overview">
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>Contract</span><b t-esc="money(F.contract)"/><small>budget cost <t t-esc="money(F.budget)"/></small></div>
+            <div class="o_pp_kpi"><span>Cost to date</span><b t-esc="money(F.cost)"/><small><t t-esc="pctOf(F.cost, F.budget)"/>% of budget · <t t-esc="F.hours"/> h</small>
+                <div class="o_pj_bar"><div t-att-class="F.cost_rag" t-att-style="'width:' + pctOf(F.cost, F.budget) + '%'"/></div></div>
+            <div class="o_pp_kpi"><span>Forecast cost at completion</span><b t-att-class="F.budget and F.eac &gt; F.budget ? 'o_pp_badtxt' : ''" t-esc="money(F.eac)"/>
+                <small t-if="F.budget and F.eac &gt; F.budget">over budget by <t t-esc="money(F.eac - F.budget)"/></small></div>
+            <div class="o_pp_kpi"><span>Margin at completion</span><b t-att-class="F.margin_eac !== null and F.margin_eac &lt; 0 ? 'o_pp_badtxt' : 'o_pp_good'" t-esc="money(F.margin_eac)"/><small t-if="F.margin_pct !== null"><t t-esc="F.margin_pct"/>%</small></div>
+            <div class="o_pp_kpi"><span>Complete</span><b t-esc="F.pct === null ? 'T&amp;M' : F.pct + '%'"/><small t-esc="J.kind === 'construction' ? 'certified ÷ contract' : 'cost ÷ budget'"/></div>
+            <div class="o_pp_kpi"><span>Certified / billed</span><b t-esc="money(F.certified)"/><small>over/under <t t-esc="money(F.over_under)"/></small></div>
+            <div t-if="J.kind === 'construction'" class="o_pp_kpi"><span>Retention held</span><b t-esc="money(F.retention)"/><small>advance left to recover <t t-esc="money(F.advance_left)"/></small></div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-bar-chart"/>Budget, actual and forecast by cost code</div>
+                <div class="p-3"><SbChart t-if="F.by_code.length" type="'bar'" labels="costChart.labels" series="costChart.series" height="240"/><div t-else="" class="o_pp_empty">Enter a budget and tag costs with this job.</div></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-table"/>By cost code</div>
+                <table class="o_pp_table"><thead><tr><th>Cost code</th><th class="text-end">Budget</th><th class="text-end">Actual</th><th class="text-end">Forecast</th><th class="text-end">Variance</th></tr></thead>
+                    <tbody><tr t-foreach="F.by_code" t-as="c" t-key="c.id"><td t-esc="c.name"/><td class="text-end" t-esc="money(c.budget)"/><td class="text-end" t-esc="money(c.actual)"/>
+                        <td class="text-end" t-esc="money(c.eac)"/><td class="text-end" t-att-class="c.eac &gt; c.budget ? 'o_pp_badtxt' : 'o_pp_good'" t-esc="money(c.budget - c.eac)"/></tr>
+                        <tr class="fw-bold"><td>Total</td><td class="text-end" t-esc="money(F.budget)"/><td class="text-end" t-esc="money(F.cost)"/><td class="text-end" t-esc="money(F.eac)"/><td class="text-end" t-esc="money(F.budget - F.eac)"/></tr></tbody></table></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_project.Plan">
+        <div class="o_pp_toolbar"><span class="small text-muted">Tasks by status: tap a status under a task to move it.</span>
+            <button t-if="J.can_edit" class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.editPhase()"><i class="fa fa-plus me-1"/>Phase</button>
+            <button t-if="J.can_edit" class="btn btn-primary btn-sm" t-on-click="() => this.editTask()"><i class="fa fa-plus me-1"/>Task</button></div>
+        <div t-if="state.phaseEdit" class="o_pp_card o_pp_panel mb-3"><div class="o_pp_formgrid">
+            <label>Phase<input class="form-control" t-att-value="state.phaseEdit.name" t-on-change="(ev) => this.state.phaseEdit.name = ev.target.value"/></label>
+            <label>Start<input type="date" class="form-control" t-att-value="state.phaseEdit.start" t-on-change="(ev) => this.state.phaseEdit.start = ev.target.value"/></label>
+            <label>End<input type="date" class="form-control" t-att-value="state.phaseEdit.end" t-on-change="(ev) => this.state.phaseEdit.end = ev.target.value"/></label>
+            <label>% complete<input type="number" class="form-control" t-att-value="state.phaseEdit.progress" t-on-change="(ev) => this.state.phaseEdit.progress = ev.target.value"/></label></div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="savePhase">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.phaseEdit = null">Cancel</button>
+                <button t-if="state.phaseEdit.id" class="btn btn-link btn-sm text-danger ms-auto" t-on-click="() => this.removePhase(state.phaseEdit)">Remove phase</button></div></div>
+        <div t-if="state.taskEdit" class="o_pp_card o_pp_panel mb-3"><t t-set="T" t-value="state.taskEdit"/><div class="o_pp_formgrid">
+            <label class="wide">Task<input class="form-control" t-att-value="T.name" t-on-change="(ev) => this.setT('name', ev.target.value)"/></label>
+            <label>Phase<select class="form-select" t-on-change="(ev) => this.setT('phase_id', ev.target.value)"><option value="">—</option>
+                <option t-foreach="J.phases" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == T.phase_id" t-esc="p.name"/></select></label>
+            <label>Assigned to<select class="form-select" t-on-change="(ev) => this.setT('employee_id', ev.target.value)"><option value="">—</option>
+                <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == T.employee_id" t-esc="p.name"/></select></label>
+            <label>Start<input type="date" class="form-control" t-att-value="T.start" t-on-change="(ev) => this.setT('start', ev.target.value)"/></label>
+            <label>Due<input type="date" class="form-control" t-att-value="T.due" t-on-change="(ev) => this.setT('due', ev.target.value)"/></label>
+            <label>Planned hours<input type="number" class="form-control" t-att-value="T.hours" t-on-change="(ev) => this.setT('hours', ev.target.value)"/></label>
+            <label class="d-flex flex-row align-items-center gap-2 pt-4"><input type="checkbox" t-att-checked="T.milestone" t-on-change="(ev) => this.setT('milestone', ev.target.checked)"/> Milestone</label>
+            <label class="wide">Details<textarea class="form-control" rows="2" t-att-value="T.description" t-on-change="(ev) => this.setT('description', ev.target.value)"/></label></div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveTask">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.taskEdit = null">Cancel</button>
+                <button t-if="T.id and J.can_edit" class="btn btn-link btn-sm text-danger ms-auto" t-on-click="() => this.removeTask(T)">Remove task</button></div></div>
+        <div class="o_pj_board">
+            <div t-foreach="['todo', 'doing', 'blocked', 'done']" t-as="st" t-key="st" t-att-class="'o_pj_col ' + st">
+                <div class="o_pj_colhead"><b t-esc="taskLabel(st)"/><span class="ms-auto small text-muted" t-esc="tasksIn(st).length"/></div>
+                <div t-foreach="tasksIn(st)" t-as="t" t-key="t.id" t-att-class="'o_pj_task ' + (t.late ? 'late' : '')">
+                    <div class="d-flex gap-1"><b class="me-auto o_pj_click" t-on-click="() => this.editTask(t)" t-esc="t.name"/><i t-if="t.milestone" class="fa fa-flag text-warning" title="Milestone"/></div>
+                    <div class="small text-muted"><t t-esc="t.phase"/><t t-if="t.employee"> · <t t-esc="t.employee"/></t><t t-if="t.due_ec"> · due <t t-esc="t.due_ec"/></t></div>
+                    <div class="o_pj_moves"><button t-foreach="['todo', 'doing', 'blocked', 'done']" t-as="s2" t-key="s2" t-if="s2 !== st" t-on-click="() => this.moveTask(t, s2)" t-esc="taskLabel(s2)"/></div>
+                </div>
+            </div>
+        </div>
+        <div class="o_pp_card mt-3"><div class="o_pp_card_head"><i class="fa fa-sitemap"/>Phases</div>
+            <div t-foreach="J.phases" t-as="p" t-key="p.id" class="o_pp_li"><b t-esc="p.name"/><span class="small text-muted"><t t-esc="p.start_ec"/> – <t t-esc="p.end_ec"/></span>
+                <div class="o_pj_bar ms-auto" style="width:8rem"><div t-att-style="'width:' + p.progress + '%'"/></div><span class="small" t-esc="p.progress + '%'"/>
+                <button t-if="J.can_edit" class="btn btn-link btn-sm p-0" t-on-click="() => this.editPhase(p)"><i class="fa fa-pencil"/></button></div>
+            <div t-if="!J.phases.length" class="o_pp_empty">No phases.</div></div>
+    </t>
+
+    <t t-name="sonador_project.Budget">
+        <div class="o_pp_toolbar"><span class="small text-muted">Budgeted cost by phase and cost code. Actual costs come from the books (tag lines with this job).</span>
+            <t t-if="J.can_edit"><button class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.template('budget')"><i class="fa fa-download me-1"/>Template</button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.pickExcel('budget')"><i class="fa fa-upload me-1"/>Import Excel</button></t></div>
+        <div class="o_pp_card o_pj_wrap">
+            <table class="o_pp_table o_pj_grid"><thead><tr><th>Phase</th><th>Cost code</th><th>Description</th><th class="text-end">Qty</th><th>Unit</th><th class="text-end">Rate</th><th class="text-end">Amount</th><th/></tr></thead>
+                <tbody><tr t-foreach="state.budget" t-as="b" t-key="b_index">
+                    <td><select class="form-select form-select-sm" t-att-disabled="!J.can_edit" t-on-change="(ev) => this.setB(b, 'phase_id', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="J.phases" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == b.phase_id" t-esc="p.name"/></select></td>
+                    <td><select class="form-select form-select-sm" t-att-disabled="!J.can_edit" t-on-change="(ev) => this.setB(b, 'cost_code_id', ev.target.value)">
+                        <option t-foreach="ctx.cost_codes" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="c.id == b.cost_code_id"><t t-esc="c.code"/> <t t-esc="c.name"/></option></select></td>
+                    <td><input class="form-control form-control-sm" t-att-disabled="!J.can_edit" t-att-value="b.name" t-on-change="(ev) => this.setB(b, 'name', ev.target.value)"/></td>
+                    <td><input type="number" class="form-control form-control-sm text-end" t-att-disabled="!J.can_edit" t-att-value="b.qty" t-on-change="(ev) => this.setB(b, 'qty', ev.target.value)"/></td>
+                    <td><input class="form-control form-control-sm" style="width:5rem" t-att-disabled="!J.can_edit" t-att-value="b.unit" t-on-change="(ev) => this.setB(b, 'unit', ev.target.value)"/></td>
+                    <td><input type="number" class="form-control form-control-sm text-end" t-att-disabled="!J.can_edit" t-att-value="b.rate" t-on-change="(ev) => this.setB(b, 'rate', ev.target.value)"/></td>
+                    <td class="text-end" t-esc="money(b.amount)"/>
+                    <td><button t-if="J.can_edit" class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.removeRow('budget', b_index)"><i class="fa fa-trash-o"/></button></td>
+                </tr><tr class="fw-bold"><td colspan="6">Total budget</td><td class="text-end" t-esc="money(budgetTotal)"/><td/></tr></tbody></table>
+            <div t-if="J.can_edit" class="o_pp_panel_foot"><button class="btn btn-light border btn-sm" t-on-click="addBudget"><i class="fa fa-plus me-1"/>Line</button>
+                <button class="btn btn-primary btn-sm ms-auto" t-on-click="saveBudget">Save budget</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_project.Boq">
+        <div class="o_pp_toolbar"><span class="small text-muted">The priced bill of quantities of the contract. Payment certificates measure against it.</span>
+            <t t-if="J.can_edit"><button class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.template('boq')"><i class="fa fa-download me-1"/>Template</button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.pickExcel('boq')"><i class="fa fa-upload me-1"/>Import Excel BOQ</button></t></div>
+        <div class="o_pp_card o_pj_wrap">
+            <table class="o_pp_table o_pj_grid"><thead><tr><th>Section</th><th style="width:5rem">Item</th><th>Description</th><th style="width:5rem">Unit</th><th class="text-end" style="width:7rem">Qty</th><th class="text-end" style="width:8rem">Rate</th>
+                <th class="text-end">Amount</th><th class="text-end">Done</th><th/></tr></thead>
+                <tbody><tr t-foreach="state.boq" t-as="b" t-key="b_index">
+                    <td><input class="form-control form-control-sm" t-att-disabled="!J.can_edit" t-att-value="b.section" t-on-change="(ev) => this.setQ(b, 'section', ev.target.value)"/></td>
+                    <td><input class="form-control form-control-sm" t-att-disabled="!J.can_edit" t-att-value="b.item_no" t-on-change="(ev) => this.setQ(b, 'item_no', ev.target.value)"/></td>
+                    <td><input class="form-control form-control-sm" t-att-disabled="!J.can_edit" t-att-value="b.name" t-on-change="(ev) => this.setQ(b, 'name', ev.target.value)"/></td>
+                    <td><input class="form-control form-control-sm" t-att-disabled="!J.can_edit" t-att-value="b.unit" t-on-change="(ev) => this.setQ(b, 'unit', ev.target.value)"/></td>
+                    <td><input type="number" class="form-control form-control-sm text-end" t-att-disabled="!J.can_edit" t-att-value="b.qty" t-on-change="(ev) => this.setQ(b, 'qty', ev.target.value)"/></td>
+                    <td><input type="number" class="form-control form-control-sm text-end" t-att-disabled="!J.can_edit" t-att-value="b.rate" t-on-change="(ev) => this.setQ(b, 'rate', ev.target.value)"/></td>
+                    <td class="text-end" t-esc="money(b.amount)"/>
+                    <td class="text-end small"><t t-esc="num(b.done)"/><div class="text-muted" t-if="b.pct"><t t-esc="b.pct"/>%</div></td>
+                    <td><button t-if="J.can_edit and !b.done" class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.removeRow('boq', b_index)"><i class="fa fa-trash-o"/></button></td>
+                </tr><tr class="fw-bold"><td colspan="6">Contract sum (excl. VAT)</td><td class="text-end" t-esc="money(boqTotal)"/><td colspan="2"/></tr></tbody></table>
+            <div t-if="J.can_edit" class="o_pp_panel_foot"><button class="btn btn-light border btn-sm" t-on-click="addBoq"><i class="fa fa-plus me-1"/>Item</button>
+                <button class="btn btn-primary btn-sm ms-auto" t-on-click="saveBoq">Save BOQ</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_project.Billing">
+        <div class="o_pp_toolbar" t-if="J.can_edit">
+            <button t-if="J.kind === 'construction'" class="btn btn-primary btn-sm" t-on-click="() => this.newBill('ipc')"><i class="fa fa-plus me-1"/>Payment certificate (IPC)</button>
+            <button t-if="J.kind === 'tm'" class="btn btn-primary btn-sm" t-on-click="() => this.newBill('tm')"><i class="fa fa-plus me-1"/>Bill approved hours</button>
+            <button t-if="J.kind !== 'tm'" class="btn btn-light border btn-sm" t-on-click="() => this.newBill('milestone')"><i class="fa fa-plus me-1"/>Progress / milestone invoice</button>
+            <button t-if="F.retention &gt; 0" class="btn btn-light border btn-sm" t-on-click="() => this.newBill('retention')"><i class="fa fa-unlock me-1"/>Release retention (<t t-esc="money(F.retention)"/>)</button>
+        </div>
+        <t t-if="state.bill" t-call="sonador_project.Bill"/>
+        <div class="o_pp_card">
+            <table class="o_pp_table"><thead><tr><th>No.</th><th>Date</th><th>Description</th><th class="text-end">Gross</th><th class="text-end">Retention</th><th class="text-end">Advance rec.</th><th class="text-end">VAT</th><th class="text-end">Total due</th><th>Status</th><th/></tr></thead>
+                <tbody><tr t-foreach="J.bills" t-as="b" t-key="b.id">
+                    <td><b class="o_pj_click" t-on-click="() => this.openBill(b)" t-esc="b.number"/><div class="small text-muted" t-esc="billLabel(b.kind)"/></td><td class="small" t-esc="b.ec"/><td class="small" t-esc="b.name"/>
+                    <td class="text-end" t-esc="money(b.gross)"/><td class="text-end" t-esc="money(b.retention)"/><td class="text-end" t-esc="money(b.recovery)"/><td class="text-end" t-esc="money(b.vat)"/>
+                    <td class="text-end"><b t-esc="money(b.total)"/></td>
+                    <td><span t-att-class="'o_pj_st ' + b.state" t-esc="b.state"/><div t-if="b.voucher" class="small"><a href="#" t-on-click.prevent="() => this.openVoucher(b.voucher)" t-esc="b.voucher.name or 'draft invoice'"/></div></td>
+                    <td><button t-if="J.can_edit and b.state !== 'invoiced'" class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.deleteBill(b)"><i class="fa fa-trash-o"/></button></td>
+                </tr><tr t-if="!J.bills.length"><td colspan="10" class="o_pp_empty">Nothing billed yet.</td></tr></tbody></table>
+        </div>
+    </t>
+
+    <t t-name="sonador_project.Bill">
+        <t t-set="B" t-value="state.bill"/>
+        <div class="o_pp_card o_pp_panel mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-file-text-o"/><t t-esc="B.number"/> · <t t-esc="billLabel(B.kind)"/><span t-att-class="'o_pj_st ms-2 ' + B.state" t-esc="B.state"/>
+                <button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.state.bill = null"><i class="fa fa-times"/></button></div>
+            <div class="p-3">
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <input class="form-control form-control-sm" style="max-width:28rem" t-att-disabled="B.state !== 'draft'" t-att-value="B.name" t-on-change="(ev) => B.name = ev.target.value"/>
+                    <input type="date" class="form-control form-control-sm w-auto" t-att-disabled="B.state !== 'draft'" t-att-value="B.date" t-on-change="(ev) => B.date = ev.target.value"/>
+                    <label t-if="B.kind === 'milestone'" class="d-flex align-items-center gap-1 m-0 small">Amount (excl. VAT)<input type="number" class="form-control form-control-sm" style="width:10rem" t-att-disabled="B.state !== 'draft'" t-att-value="B.gross" t-on-change="(ev) => B.gross = ev.target.value"/></label>
+                </div>
+                <table t-if="B.kind === 'ipc'" class="o_pp_table o_pj_ipc"><thead><tr><th>Item</th><th>Unit</th><th class="text-end">Contract qty</th><th class="text-end">Rate</th><th class="text-end">Before</th><th class="text-end" style="width:9rem">Measured to date</th><th class="text-end">This period</th><th class="text-end">Amount this period</th></tr></thead>
+                    <tbody><tr t-foreach="B.lines" t-as="l" t-key="l.id"><td class="small" t-esc="l.name"/><td class="small" t-esc="l.unit"/><td class="text-end" t-esc="num(l.contract_qty)"/><td class="text-end" t-esc="num(l.rate)"/>
+                        <td class="text-end" t-esc="num(l.prev, 3)"/>
+                        <td><input type="number" step="any" class="form-control form-control-sm text-end" t-att-disabled="B.state !== 'draft'" t-att-value="l.to_date" t-on-change="(ev) => this.setBillLine(l, ev.target.value)"/></td>
+                        <td class="text-end" t-esc="num(l.this, 3)"/><td class="text-end" t-esc="money(l.amount_this)"/></tr></tbody></table>
+                <div t-if="B.kind === 'tm'" class="small mb-2"><t t-esc="B.hours"/> approved hours.</div>
+                <div class="o_pj_calc">
+                    <div t-if="B.kind === 'ipc'"><span>Work done to date</span><b t-esc="money(B.gross_to_date)"/></div>
+                    <div t-if="B.kind === 'ipc'"><span>Less certified before</span><b t-esc="money(B.prev_gross)"/></div>
+                    <div><span>This bill (gross)</span><b t-esc="money(B.gross)"/></div>
+                    <div t-if="B.retention"><span>Less retention</span><b>(<t t-esc="money(B.retention)"/>)</b></div>
+                    <div t-if="B.recovery"><span>Less advance recovery</span><b>(<t t-esc="money(B.recovery)"/>)</b></div>
+                    <div><span>Amount due before VAT</span><b t-esc="money(B.net)"/></div>
+                    <div><span>VAT 15% (on <t t-esc="ctx.vat_on === 'net' ? 'amount due' : 'gross'"/>)</span><b t-esc="money(B.vat)"/></div>
+                    <div class="total"><span>Total due</span><b t-esc="money(B.total)"/></div>
+                </div>
+                <div t-if="B.state === 'draft'" class="d-flex gap-2 mt-2"><button class="btn btn-light border btn-sm" t-on-click="saveBill">Recalculate</button>
+                    <button class="btn btn-primary btn-sm" t-on-click="approveBill"><i class="fa fa-check me-1"/>Approve and make the invoice</button></div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_project.Costs">
+        <div class="o_pp_toolbar"><span class="small text-muted">Everything posted in the books with this job, store issues to it, and approved hours. Click a line to open the voucher.</span></div>
+        <div class="o_pp_card o_pj_wrap">
+            <table class="o_pp_table"><thead><tr><th>Date</th><th>Voucher</th><th>Type</th><th>Who</th><th>What</th><th>Cost code</th><th class="text-end">Cost</th><th class="text-end">Revenue</th></tr></thead>
+                <tbody><tr t-foreach="J.ledger" t-as="l" t-key="l_index" class="o_pj_click" t-on-click="() => this.openLedger(l)">
+                    <td class="small" t-esc="l.ec"/><td class="small" t-esc="l.ref"/><td class="small" t-esc="l.type"/><td class="small" t-esc="l.who"/><td class="small" t-esc="l.what"/><td class="small" t-esc="l.code"/>
+                    <td class="text-end" t-esc="l.cost ? money(l.cost) : ''"/><td class="text-end" t-esc="l.revenue ? money(l.revenue) : ''"/></tr>
+                    <tr t-if="!J.ledger.length"><td colspan="8" class="o_pp_empty">No costs yet. In Accounting, pick this job on bill, payment or store-issue lines.</td></tr></tbody></table>
+        </div>
+    </t>
+
+    <t t-name="sonador_project.Subs">
+        <div class="o_pp_toolbar"><span class="small text-muted">Subcontract agreements; billed comes from posted vendor bills of the subcontractor tagged with this job.</span>
+            <button t-if="J.can_edit" class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.editSub()"><i class="fa fa-plus me-1"/>Subcontract</button></div>
+        <div t-if="state.subEdit" class="o_pp_card o_pp_panel mb-3"><t t-set="S" t-value="state.subEdit"/><div class="o_pp_formgrid">
+            <label class="position-relative">Subcontractor<input class="form-control" t-att-value="S.partner" t-on-input="(ev) => this.findSub(ev.target.value)"/>
+                <div t-if="state.custHits.length" class="o_pj_hits"><div t-foreach="state.custHits" t-as="c" t-key="c.id" t-on-click="() => this.pickSub(c)" t-esc="c.name"/></div></label>
+            <label class="wide">Scope<input class="form-control" t-att-value="S.name" t-on-change="(ev) => S.name = ev.target.value"/></label>
+            <label>Agreed value<input type="number" class="form-control" t-att-value="S.value" t-on-change="(ev) => S.value = ev.target.value"/></label>
+            <label>Retention %<input type="number" class="form-control" t-att-value="S.retention_pct" t-on-change="(ev) => S.retention_pct = ev.target.value"/></label>
+            <label>Phase<select class="form-select" t-on-change="(ev) => S.phase_id = ev.target.value"><option value="">—</option><option t-foreach="J.phases" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == S.phase_id" t-esc="p.name"/></select></label></div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveSub">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.subEdit = null">Cancel</button></div></div>
+        <div class="o_pp_card"><table class="o_pp_table"><thead><tr><th>Subcontractor</th><th>Scope</th><th class="text-end">Agreed</th><th class="text-end">Billed</th><th class="text-end">Left</th><th class="text-end">Retention %</th><th/></tr></thead>
+            <tbody><tr t-foreach="J.subs" t-as="s" t-key="s.id"><td><b t-esc="s.partner"/></td><td t-esc="s.name"/><td class="text-end" t-esc="money(s.value)"/><td class="text-end" t-esc="money(s.billed)"/>
+                <td class="text-end" t-att-class="s.left &lt; 0 ? 'o_pp_badtxt' : ''" t-esc="money(s.left)"/><td class="text-end" t-esc="s.retention_pct"/>
+                <td><button t-if="J.can_edit" class="btn btn-link btn-sm p-0" t-on-click="() => this.editSub(s)"><i class="fa fa-pencil"/></button></td></tr>
+                <tr t-if="!J.subs.length"><td colspan="7" class="o_pp_empty">No subcontracts.</td></tr></tbody></table></div>
+    </t>
+
+    <t t-name="sonador_project.Team">
+        <div class="o_pp_card" style="max-width:36rem"><div class="o_pp_card_head"><i class="fa fa-users"/>Approved hours by person</div>
+            <div t-foreach="J.hours" t-as="h" t-key="h_index" class="o_pp_li"><span t-esc="h.name"/><b class="ms-auto"><t t-esc="h.hours"/> h</b></div>
+            <div t-if="!J.hours.length" class="o_pp_empty">No approved hours yet.</div></div>
+    </t>
+
+    <!-- ============================================================ timesheet -->
+    <t t-name="sonador_project.Timesheet">
+        <t t-set="W" t-value="state.ts"/>
+        <div t-if="W.no_person" class="o_pp_card p-4">Your login is not linked to a person in People, so you have no timesheet. HR links it on your profile in People (Login card).</div>
+        <t t-else="">
+        <div class="o_pp_toolbar">
+            <div class="btn-group"><button class="btn btn-light border btn-sm" t-on-click="() => this.shiftWeek(-1)"><i class="fa fa-chevron-left"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftWeek(1)"><i class="fa fa-chevron-right"/></button></div>
+            <b t-esc="W.label"/><span class="small text-muted"><t t-esc="W.employee.name"/></span>
+            <b class="ms-auto"><t t-esc="num(weekTotal, 2)"/> h</b>
+        </div>
+        <div class="o_pp_card o_pj_wrap">
+            <table class="o_pp_table o_pj_ts"><thead><tr><th>Job</th><th>Task</th><th t-foreach="W.days" t-as="d" t-key="d.date" class="text-center"><t t-esc="d.name"/><div class="small fw-normal" t-esc="d.ec"/></th><th class="text-end">Total</th></tr></thead>
+                <tbody><tr t-foreach="state.tsRows" t-as="r" t-key="r_index">
+                    <td><select class="form-select form-select-sm" t-on-change="(ev) => this.setTsRow(r, 'job_id', ev.target.value)"><option value="">Choose…</option>
+                        <option t-foreach="W.jobs" t-as="j" t-key="j.id" t-att-value="j.id" t-att-selected="j.id == r.job_id" t-esc="j.name"/></select></td>
+                    <td><select class="form-select form-select-sm" t-on-change="(ev) => this.setTsRow(r, 'task_id', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="tasksOf(r.job_id)" t-as="t" t-key="t.id" t-att-value="t.id" t-att-selected="t.id == r.task_id" t-esc="t.name"/></select></td>
+                    <td t-foreach="W.days" t-as="d" t-key="d.date"><input type="number" step="0.25" min="0" max="16" t-att-class="'form-control form-control-sm text-center o_pj_h ' + ((r.states or {})[d.date] or '')"
+                        t-att-disabled="cellLocked(r, d.date)" t-att-value="r.hours[d.date] or ''" t-on-change="(ev) => this.setTs(r, d.date, ev.target.value)"/></td>
+                    <td class="text-end"><b t-esc="num(rowTotal(r), 2)"/></td>
+                </tr>
+                <tr class="fw-bold"><td colspan="2">Day total</td><td t-foreach="W.days" t-as="d" t-key="d.date" class="text-center" t-esc="num(dayTotal(d.date), 2)"/><td class="text-end" t-esc="num(weekTotal, 2)"/></tr></tbody></table>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border btn-sm" t-on-click="addTsRow"><i class="fa fa-plus me-1"/>Row</button>
+                <span class="small text-muted">Grey cells are sent or approved.</span>
+                <button class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.saveTs(false)">Save</button>
+                <button class="btn btn-primary btn-sm" t-on-click="() => this.saveTs(true)"><i class="fa fa-paper-plane me-1"/>Send week for approval</button></div>
+        </div>
+        <div t-if="!W.jobs.length" class="small text-muted mt-2">You are not on any running job's team yet: ask the project manager to add you.</div>
+        </t>
+    </t>
+
+    <t t-name="sonador_project.Approvals">
+        <div class="o_pp_toolbar"><span class="small text-muted">Hours waiting for you (project manager), by person and job.</span>
+            <input class="form-control form-control-sm ms-auto" style="max-width:20rem" placeholder="Reason when sending back" t-att-value="state.rejectNote" t-on-change="(ev) => this.state.rejectNote = ev.target.value"/></div>
+        <div t-foreach="state.appr" t-as="g" t-key="g_index" class="o_pp_card mb-2">
+            <div class="o_pp_card_head"><b t-esc="g.employee"/> · <t t-esc="g.job"/><b class="ms-auto"><t t-esc="num(g.hours, 2)"/> h</b>
+                <button class="btn btn-light border btn-sm ms-2" t-on-click="() => this.decide(g, false)">Send back</button>
+                <button class="btn btn-primary btn-sm" t-on-click="() => this.decide(g, true)"><i class="fa fa-check me-1"/>Approve</button></div>
+            <div t-foreach="g.lines" t-as="l" t-key="l_index" class="o_pp_li small"><span t-esc="l.date"/><span t-esc="l.task"/><span class="text-muted" t-esc="l.note"/><b class="ms-auto"><t t-esc="l.hours"/> h</b></div>
+        </div>
+        <div t-if="!state.appr.length" class="o_pp_card p-4 text-muted">Nothing waiting.</div>
+    </t>
+
+    <!-- ============================================================ settings -->
+    <t t-name="sonador_project.Settings">
+        <t t-set="S" t-value="state.set"/>
+        <div class="o_pp_grid">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-book"/>Accounts for job billing</div>
+                <div class="o_pp_fields">
+                    <label><span>Job revenue</span><select class="form-select form-select-sm w-auto" style="max-width:20rem" t-on-change="(ev) => this.setS('income', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="S.income_accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == S.income" t-esc="a.name"/></select></label>
+                    <label><span>Retention receivable</span><select class="form-select form-select-sm w-auto" style="max-width:20rem" t-on-change="(ev) => this.setS('retention', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="S.retention_accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == S.retention" t-esc="a.name"/></select></label>
+                    <label><span>Customer advances (mobilisation)</span><select class="form-select form-select-sm w-auto" style="max-width:20rem" t-on-change="(ev) => this.setS('advance', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="S.advance_accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == S.advance" t-esc="a.name"/></select></label>
+                    <label><span>VAT on certificates</span><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setS('vat_on', ev.target.value)">
+                        <option value="net" t-att-selected="S.vat_on === 'net'">On the amount due (after deductions)</option><option value="gross" t-att-selected="S.vat_on === 'gross'">On the gross work certified</option></select></label>
+                </div>
+                <div class="o_pp_empty small">Confirm with your tax adviser how your contracts are taxed.</div>
+                <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveSettings">Save</button></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-tags"/>Cost codes<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.state.codeEdit = {id: false, code: '', name: '', kind: 'other'}"><i class="fa fa-plus"/> Code</button></div>
+                <div t-if="state.codeEdit" class="p-2 d-flex gap-2 border-bottom"><input class="form-control form-control-sm" style="width:6rem" placeholder="Code" t-att-value="state.codeEdit.code" t-on-change="(ev) => this.state.codeEdit.code = ev.target.value"/>
+                    <input class="form-control form-control-sm" placeholder="Name" t-att-value="state.codeEdit.name" t-on-change="(ev) => this.state.codeEdit.name = ev.target.value"/>
+                    <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.state.codeEdit.kind = ev.target.value"><option t-foreach="ctx.cost_kinds" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="k.id === state.codeEdit.kind" t-esc="k.name"/></select>
+                    <button class="btn btn-primary btn-sm" t-on-click="saveCode">Save</button></div>
+                <div t-foreach="S.codes" t-as="c" t-key="c.id" class="o_pp_li"><b t-esc="c.code"/><span t-esc="c.name"/><span class="small text-muted ms-auto" t-esc="c.kind"/>
+                    <button class="btn btn-link btn-sm p-0" t-on-click="() => this.state.codeEdit = {id: c.id, code: c.code, name: c.name, kind: c.kind}"><i class="fa fa-pencil"/></button></div></div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,10 @@
+# Local only (not on the server): a mail catcher, so sign-up emails can be read at http://localhost:8025 instead of being sent.
+services:
+  mail:
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+  odoo:
+    volumes:
+      - ./queue:/var/lib/unio-queue

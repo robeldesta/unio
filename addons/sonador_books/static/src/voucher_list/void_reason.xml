@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.VoidReasonDialog">
+        <Dialog title="props.title" size="'md'">
+            <p t-if="props.body" class="mb-3" t-esc="props.body"/>
+            <label class="form-label fw-bold" for="sb_void_reason_input">Reason for voiding</label>
+            <textarea id="sb_void_reason_input" t-ref="reason" class="form-control" rows="2" t-model="state.reason"
+                      t-att-class="{'is-invalid': state.tried and !ok}" t-on-keydown="onKeydown"
+                      placeholder="e.g. entered twice, wrong supplier, wrong amount" autofocus="autofocus"/>
+            <div t-if="state.tried and !ok" class="invalid-feedback d-block">Write why it is voided (a few words): it is kept in the history.</div>
+            <t t-set-slot="footer">
+                <button class="btn btn-danger" t-on-click="onConfirm">Void</button>
+                <button class="btn btn-secondary" t-on-click="props.close">Cancel</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

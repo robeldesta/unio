@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_exit_user,exit user,model_sb_exit,base.group_user,1,0,0,0
+access_exit_line_user,exit line user,model_sb_exit_line,base.group_user,1,0,0,0
+access_item_user,item user,model_sb_people_item,base.group_user,1,0,0,0
+access_exit_hr,exit hr,model_sb_exit,sonador_books.group_sb_hr,1,1,1,0
+access_exit_line_hr,exit line hr,model_sb_exit_line,sonador_books.group_sb_hr,1,1,1,1
+access_item_hr,item hr,model_sb_people_item,sonador_books.group_sb_hr,1,1,1,1

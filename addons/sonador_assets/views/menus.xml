@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_fixed_assets" model="ir.actions.client">
+        <field name="name">Fixed Assets</field>
+        <field name="tag">sonador_assets.app</field>
+    </record>
+    <record id="sonador_books.menu_sb_assets" model="ir.ui.menu">
+        <field name="action" ref="action_fixed_assets"/>
+        <field name="group_ids" eval="[(6, 0, [ref('sonador_books.group_sb_accountant')])]"/>
+    </record>
+</odoo>

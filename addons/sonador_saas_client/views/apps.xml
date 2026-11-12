@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_apps" model="ir.actions.client">
+        <field name="name">Apps</field>
+        <field name="tag">sonador_saas_client.apps</field>
+    </record>
+    <menuitem id="menu_apps" name="Apps" action="action_apps" web_icon="sonador_saas_client,static/description/apps.png"
+              groups="base.group_erp_manager" sequence="500"/>
+    <record id="action_refer" model="ir.actions.client">
+        <field name="name">Refer a business</field>
+        <field name="tag">sonador_saas_client.refer</field>
+    </record>
+    <menuitem id="menu_refer" name="Refer &amp; earn" parent="base.menu_administration" action="action_refer" groups="base.group_erp_manager" sequence="1"/>
+</odoo>

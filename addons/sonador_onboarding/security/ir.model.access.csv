@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_tpl_hr,tpl,model_sb_journey_template,sonador_books.group_sb_hr,1,1,1,1
+access_tpltask_hr,tpltask,model_sb_journey_template_task,sonador_books.group_sb_hr,1,1,1,1
+access_journey_hr,journey,model_sb_journey,sonador_books.group_sb_hr,1,1,1,1
+access_task_hr,task,model_sb_journey_task,sonador_books.group_sb_hr,1,1,1,1
+access_policy_user,policy,model_sb_policy,base.group_user,1,0,0,0
+access_policy_hr,policy hr,model_sb_policy,sonador_books.group_sb_hr,1,1,1,1
+access_ack_hr,ack,model_sb_policy_ack,sonador_books.group_sb_hr,1,1,1,1

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_sale_document_efris" inherit_id="sonador_books.report_sale_document">
+        <!-- issued in the URA portal: the tax invoice is the EFRIS e-invoice; ours refers to it -->
+        <xpath expr="//t[@t-set='title']" position="after">
+            <t t-if="v.company_id.sb_efris_mode == 'manual' and v.voucher_type in ('sale', 'cash_sale')"
+               t-set="title" t-value="'Invoice (cash sale)' if v.voucher_type == 'cash_sale' else 'Invoice'"/>
+        </xpath>
+        <xpath expr="//div[@id='sb_fiscal']" position="inside">
+            <table t-if="v.sb_efris_fdn" style="width:100%; background:#F5F7F8 !important; margin-bottom:4px">
+                <tr>
+                    <td style="padding:8px 10px; vertical-align:top; font-size:11px">
+                        <div style="font-size:9.5px; text-transform:uppercase; letter-spacing:1.5px; color:#888; margin-bottom:3px">URA EFRIS e-invoice</div>
+                        <div>Fiscal document no. <b style="color:#222" t-esc="v.sb_efris_fdn"/></div>
+                        <div t-if="v.sb_efris_code">Verification code <b style="color:#222" t-esc="v.sb_efris_code"/></div>
+                        <div t-if="v.sb_efris_test" style="color:#C0392B; font-weight:bold">TEST - NOT A FISCAL DOCUMENT</div>
+                    </td>
+                    <td t-if="v.sb_efris_qr_png" style="padding:6px; width:96px; text-align:right"><img t-att-src="'data:image/png;base64,%s' % v.sb_efris_qr_png.decode()" style="width:84px; height:84px"/></td>
+                </tr>
+            </table>
+            <div t-elif="v.sb_efris_state in ('waiting', 'error')" style="color:#C0392B; font-weight:bold">Not yet fiscalised with URA</div>
+            <div t-elif="v.sb_efris_state == 'manual'" style="color:#555">The tax invoice is the URA EFRIS e-invoice for this sale.</div>
+        </xpath>
+    </template>
+</odoo>

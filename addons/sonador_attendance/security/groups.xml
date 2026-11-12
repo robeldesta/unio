@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_kiosk" model="res.groups">
+        <field name="name">Attendance kiosk</field>
+        <field name="comment">A shared tablet login that may clock people in and out with their PIN.</field>
+    </record>
+    <record id="group_ot_clerk" model="res.groups">
+        <field name="name">Overtime sheet: upload</field>
+        <field name="comment">Sends the month's attendance for payroll: sees Days worked and the OT sheet, uploads the overtime sheet for HR to approve. Approves nothing.</field>
+    </record>
+</odoo>

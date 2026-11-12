@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_voucher_form_stock" model="ir.ui.view">
+        <field name="name">sb.voucher.form.stock</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='memo']" position="after">
+                <field name="sb_has_stock" invisible="1"/>
+                <field name="sb_warehouse_id"
+                       invisible="voucher_type not in ('cash_sale', 'sale', 'cash_purchase', 'bill', 'sale_return', 'purchase_return') or not sb_has_stock"
+                       readonly="state != 'draft'" options="{'no_create': True}"/>
+                <field name="sb_grn_id" invisible="voucher_type != 'bill'" readonly="state != 'draft'" options="{'no_create': True}"/>
+                <!-- stock documents: only for those who may open them (a petty cash keeper may not) -->
+                <field name="sb_landed_grn_ids" widget="many2many_tags" invisible="voucher_type not in ('bill', 'cash_purchase')" readonly="state != 'draft'"
+                       options="{'no_create': True}" placeholder="Freight, clearing or duty for these GRNs" groups="sonador_books.group_sb_auditor,sonador_inventory.group_sb_store_user"/>
+                <field name="sb_landed_basis" invisible="not sb_landed_grn_ids" readonly="state != 'draft'" groups="sonador_books.group_sb_auditor,sonador_inventory.group_sb_store_user"/>
+                <field name="sb_landed_voucher_id" invisible="not sb_landed_voucher_id"/>
+                <field name="sb_cogs" invisible="voucher_type not in ('cash_sale', 'sale') or not sb_cogs" groups="account.group_account_invoice"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

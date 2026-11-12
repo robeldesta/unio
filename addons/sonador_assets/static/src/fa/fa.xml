@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_assets.App">
+        <div class="o_pp o_fa o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.company"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-building-o me-2"/>Fixed assets</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="['list', 'asset'].includes(state.page) ? 'active' : ''" t-on-click="back"><i class="fa fa-list"/> Register</button>
+                        <button t-att-class="state.page === 'control' ? 'active' : ''" t-on-click="showControl"><i class="fa fa-balance-scale"/> Control</button>
+                        <button t-att-class="state.page === 'tax' ? 'active' : ''" t-on-click="showTax"><i class="fa fa-percent"/> Books vs tax</button>
+                        <button t-att-class="state.page === 'capitalise' ? 'active' : ''" t-on-click="showCap"><i class="fa fa-level-up"/> Capitalise past expenses</button>
+                        <button t-att-class="state.page === 'categories' ? 'active' : ''" t-on-click="() => this.state.page = 'categories'"><i class="fa fa-tags"/> Classes and settings</button>
+                    </nav>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'list' and state.data">
+                    <t t-set="T" t-value="state.data.totals"/>
+                    <div class="o_pp_kpis">
+                        <div class="o_pp_kpi"><span>Cost</span><b t-esc="money(T.cost)"/></div>
+                        <div class="o_pp_kpi"><span>Accumulated depreciation</span><b t-esc="money(T.depreciated)"/></div>
+                        <div class="o_pp_kpi"><span>Carrying amount</span><b t-esc="money(T.book_value)"/></div>
+                        <div class="o_pp_kpi"><span>Depreciation a month</span><b t-esc="money(T.monthly)"/><small t-if="ctx.last_run">last run <t t-esc="ctx.last_run"/></small><small t-else=""><t t-esc="ctx.frequencies.find((f) => f.id === ctx.frequency).name.toLowerCase()"/></small></div>
+                        <div t-if="T.expensed" class="o_pp_kpi"><span>Expensed when bought</span><b t-esc="money(T.expensed)"/><small>on the register, not in the books</small></div>
+                        <div class="o_pp_kpi"><span>To confirm</span><b t-att-class="T.to_confirm ? 'o_pp_badtxt' : ''" t-esc="T.to_confirm"/><small>from bills and projects</small></div>
+                    </div>
+                    <div class="o_pp_toolbar">
+                        <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setF('state', ev.target.value)"><option value="">All</option>
+                            <option value="draft">To confirm</option><option value="running">Depreciating</option><option value="done">Fully depreciated</option><option value="disposed">Disposed</option><option value="expensed">Expensed when bought</option></select>
+                        <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setF('category_id', ev.target.value)"><option value="">All categories</option>
+                            <option t-foreach="ctx.categories" t-as="c" t-key="c.id" t-att-value="c.id" t-esc="c.name"/></select>
+                        <input class="form-control form-control-sm o_pp_search" placeholder="Asset, code or serial" t-on-change="(ev) => this.setF('search', ev.target.value)"/>
+                        <button t-if="T.to_confirm" class="btn btn-light border btn-sm" t-on-click="confirmAll"><i class="fa fa-check me-1"/>Confirm all</button>
+                        <span class="ms-auto d-flex align-items-center gap-1 small" t-att-title="'Last period ended: ' + ctx.last_period">Depreciation to
+                            <input type="date" class="form-control form-control-sm w-auto" t-att-value="state.runMonth" t-on-change="(ev) => this.state.runMonth = ev.target.value"/>
+                            <button class="btn btn-primary btn-sm" t-on-click="run"><i class="fa fa-play me-1"/>Run</button></span>
+                        <button class="btn btn-light border btn-sm" t-on-click="newAsset"><i class="fa fa-plus me-1"/>Asset</button>
+                    </div>
+                    <div class="o_pp_card o_fa_wrap"><table class="o_pp_table">
+                        <thead><tr><th>Asset</th><th>Category</th><th>Acquired</th><th>Status</th><th class="text-end">Cost</th><th class="text-end">Depreciated</th><th class="text-end">Carrying</th><th class="text-end">A month</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="state.data.rows" t-as="r" t-key="r.id" class="o_fa_click" t-on-click="() => this.open(r.id)">
+                                <td><b t-esc="r.name"/><div class="small text-muted"><t t-esc="r.code"/><t t-if="r.serial"> · <t t-esc="r.serial"/></t><t t-if="r.source"> · <t t-esc="r.source"/></t></div></td>
+                                <td class="small" t-esc="r.category"/><td class="small" t-esc="r.acquired_ec"/>
+                                <td><span t-att-class="'o_fa_st ' + r.state" t-esc="stateLabel(r.state)"/></td>
+                                <td class="text-end" t-esc="money(r.cost)"/><td class="text-end" t-esc="money(r.depreciated)"/><td class="text-end"><b t-esc="money(r.book_value)"/></td>
+                                <td class="text-end small" t-esc="r.monthly ? money(r.monthly) : ''"/>
+                            </tr>
+                            <tr t-if="!state.data.rows.length"><td colspan="8" class="o_pp_empty">No assets. They appear when a bill is posted to a fixed-asset account, or add one.</td></tr>
+                        </tbody>
+                    </table></div>
+                </t>
+
+                <t t-if="state.page === 'asset'">
+                    <button class="btn btn-link btn-sm px-0 mb-2" t-on-click="back"><i class="fa fa-arrow-left me-1"/>Register</button>
+                    <t t-if="state.edit" t-call="sonador_assets.Edit"/>
+                    <t t-elif="state.asset">
+                        <t t-set="A" t-value="state.asset"/>
+                        <div class="d-flex flex-wrap align-items-start gap-2 mb-3">
+                            <div class="me-auto"><div class="small text-muted"><t t-esc="A.code"/> · <t t-esc="A.category"/> · <span t-att-class="'o_fa_st ' + A.state" t-esc="stateLabel(A.state)"/></div>
+                                <h2 class="m-0" t-esc="A.name"/>
+                                <div class="small"><t t-if="A.serial"><t t-esc="A.serial"/> · </t><t t-if="A.location"><t t-esc="A.location"/> · </t><t t-if="A.custodian">held by <t t-esc="A.custodian"/> · </t>
+                                    <t t-if="A.state === 'expensed'">expensed when bought</t>
+                                    <t t-else="" t-esc="A.method === 'straight' ? 'straight line over ' + A.life_months + ' months' : 'reducing balance at ' + A.rate + '% a year'"/>
+                                    <t t-if="A.law"> · <span class="text-muted" t-esc="A.law"/></t></div></div>
+                            <button t-if="A.below_threshold" class="btn btn-warning btn-sm" t-on-click="expenseIt" title="Costs less than the capitalisation threshold"><i class="fa fa-level-down me-1"/>Under the threshold: expense it</button>
+                            <button t-if="A.state === 'draft'" class="btn btn-primary btn-sm" t-on-click="() => this.confirm([A.id])"><i class="fa fa-check me-1"/>Confirm</button>
+                            <button t-if="A.state === 'draft' or A.state === 'running'" class="btn btn-light border btn-sm" t-on-click="editAsset"><i class="fa fa-pencil me-1"/>Edit</button>
+                            <button t-if="A.state === 'running' or A.state === 'done' or A.state === 'expensed'" class="btn btn-light border btn-sm" t-on-click="startDispose"><i class="fa fa-sign-out me-1"/>Dispose</button>
+                        </div>
+                        <div t-if="state.dispose" class="o_pp_card o_pp_panel mb-3"><div class="o_pp_formgrid">
+                            <label>Date<input type="date" class="form-control" t-att-value="state.dispose.day" t-on-change="(ev) => this.state.dispose.day = ev.target.value"/></label>
+                            <label>Sold for (nil if scrapped)<input type="number" class="form-control" t-att-value="state.dispose.amount" t-on-change="(ev) => this.state.dispose.amount = ev.target.value"/></label>
+                            <label>Money to<select class="form-select" t-on-change="(ev) => this.state.dispose.account_id = ev.target.value"><option value="">—</option>
+                                <option t-foreach="ctx.cash" t-as="c" t-key="c.id" t-att-value="c.id" t-esc="c.name"/></select></label></div>
+                            <div class="o_pp_panel_foot"><button class="btn btn-danger btn-sm" t-on-click="doDispose">Post the disposal</button>
+                                <button class="btn btn-light border btn-sm" t-on-click="() => this.state.dispose = null">Cancel</button>
+                                <span class="small text-muted ms-auto">Cost out, depreciation cleared, gain or loss posted.</span></div></div>
+                        <div class="o_pp_kpis">
+                            <div class="o_pp_kpi"><span>Cost</span><b t-esc="money(A.cost)"/><small>acquired <t t-esc="A.acquired_ec"/></small></div>
+                            <div class="o_pp_kpi"><span>Accumulated depreciation</span><b t-esc="money(A.depreciated)"/></div>
+                            <div class="o_pp_kpi"><span>Carrying amount</span><b t-esc="money(A.book_value)"/><small>residual <t t-esc="money(A.salvage)"/></small></div>
+                            <div t-if="A.state !== 'draft' and A.state !== 'expensed'" class="o_pp_kpi"><span>Tax written-down value</span><b t-esc="money(A.tax_wdv)"/><small t-esc="A.tax_method === 'straight' ? A.tax_life_months + ' months' : A.tax_rate + '% a year'"/></div>
+                            <div t-if="A.state === 'disposed'" class="o_pp_kpi"><span>Disposed</span><b t-esc="money(A.disposal_amount)"/><small t-esc="A.disposed"/></div>
+                        </div>
+                        <div class="o_pp_card o_fa_wrap"><div class="o_pp_card_head"><i class="fa fa-calendar"/>Depreciation schedule<span class="ms-auto small text-muted" t-if="A.source">bought on <t t-esc="A.source"/></span></div>
+                            <table class="o_pp_table"><thead><tr><th>Month</th><th class="text-end">Depreciation</th><th class="text-end">Accumulated</th><th class="text-end">Carrying amount</th><th/></tr></thead>
+                                <tbody><tr t-foreach="A.schedule" t-as="s" t-key="s.date" t-att-class="s.state === 'future' ? 'text-muted' : ''">
+                                    <td t-esc="s.label"/><td class="text-end" t-esc="money(s.amount)"/><td class="text-end" t-esc="money(s.accumulated)"/><td class="text-end" t-esc="money(s.book_value)"/>
+                                    <td class="small"><span t-if="s.state === 'posted'" class="o_fa_st running">posted</span><span t-elif="s.state === 'future'">planned</span></td></tr>
+                                    <tr t-if="!A.schedule.length"><td colspan="5" class="o_pp_empty">Confirm the asset to see its schedule.</td></tr></tbody></table></div>
+                    </t>
+                </t>
+
+                <t t-if="state.page === 'control' and state.control">
+                    <t t-set="K" t-value="state.control"/>
+                    <div class="o_pp_toolbar"><span class="small text-muted">The ledger's fixed-asset accounts (control accounts) against the register (the subsidiary ledger), as at <t t-esc="K.label"/>.</span>
+                        <span t-if="K.ok" class="ms-auto o_fa_st running"><i class="fa fa-check me-1"/>Ledger and register agree</span></div>
+                    <div class="o_pp_card o_fa_wrap mb-3"><table class="o_pp_table">
+                        <thead><tr><th>Account</th><th>Holds</th><th>Class</th><th class="text-end">Ledger</th><th class="text-end">Register</th><th class="text-end">Difference</th></tr></thead>
+                        <tbody><tr t-foreach="K.rows" t-as="r" t-key="r.account_id">
+                            <td class="small" t-esc="r.account"/><td class="small" t-esc="r.kind === 'cost' ? 'Cost' : r.kind === 'dep' ? 'Accumulated depreciation' : 'Expensed when bought'"/>
+                            <td class="small" t-esc="r.label"/><td class="text-end" t-esc="money(r.ledger)"/><td class="text-end" t-esc="money(r.register)"/>
+                            <td t-att-class="'text-end ' + (Math.abs(r.diff) >= 1 ? 'o_pp_badtxt fw-bold' : 'text-muted')" t-esc="money(r.diff)"/></tr></tbody></table></div>
+                    <div t-if="K.unlinked.length" class="o_pp_card o_fa_wrap mb-3"><div class="o_pp_card_head"><i class="fa fa-chain-broken"/>On an asset account, not on the register</div>
+                        <table class="o_pp_table"><thead><tr><th>Date</th><th>Entry</th><th>Description</th><th>Account</th><th class="text-end">Amount</th><th/></tr></thead>
+                            <tbody><tr t-foreach="K.unlinked" t-as="u" t-key="u.id">
+                                <td class="small" t-esc="u.date"/><td><a href="#" t-on-click.prevent="() => this.openVoucher(u.voucher_id)" t-esc="u.voucher"/></td>
+                                <td class="small" t-esc="u.name"/><td class="small" t-esc="u.account"/><td class="text-end" t-esc="money(u.amount)"/>
+                                <td class="text-nowrap"><button class="btn btn-light border btn-sm me-1" t-on-click="() => this.fromLine(u.id)"><i class="fa fa-plus me-1"/>Make asset</button>
+                                    <span t-if="K.assets.length" class="d-inline-flex gap-1 align-items-center">
+                                        <select multiple="multiple" size="1" class="form-select form-select-sm w-auto" t-on-change="(ev) => this.pickLink(u.id, ev)" title="Assets entered by hand that make up this line">
+                                            <option t-foreach="K.assets" t-as="a" t-key="a.id" t-att-value="a.id" t-esc="a.name"/></select>
+                                        <button class="btn btn-light border btn-sm" t-on-click="() => this.linkLine(u.id)">Link</button></span></td></tr></tbody></table></div>
+                    <div t-if="K.outside.length" class="o_pp_card o_fa_wrap"><div class="o_pp_card_head"><i class="fa fa-exclamation-triangle"/>Posted on these accounts outside vouchers</div>
+                        <table class="o_pp_table"><thead><tr><th>Date</th><th>Entry</th><th>Description</th><th>Account</th><th class="text-end">Amount</th></tr></thead>
+                            <tbody><tr t-foreach="K.outside" t-as="o" t-key="o_index"><td class="small" t-esc="o.date"/><td class="small" t-esc="o.move"/><td class="small" t-esc="o.name"/>
+                                <td class="small" t-esc="o.account"/><td class="text-end" t-esc="money(o.amount)"/></tr></tbody></table></div>
+                </t>
+
+                <t t-if="state.page === 'tax' and state.tax">
+                    <t t-set="X" t-value="state.tax"/>
+                    <div class="o_pp_kpis">
+                        <div class="o_pp_kpi"><span>Carrying amount (books)</span><b t-esc="money(X.totals.book)"/></div>
+                        <div class="o_pp_kpi"><span>Tax written-down value</span><b t-esc="money(X.totals.tax)"/></div>
+                        <div class="o_pp_kpi"><span>Difference</span><b t-esc="money(X.totals.diff)"/></div>
+                        <div class="o_pp_kpi"><span>Deferred tax at <t t-esc="X.rate"/>%</span><b t-esc="money(X.totals.deferred)"/><small t-esc="X.totals.deferred >= 0 ? 'liability' : 'asset'"/></div>
+                        <div class="o_pp_kpi"><span>In the ledger</span><b t-esc="money(X.booked)"/><small>to post <t t-esc="money(X.adjust)"/></small></div>
+                    </div>
+                    <div class="o_pp_toolbar"><span class="small text-muted">Books: the depreciation the company chose. Tax: the law's rate a year on the reducing balance (or straight line), the full year in the year of purchase. As at <t t-esc="X.label"/>.</span>
+                        <button t-if="Math.abs(X.adjust) >= 1" class="btn btn-primary btn-sm ms-auto" t-on-click="postDeferred"><i class="fa fa-check me-1"/>Post deferred tax <t t-esc="money(X.adjust)"/></button></div>
+                    <div class="o_pp_card o_fa_wrap"><table class="o_pp_table">
+                        <thead><tr><th>Asset</th><th>Class</th><th>Tax rate</th><th class="text-end">Books</th><th class="text-end">Tax</th><th class="text-end">Difference</th><th class="text-end">Deferred tax</th></tr></thead>
+                        <tbody><tr t-foreach="X.rows" t-as="r" t-key="r.id" class="o_fa_click" t-on-click="() => this.open(r.id)">
+                            <td><b t-esc="r.name"/><div class="small text-muted" t-esc="r.code"/></td><td class="small" t-esc="r.category"/><td class="small" t-esc="r.tax_basis"/>
+                            <td class="text-end" t-esc="money(r.book)"/><td class="text-end" t-esc="money(r.tax)"/><td class="text-end" t-esc="money(r.diff)"/><td class="text-end" t-esc="money(r.deferred)"/></tr>
+                            <tr t-if="!X.rows.length"><td colspan="7" class="o_pp_empty">No assets in use.</td></tr></tbody></table></div>
+                </t>
+
+                <t t-if="state.page === 'capitalise' and state.cap">
+                    <div class="o_pp_toolbar"><span class="small text-muted">Expenses already posted that were really assets. The cost moves to the class's cost account (from retained earnings when the year has ended), and the depreciation it would have had is caught up.</span></div>
+                    <div class="o_pp_toolbar">
+                        <label class="small d-flex align-items-center gap-1">From<input type="date" class="form-control form-control-sm w-auto" t-att-value="state.capF.date_from" t-on-change="(ev) => this.setCapF('date_from', ev.target.value)"/></label>
+                        <label class="small d-flex align-items-center gap-1">To<input type="date" class="form-control form-control-sm w-auto" t-att-value="state.capF.date_to" t-on-change="(ev) => this.setCapF('date_to', ev.target.value)"/></label>
+                        <label class="small d-flex align-items-center gap-1">At least<input type="number" class="form-control form-control-sm w-auto" t-att-value="state.capF.min_amount" t-on-change="(ev) => this.setCapF('min_amount', ev.target.value)"/></label>
+                        <input class="form-control form-control-sm o_pp_search" placeholder="Laptop, generator, chair…" t-on-change="(ev) => this.setCapF('search', ev.target.value)"/>
+                        <span class="ms-auto d-flex align-items-center gap-1 small">As
+                            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.state.capCat = ev.target.value">
+                                <option t-foreach="ctx.categories" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="c.id == state.capCat" t-esc="c.name"/></select>
+                            <button class="btn btn-primary btn-sm" t-att-disabled="!capIds.length" t-on-click="doCapitalise"><i class="fa fa-level-up me-1"/>Capitalise <t t-esc="capIds.length or ''"/></button></span>
+                    </div>
+                    <div class="o_pp_card o_fa_wrap"><table class="o_pp_table">
+                        <thead><tr><th/><th>Date</th><th>Entry</th><th>Description</th><th>Supplier</th><th>Expensed to</th><th class="text-end">Amount</th></tr></thead>
+                        <tbody><tr t-foreach="state.cap.rows" t-as="r" t-key="r.id">
+                            <td><input type="checkbox" class="form-check-input" t-att-checked="state.capSel[r.id]" t-on-change="(ev) => this.state.capSel[r.id] = ev.target.checked"/></td>
+                            <td class="small" t-esc="r.date"/><td><a href="#" t-on-click.prevent="() => this.openVoucher(r.voucher_id)" t-esc="r.voucher"/></td>
+                            <td class="small" t-esc="r.name"/><td class="small" t-esc="r.partner"/><td class="small" t-esc="r.account"/><td class="text-end" t-esc="money(r.amount)"/></tr>
+                            <tr t-if="!state.cap.rows.length"><td colspan="7" class="o_pp_empty">No expense lines match.</td></tr></tbody></table></div>
+                </t>
+
+                <t t-if="state.page === 'categories'">
+                    <div class="o_pp_card o_pp_panel mb-3"><div class="o_pp_card_head"><i class="fa fa-cog"/>Settings</div><div class="o_pp_formgrid">
+                        <label>Post depreciation<select class="form-select" t-on-change="(ev) => this.state.settings.frequency = ev.target.value">
+                            <option t-foreach="ctx.frequencies" t-as="f" t-key="f.id" t-att-value="f.id" t-att-selected="f.id === state.settings.frequency" t-esc="f.name"/></select></label>
+                        <label>Capitalise items from (cost)<input type="number" class="form-control" t-att-value="state.settings.threshold" t-on-change="(ev) => this.state.settings.threshold = ev.target.value"/></label></div>
+                        <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveSettings">Save</button>
+                            <span class="small text-muted ms-auto">Automatic: every month posts the period just ended; once a year posts the whole year at year end. Items under the threshold are expensed and kept on the register.</span></div></div>
+                    <div class="o_pp_toolbar"><span class="small text-muted">Each class has its own cost and accumulated-depreciation accounts and the country's rate. A bill line on a class's cost account becomes an asset to confirm; one on its expensed items account goes on the register as expensed.</span>
+                        <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.editCat()"><i class="fa fa-plus me-1"/>Class</button></div>
+                    <div t-if="state.catEdit" class="o_pp_card o_pp_panel mb-3"><t t-set="C" t-value="state.catEdit"/><div class="o_pp_formgrid">
+                        <label>Name<input class="form-control" t-att-value="C.name" t-on-change="(ev) => C.name = ev.target.value"/></label>
+                        <label>Cost account<select class="form-select" t-on-change="(ev) => C.asset_id = ev.target.value"><option value="">—</option>
+                            <option t-foreach="accountsOf('asset_fixed')" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == C.asset_id" t-esc="a.name"/></select></label>
+                        <label>Accumulated depreciation<select class="form-select" t-on-change="(ev) => C.dep_id = ev.target.value"><option value="">—</option>
+                            <option t-foreach="accountsOf('asset_fixed')" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == C.dep_id" t-esc="a.name"/></select></label>
+                        <label>Depreciation expense<select class="form-select" t-on-change="(ev) => C.exp_id = ev.target.value"><option value="">—</option>
+                            <option t-foreach="accountsOf(['expense_depreciation', 'expense'])" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == C.exp_id" t-esc="a.name"/></select></label>
+                        <label>Method<select class="form-select" t-on-change="(ev) => C.method = ev.target.value"><option t-foreach="ctx.methods" t-as="m" t-key="m.id" t-att-value="m.id" t-att-selected="m.id === C.method" t-esc="m.name"/></select></label>
+                        <label>Useful life (months)<input type="number" class="form-control" t-att-value="C.life_months" t-on-change="(ev) => C.life_months = ev.target.value"/></label>
+                        <label>Rate % a year (reducing)<input type="number" class="form-control" t-att-value="C.rate" t-on-change="(ev) => C.rate = ev.target.value"/></label>
+                        <label>Residual value %<input type="number" class="form-control" t-att-value="C.salvage_pct" t-on-change="(ev) => C.salvage_pct = ev.target.value"/></label>
+                        <label>Tax method<select class="form-select" t-on-change="(ev) => C.tax_method = ev.target.value"><option t-foreach="ctx.methods" t-as="m" t-key="m.id" t-att-value="m.id" t-att-selected="m.id === C.tax_method" t-esc="m.name"/></select></label>
+                        <label>Tax rate % a year<input type="number" class="form-control" t-att-value="C.tax_rate" t-on-change="(ev) => C.tax_rate = ev.target.value"/></label>
+                        <label>Tax life (months)<input type="number" class="form-control" t-att-value="C.tax_life_months" t-on-change="(ev) => C.tax_life_months = ev.target.value"/></label>
+                        <label>Expensed items account<select class="form-select" t-on-change="(ev) => C.expensed_id = ev.target.value"><option value="">—</option>
+                            <option t-foreach="accountsOf('expense')" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == C.expensed_id" t-esc="a.name"/></select></label></div>
+                        <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveCat">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.catEdit = null">Cancel</button></div></div>
+                    <div class="o_pp_card"><table class="o_pp_table"><thead><tr><th>Class</th><th>Cost account</th><th>Accumulated</th><th>Expense</th><th>Books</th><th>Tax</th><th/></tr></thead>
+                        <tbody><tr t-foreach="ctx.categories" t-as="c" t-key="c.id"><td><b t-esc="c.name"/></td><td class="small" t-esc="c.asset"/><td class="small" t-esc="c.dep"/><td class="small" t-esc="c.exp"/>
+                            <td class="small" t-esc="c.method === 'straight' ? c.life_months + ' months, straight line' : c.rate + '% reducing balance'"/>
+                            <td class="small"><t t-esc="c.tax_method === 'straight' ? c.tax_life_months + ' months, straight line' : c.tax_rate + '% reducing balance'"/><div t-if="c.law" class="text-muted" t-esc="c.law"/></td>
+                            <td><button class="btn btn-link btn-sm p-0" t-on-click="() => this.editCat(c)"><i class="fa fa-pencil"/></button></td></tr></tbody></table></div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_assets.Edit">
+        <t t-set="E" t-value="state.edit"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-building-o"/><t t-esc="E.id ? 'Edit asset' : 'New asset'"/></div>
+            <div class="o_pp_formgrid">
+                <label class="wide">Description<input class="form-control" t-att-value="E.name" t-on-change="(ev) => this.setE('name', ev.target.value)"/></label>
+                <label>Category<select class="form-select" t-on-change="(ev) => this.setE('category_id', ev.target.value)">
+                    <option t-foreach="ctx.categories" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="c.id == E.category_id" t-esc="c.name"/></select></label>
+                <label>Cost<input type="number" class="form-control" t-att-value="E.cost" t-on-change="(ev) => this.setE('cost', ev.target.value)"/></label>
+                <label>Residual value<input type="number" class="form-control" t-att-value="E.salvage" t-on-change="(ev) => this.setE('salvage', ev.target.value)"/></label>
+                <label>Acquired<input type="date" class="form-control" t-att-value="E.date_acquired" t-on-change="(ev) => this.setE('date_acquired', ev.target.value)"/></label>
+                <label>In use from<input type="date" class="form-control" t-att-value="E.date_start" t-on-change="(ev) => this.setE('date_start', ev.target.value)"/></label>
+                <label>Method<select class="form-select" t-on-change="(ev) => this.setE('method', ev.target.value)"><option t-foreach="ctx.methods" t-as="m" t-key="m.id" t-att-value="m.id" t-att-selected="m.id === E.method" t-esc="m.name"/></select></label>
+                <label t-if="E.method === 'straight'">Useful life (months)<input type="number" class="form-control" t-att-value="E.life_months" t-on-change="(ev) => this.setE('life_months', ev.target.value)"/></label>
+                <label t-else="">Rate % a year<input type="number" class="form-control" t-att-value="E.rate" t-on-change="(ev) => this.setE('rate', ev.target.value)"/></label>
+                <label>Tax method<select class="form-select" t-on-change="(ev) => this.setE('tax_method', ev.target.value)"><option t-foreach="ctx.methods" t-as="m" t-key="m.id" t-att-value="m.id" t-att-selected="m.id === E.tax_method" t-esc="m.name"/></select></label>
+                <label t-if="E.tax_method === 'straight'">Tax life (months)<input type="number" class="form-control" t-att-value="E.tax_life_months" t-on-change="(ev) => this.setE('tax_life_months', ev.target.value)"/></label>
+                <label t-else="">Tax rate % a year<input type="number" class="form-control" t-att-value="E.tax_rate" t-on-change="(ev) => this.setE('tax_rate', ev.target.value)"/></label>
+                <label>Tax allowances claimed before go-live<input type="number" class="form-control" t-att-value="E.tax_opening" t-on-change="(ev) => this.setE('tax_opening', ev.target.value)"/></label>
+                <label>Depreciated before go-live<input type="number" class="form-control" t-att-value="E.opening_depreciation" t-on-change="(ev) => this.setE('opening_depreciation', ev.target.value)"/></label>
+                <label>Serial / plate / tag<input class="form-control" t-att-value="E.serial" t-on-change="(ev) => this.setE('serial', ev.target.value)"/></label>
+                <label>Location<input class="form-control" t-att-value="E.location" t-on-change="(ev) => this.setE('location', ev.target.value)"/></label>
+                <label>Held by<select class="form-select" t-on-change="(ev) => this.setE('custodian_id', ev.target.value)"><option value="">—</option>
+                    <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == E.custodian_id" t-esc="p.name"/></select></label>
+                <label class="wide">Notes<textarea class="form-control" rows="2" t-att-value="E.note" t-on-change="(ev) => this.setE('note', ev.target.value)"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveAsset">Save</button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => E.id ? (this.state.edit = null) : this.back()">Cancel</button>
+                <span class="small text-muted ms-auto">Saving does not post anything: the cost is already in the books from the bill or the opening balance.</span></div>
+        </div>
+    </t>
+</templates>

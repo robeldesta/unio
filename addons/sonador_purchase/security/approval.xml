@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_sb_po_gm" model="res.groups">
+        <field name="name">Purchase Approver: General Manager (all)</field>
+        <field name="sequence">40</field>
+        <field name="comment">Approves purchase orders in the highest band (over 50,000 by default).</field>
+        <field name="privilege_id" ref="privilege_sonador_purchase"/>
+        <field name="implied_ids" eval="[(4, ref('group_sb_purchase_user'))]"/>
+        <field name="user_ids" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+    <record id="group_sb_po_2k" model="res.groups">
+        <field name="name">Purchase Approver: up to 2,000</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="privilege_sonador_purchase"/>
+        <field name="implied_ids" eval="[(4, ref('group_sb_purchase_user'))]"/>
+    </record>
+    <record id="group_sb_po_20k" model="res.groups">
+        <field name="name">Purchase Approver: up to 20,000</field>
+        <field name="sequence">25</field>
+        <field name="privilege_id" ref="privilege_sonador_purchase"/>
+        <field name="implied_ids" eval="[(4, ref('group_sb_purchase_user'))]"/>
+    </record>
+    <record id="group_sb_po_50k" model="res.groups">
+        <field name="name">Purchase Approver: up to 50,000</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="privilege_sonador_purchase"/>
+        <field name="implied_ids" eval="[(4, ref('group_sb_purchase_user'))]"/>
+    </record>
+    <!-- default bands (Purchase > Configuration > Approval Limits); kept as configured on upgrades -->
+    <data noupdate="1">
+    <record id="po_rule_1" model="sb.po.approval.rule">
+        <field name="amount_from">0</field>
+        <field name="amount_to">2000</field>
+        <field name="group_id" ref="group_sb_po_2k"/>
+    </record>
+    <record id="po_rule_2" model="sb.po.approval.rule">
+        <field name="amount_from">2000</field>
+        <field name="amount_to">20000</field>
+        <field name="group_id" ref="group_sb_po_20k"/>
+    </record>
+    <record id="po_rule_3" model="sb.po.approval.rule">
+        <field name="amount_from">20000</field>
+        <field name="amount_to">50000</field>
+        <field name="group_id" ref="group_sb_po_50k"/>
+    </record>
+    <record id="po_rule_4" model="sb.po.approval.rule">
+        <field name="amount_from">50000</field>
+        <field name="group_id" ref="group_sb_po_gm"/>
+    </record>
+    </data>
+</odoo>

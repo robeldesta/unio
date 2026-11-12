@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_stock_voucher_form_series" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.series</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date_ec']" position="after">
+                <field name="sb_doc_kind" invisible="voucher_type not in ('grn', 'giv')" readonly="state != 'draft'"
+                       widget="radio" options="{'horizontal': true}"/>
+                <field name="sb_series_id" invisible="voucher_type not in ('grn', 'giv') or (state != 'draft' and not sb_series_id)"
+                       readonly="state != 'draft'" options="{'no_create': True, 'no_open': True}"/>
+                <field name="sb_pad_number" invisible="voucher_type not in ('grn', 'giv') or state != 'draft'"
+                       placeholder="as printed on the pad (optional)"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_stock_voucher_search_kind" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.search.kind</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sb_stock_voucher_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="drm" string="Direct raw material (DRM)" domain="[('sb_doc_kind', '=', 'drm')]"/>
+                <filter name="regular" string="Regular" domain="[('sb_doc_kind', '=', 'regular')]"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- a document not posted yet shows "New", as the vouchers do, not "/" -->
+    <record id="sb_stock_voucher_form_number" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.number</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_title')]/h1/field[@name='name']" position="attributes">
+                <attribute name="invisible">name == '/'</attribute>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]/h1" position="inside">
+                <span invisible="name != '/'">New</span>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_stock_voucher_list_number" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.list.number</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sb_stock_voucher_list"/>
+        <field name="arch" type="xml">
+            <field name="name" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </field>
+            <field name="name" position="after">
+                <field name="sb_number"/>
+            </field>
+        </field>
+    </record>
+    <function model="sb.doc.series" name="_ensure_defaults"/>
+</odoo>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dashboard" model="ir.actions.client">
+        <field name="name">Dashboard</field>
+        <field name="tag">sonador_dashboard.app</field>
+    </record>
+    <!-- pinned second in the left bar, under Me, for everyone (sonador_app_order keeps it there) -->
+    <menuitem id="menu_dashboard_root" name="Dashboard" sequence="1" action="action_dashboard"
+              web_icon="sonador_dashboard,static/description/icon.png"/>
+</odoo>

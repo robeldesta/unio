@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_ifrs_line_list" model="ir.ui.view">
+        <field name="name">sb.ifrs.line.list</field>
+        <field name="model">sb.ifrs.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="code"/>
+                <field name="name"/>
+                <field name="statement"/>
+                <field name="section"/>
+                <field name="cash_flow"/>
+                <field name="standard"/>
+                <field name="account_count" string="Accounts"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_ifrs_line_form" model="ir.ui.view">
+        <field name="name">sb.ifrs.line.form</field>
+        <field name="model">sb.ifrs.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group><field name="code"/><field name="name"/><field name="standard"/></group>
+                        <group><field name="statement"/><field name="section"/><field name="cash_flow"/></group>
+                    </group>
+                    <field name="account_ids" readonly="1">
+                        <list><field name="code"/><field name="name"/><field name="account_type"/></list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_ifrs_line" model="ir.actions.act_window">
+        <field name="name">IFRS Line Items</field>
+        <field name="res_model">sb.ifrs.line</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- chart of accounts with IFRS mapping -->
+    <record id="sb_account_list" model="ir.ui.view">
+        <field name="name">account.account.list.sb</field>
+        <field name="model">account.account</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" decoration-danger="not sb_ifrs_line_id">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="account_type"/>
+                <field name="reconcile" optional="hide"/>
+                <field name="sb_ifrs_line_id" options="{'no_create': True}"/>
+                <field name="sb_ifrs_section" optional="show"/>
+                <field name="sb_cash_flow" optional="show"/>
+                <field name="current_balance" optional="show"/>
+                <field name="company_currency_id" column_invisible="1"/>
+                <button name="action_sb_view" type="object" string="View" class="btn-link" title="The account's transactions"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_account_search" model="ir.ui.view">
+        <field name="name">account.account.search.sb</field>
+        <field name="model">account.account</field>
+        <field name="inherit_id" ref="account.view_account_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="sb_unmapped" string="Not mapped to IFRS" domain="[('sb_ifrs_line_id', '=', False)]"/>
+                <filter name="sb_group_ifrs" string="IFRS Line" context="{'group_by': 'sb_ifrs_line_id'}"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_sb_chart" model="ir.actions.act_window">
+        <field name="name">Chart of Accounts</field>
+        <field name="res_model">account.account</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="sb_account_list"/>
+    </record>
+    <record id="action_sb_ifrs_check" model="ir.actions.act_window">
+        <field name="name">IFRS Mapping Check</field>
+        <field name="res_model">account.account</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="sb_account_list"/>
+        <field name="context">{'search_default_sb_group_ifrs': 1}</field>
+    </record>
+</odoo>

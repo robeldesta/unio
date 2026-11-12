@@ -1,0 +1,40 @@
+.o_fl {
+    .o_pj_wrap { overflow-x: auto; }
+    .o_pj_click { cursor: pointer; }
+    tr.o_pj_click:hover td { background: rgba(13, 110, 253, .04); }
+    .o_pj_head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; h2 { margin: 2px 0; font-size: 1.5rem; } }
+    .o_pj_hits {
+        position: absolute; z-index: 20; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, .08); max-height: 14rem; overflow: auto;
+        > div { padding: 6px 10px; cursor: pointer; font-weight: normal; &:hover { background: #f1f5ff; } }
+    }
+    .o_pj_tag { display: inline-block; padding: 2px 9px; margin: 2px; border: 1px solid #dee2e6; border-radius: 12px; cursor: pointer; &.on { background: #3a7bd5; border-color: #3a7bd5; color: #fff; } }
+    .o_fl_plate { display: inline-block; font-family: monospace; font-weight: 700; letter-spacing: .5px; border: 1.5px solid #212529; border-radius: 4px; padding: 0 6px; background: #fffbe6; }
+    .o_fl_st {
+        display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .75rem; background: #eef1f4; color: #495057;
+        &.active, &.filled, &.back, &.done { background: #e3f4ea; color: #1e7b45; }
+        &.request, &.planned, &.workshop, &.open { background: #fff4d6; color: #8a6200; }
+        &.approved, &.out { background: #e5efff; color: #1d55b8; }
+        &.rejected, &.cancel, &.disposed { background: #fde8e8; color: #b42318; }
+    }
+    .o_fl_risk {
+        display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .72rem; font-weight: 600;
+        &.ok { background: #e3f4ea; color: #1e7b45; } &.watch { background: #fff4d6; color: #8a6200; }
+        &.alert { background: #fde3cf; color: #b54708; } &.theft { background: #d64545; color: #fff; }
+    }
+    .o_fl_ftxt { line-height: 1.25; margin-top: 2px; &.watch { color: #8a6200; } &.alert { color: #b54708; } &.theft { color: #b42318; font-weight: 600; } }
+    tr.o_fl_risk_theft td { background: rgba(214, 69, 69, .05); }
+    .o_fl_flags { padding: 0 16px 8px; }
+    .o_fl_flag { font-size: .85rem; padding: 4px 8px; border-radius: 6px; margin-bottom: 4px; &.watch { background: #fff8e1; } &.alert { background: #fdeee3; } &.theft { background: #fde8e8; color: #b42318; } }
+    .o_fl_dot {
+        display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: 6px; background: #adb5bd;
+        &.ok { background: #2f9e5b; } &.soon { background: #e8a33a; } &.expired { background: #d64545; } &.history { background: #dee2e6; }
+    }
+    .o_fl_myv { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 12px; h3 { font-family: monospace; } }
+    .o_fl_gate { padding: 20px; h3 { font-size: 1.3rem; } }
+    .o_fl_gatet { width: 100%; margin: 12px 0; th { width: 9rem; color: #6c757d; font-weight: 500; padding: 6px; } td { padding: 6px; border-bottom: 1px dotted #ced4da; } }
+    .o_fl_sign { display: flex; gap: 24px; margin-top: 36px; > div { flex: 1; border-top: 1px solid #212529; padding-top: 4px; font-size: .8rem; color: #6c757d; } }
+}
+@media print {
+    .o_fl .o_fl_noprint, .o_main_navbar, .o_control_panel { display: none !important; }
+    .o_fl .o_fl_gate { box-shadow: none; border: none; }
+}

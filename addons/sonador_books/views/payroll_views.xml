@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_employee_list" model="ir.ui.view">
+        <field name="name">sb.employee.list</field>
+        <field name="model">sb.employee</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="job"/>
+                <field name="tin"/>
+                <field name="pension_no"/>
+                <field name="basic_salary" sum="Basic"/>
+                <field name="taxable_allowance" optional="show"/>
+                <field name="nontaxable_allowance" optional="show"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_employee_form" model="ir.ui.view">
+        <field name="name">sb.employee.form</field>
+        <field name="model">sb.employee</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" placeholder="Full name"/></h1><field name="job" placeholder="Position"/></div>
+                    <group>
+                        <group string="Pay">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="basic_salary"/>
+                            <field name="taxable_allowance"/>
+                            <field name="nontaxable_allowance"/>
+                            <field name="pension"/>
+                        </group>
+                        <group string="Work">
+                            <field name="department"/>
+                            <field name="manager_id" options="{'no_create': True}"/>
+                            <field name="employee_type"/>
+                            <field name="user_id" options="{'no_create': True}"/>
+                            <field name="work_email" widget="email"/>
+                            <field name="work_phone" widget="phone"/>
+                            <field name="mobile" widget="phone"/>
+                            <field name="end_date" invisible="active"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Details">
+                            <field name="tin"/>
+                            <field name="pension_no"/>
+                            <field name="start_date"/>
+                            <field name="bank_account"/>
+                            <field name="partner_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_employees" model="ir.actions.act_window">
+        <field name="name">Employees</field>
+        <field name="res_model">sb.employee</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="sb_payroll_run_list" model="ir.ui.view">
+        <field name="name">sb.payroll.run.list</field>
+        <field name="model">sb.payroll.run</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'draft'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="pay_date"/>
+                <field name="total_gross" sum="Gross"/>
+                <field name="total_tax" sum="PAYE"/>
+                <field name="total_pension_ee" sum="7%"/>
+                <field name="total_pension_er" sum="11%"/>
+                <field name="total_net" sum="Net"/>
+                <field name="state" widget="badge" decoration-success="state == 'paid'" decoration-info="state == 'posted'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_payroll_run_form" model="ir.ui.view">
+        <field name="name">sb.payroll.run.form</field>
+        <field name="model">sb.payroll.run</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_load" type="object" string="Load employees" invisible="state != 'draft'"/>
+                    <button name="action_post" type="object" string="Post payroll" class="btn-primary" invisible="state != 'draft'"
+                            groups="sonador_books.group_sb_accountant"/>
+                    <button name="action_pay" type="object" string="Pay net salaries" class="btn-primary" invisible="state != 'posted'"
+                            groups="sonador_books.group_sb_accountant"/>
+                    <button name="action_payslips" type="object" string="Payslips" invisible="not line_ids"/>
+                    <button name="action_reset" type="object" string="Reset to draft" invisible="state == 'draft'"
+                            groups="sonador_books.group_sb_accountant"
+                            confirm="Void the payroll entry and the salary payment, and go back to draft?" confirm-label="Void"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="period" readonly="state != 'draft'"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="pay_date" readonly="state == 'paid'"/>
+                            <field name="pay_account_id" readonly="state == 'paid'" options="{'no_create': True}"/>
+                            <field name="voucher_id" invisible="not voucher_id"/>
+                            <field name="payment_id" invisible="not payment_id"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="state != 'draft'">
+                        <list editable="bottom">
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="employee_id" options="{'no_create': True}"/>
+                            <field name="basic" sum="Basic"/>
+                            <field name="taxable_allowance" optional="show" sum="Taxable allow."/>
+                            <field name="overtime" optional="show" sum="Overtime"/>
+                            <field name="nontaxable_allowance" sum="Non-taxable"/>
+                            <field name="gross" sum="Gross"/>
+                            <field name="income_tax" sum="PAYE"/>
+                            <field name="pension_ee" sum="7%"/>
+                            <field name="other_deduction" optional="show" sum="Other"/>
+                            <field name="deduction_account_id" optional="hide" options="{'no_create': True}"/>
+                            <field name="net" sum="Net"/>
+                            <field name="pension_er" sum="11%"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="total_gross" string="Gross pay"/>
+                        <field name="total_tax" string="PAYE to the tax office"/>
+                        <field name="total_pension_ee" string="Pension, employee share"/>
+                        <field name="total_pension_er" string="Pension, employer share"/>
+                        <field name="total_net" string="Net pay to employees"/>
+                        <field name="total_cost" string="Total cost to company"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_payroll" model="ir.actions.act_window">
+        <field name="name">Payroll</field>
+        <field name="res_model">sb.payroll.run</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Run this month's payroll</p>
+            <p>Load employees, check the figures, post (salaries, PAYE and pension are booked), then pay the net salaries.</p></field>
+    </record>
+    <record id="sb_payroll_bracket_list" model="ir.ui.view">
+        <field name="name">sb.payroll.bracket.list</field>
+        <field name="model">sb.payroll.bracket</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="currency_id" column_invisible="1"/>
+                <field name="company_id" column_invisible="1"/>
+                <field name="lower"/>
+                <field name="upper"/>
+                <field name="rate"/>
+                <field name="deduction"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_sb_payroll_brackets" model="ir.actions.act_window">
+        <field name="name">Employment Income Tax Table</field>
+        <field name="res_model">sb.payroll.bracket</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html"><p>Monthly brackets: tax = income x rate - deduction. Defaults follow Income Tax Proclamation 1395/2025.</p></field>
+    </record>
+</odoo>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="tpl_onboarding" model="sb.journey.template"><field name="name">Onboarding (Labour Proclamation 1156/2019)</field><field name="kind">onboarding</field></record>
+    <record id="tpl_onboarding_t1" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">1</field>
+        <field name="name">Written employment contract signed, copy to the employee</field><field name="role">hr</field><field name="offset">-3</field><field name="action">contract</field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t2" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">2</field>
+        <field name="name">Collect Fayda / Kebele ID, TIN and photo</field><field name="role">hr</field><field name="offset">0</field><field name="action">documents</field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t3" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">3</field>
+        <field name="name">Salary bank account recorded</field><field name="role">hr</field><field name="offset">0</field><field name="action"></field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t4" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">4</field>
+        <field name="name">Guarantee (wass) letter, for cash or stock positions</field><field name="role">hr</field><field name="offset">0</field><field name="action"></field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t5" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">5</field>
+        <field name="name">Create the login and work email</field><field name="role">it</field><field name="offset">-1</field><field name="action">login</field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t6" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">6</field>
+        <field name="name">Issue laptop / phone / SIM</field><field name="role">it</field><field name="offset">0</field><field name="action">assets</field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t7" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">7</field>
+        <field name="name">Issue uniform and safety equipment (PPE)</field><field name="role">store</field><field name="offset">0</field><field name="action">assets</field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t8" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">8</field>
+        <field name="name">Welcome, introduce the team, explain the job description</field><field name="role">manager</field><field name="offset">0</field><field name="action"></field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t9" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">9</field>
+        <field name="name">Read and acknowledge company policies</field><field name="role">employee</field><field name="offset">3</field><field name="action">policies</field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t10" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">10</field>
+        <field name="name">Set the first goals</field><field name="role">manager</field><field name="offset">7</field><field name="action">goals</field><field name="legal_ref"></field></record>
+    <record id="tpl_onboarding_t11" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">11</field>
+        <field name="name">Register with POESSA (pension) and the tax office</field><field name="role">hr</field><field name="offset">30</field><field name="action"></field><field name="legal_ref">Proc. 715/2011</field></record>
+    <record id="tpl_onboarding_t12" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">12</field>
+        <field name="name">Probation review: recommend confirmation or not</field><field name="role">manager</field><field name="offset">45</field><field name="action"></field><field name="legal_ref">art. 11</field></record>
+    <record id="tpl_onboarding_t13" model="sb.journey.template.task"><field name="template_id" ref="tpl_onboarding"/><field name="sequence">13</field>
+        <field name="name">Confirm employment after probation (60 working days)</field><field name="role">hr</field><field name="offset">55</field><field name="action">probation</field><field name="legal_ref">art. 11</field></record>
+    <record id="tpl_offboarding" model="sb.journey.template"><field name="name">Offboarding and clearance</field><field name="kind">offboarding</field></record>
+    <record id="tpl_offboarding_t1" model="sb.journey.template.task"><field name="template_id" ref="tpl_offboarding"/><field name="sequence">1</field>
+        <field name="name">Resignation letter received / termination letter issued with the notice period</field><field name="role">hr</field><field name="offset">-30</field><field name="action"></field><field name="legal_ref">art. 31, 35</field></record>
+    <record id="tpl_offboarding_t2" model="sb.journey.template.task"><field name="template_id" ref="tpl_offboarding"/><field name="sequence">2</field>
+        <field name="name">Knowledge transfer and handover notes</field><field name="role">manager</field><field name="offset">-7</field><field name="action"></field><field name="legal_ref"></field></record>
+    <record id="tpl_offboarding_t3" model="sb.journey.template.task"><field name="template_id" ref="tpl_offboarding"/><field name="sequence">3</field>
+        <field name="name">Exit interview</field><field name="role">hr</field><field name="offset">-3</field><field name="action">interview</field><field name="legal_ref"></field></record>
+    <record id="tpl_offboarding_t4" model="sb.journey.template.task"><field name="template_id" ref="tpl_offboarding"/><field name="sequence">4</field>
+        <field name="name">Disable the login and email on the last day</field><field name="role">it</field><field name="offset">0</field><field name="action">login</field><field name="legal_ref"></field></record>
+    <record id="tpl_offboarding_t5" model="sb.journey.template.task"><field name="template_id" ref="tpl_offboarding"/><field name="sequence">5</field>
+        <field name="name">Final settlement prepared (notice, severance, leave pay-out)</field><field name="role">finance</field><field name="offset">0</field><field name="action">settlement</field><field name="legal_ref">art. 39-41, 77(4)</field></record>
+    <record id="tpl_offboarding_t6" model="sb.journey.template.task"><field name="template_id" ref="tpl_offboarding"/><field name="sequence">6</field>
+        <field name="name">Certificate of service issued, free of charge</field><field name="role">hr</field><field name="offset">0</field><field name="action">certificate</field><field name="legal_ref">art. 12(8)</field></record>
+    <record id="tpl_offboarding_t7" model="sb.journey.template.task"><field name="template_id" ref="tpl_offboarding"/><field name="sequence">7</field>
+        <field name="name">Leaver reported to POESSA and the tax office</field><field name="role">hr</field><field name="offset">30</field><field name="action"></field><field name="legal_ref"></field></record>
+    <record id="policy_conduct" model="sb.policy"><field name="name">Code of conduct and work rules</field><field name="sequence">1</field>
+        <field name="body"><![CDATA[<p>Working hours, attendance and leave follow the Labour Proclamation No. 1156/2019 and the company's work rules. Replace this text with your own work rules or attach the signed document.</p>]]></field></record>
+    <record id="policy_safety" model="sb.policy"><field name="name">Occupational safety and health</field><field name="sequence">2</field>
+        <field name="body"><![CDATA[<p>Use the protective equipment provided, follow safety instructions and report hazards and accidents. Replace with your own safety rules.</p>]]></field></record>
+    <record id="policy_harassment" model="sb.policy"><field name="name">Sexual harassment and violence: zero tolerance</field><field name="sequence">3</field>
+        <field name="body"><![CDATA[<p>Sexual harassment and sexual violence at work are prohibited; a worker may resign over them with severance and compensation (art. 32(1)(b), 39(1)(d), 41(2)). How to report, and how reports are handled. Replace with your own policy.</p>]]></field></record>
+    <record id="policy_confidentiality" model="sb.policy"><field name="name">Confidentiality and company property</field><field name="sequence">4</field>
+        <field name="body"><![CDATA[<p>Company information, customers, prices and formulas stay confidential; company property issued is returned on leaving. Replace with your own policy.</p>]]></field></record>
+</odoo>

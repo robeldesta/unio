@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- GRN, GIV, transfer, FPRR, opening stock, count: one printed voucher, titled by its type -->
+    <record id="action_report_stock_voucher" model="ir.actions.report">
+        <field name="name">Inventory Voucher</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_inventory.report_stock_voucher</field>
+        <field name="print_report_name">'%s' % object.name</field>
+        <field name="binding_model_id" ref="model_sb_stock_voucher"/>
+    </record>
+    <template id="report_stock_voucher">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="v">
+                <t t-call="web.external_layout">
+                    <t t-set="priced" t-value="v.voucher_type in ('grn', 'opening')"/>
+                    <div class="page" style="font-size: 12px">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid #0B2D63; padding-bottom: 6px; margin-bottom: 10px">
+                            <h3 style="margin:0; color:#0B2D63" t-esc="{'grn': 'Goods Received Note', 'giv': 'Goods Issue Voucher', 'transfer': 'Stock Transfer Voucher',
+                                'opening': 'Opening Stock', 'adjustment': 'Stock Count / Adjustment', 'fprr': 'Finished Product Receiving Report',
+                                'build': 'Production Report'}.get(v.voucher_type, v._type_label()) + (' (Direct Raw Material)' if 'sb_doc_kind' in v._fields and v.sb_doc_kind == 'drm' and v.voucher_type in ('grn', 'giv') else '')"/>
+                            <div style="text-align:right">
+                                <div style="font-size:16px; font-weight:bold" t-esc="v.name"/>
+                                <div><span t-esc="v.date.strftime('%d %b %Y')"/> · <span t-esc="v.date_ec"/></div>
+                            </div>
+                        </div>
+                        <table style="width:100%; margin-bottom: 10px">
+                            <tr>
+                                <td style="width:50%; vertical-align:top">
+                                    <div t-if="v.voucher_type == 'grn'"><b>Supplier:</b> <span t-esc="v.partner_id.name"/>
+                                        <span t-if="v.partner_id.vat"> (TIN <span t-esc="v.partner_id.vat"/>)</span></div>
+                                    <div t-if="v.voucher_type == 'giv' and v.department"><b>Issued to:</b> <span t-esc="v.department"/></div>
+                                    <div t-if="v.voucher_type in ('giv', 'grn') and v.received_by"><b>Received by:</b> <span t-esc="v.received_by"/></div>
+                                    <div t-if="v.reference"><b>Reference:</b> <span t-esc="v.reference"/></div>
+                                    <div t-if="v.memo"><b>Description:</b> <span t-esc="v.memo"/></div>
+                                </td>
+                                <td style="width:50%; vertical-align:top; text-align:right">
+                                    <div><b t-esc="'From store:' if v.voucher_type in ('giv', 'transfer') else 'Store:'"/> <span t-esc="v.warehouse_id.name"/></div>
+                                    <div t-if="v.voucher_type == 'transfer'"><b>To store:</b> <span t-esc="v.warehouse_dest_id.name"/></div>
+                                    <div t-if="v.state == 'void'" style="color:#C0392B; font-weight:bold">VOID</div>
+                                </td>
+                            </tr>
+                        </table>
+                        <table class="table table-sm" style="font-size: 12px">
+                            <thead style="background:#0B2D63; color:#fff">
+                                <tr><th style="color:#fff; background:#0B2D63">#</th><th style="color:#fff; background:#0B2D63">Item ID</th><th style="color:#fff; background:#0B2D63">Description</th><th style="color:#fff; background:#0B2D63" class="text-end">Quantity</th><th style="color:#fff; background:#0B2D63">Unit</th>
+                                    <th style="color:#fff; background:#0B2D63" t-if="priced" class="text-end">Unit cost</th><th style="color:#fff; background:#0B2D63" t-if="priced" class="text-end">Amount</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="v.line_ids.filtered('product_id')" t-as="l">
+                                    <td t-esc="l_index + 1"/>
+                                    <td t-esc="l.product_id.default_code or ''"/>
+                                    <td t-esc="l.name or l.product_id.name"/>
+                                    <td class="text-end" t-esc="'{:,.4f}'.format(l.quantity).rstrip('0').rstrip('.')"/>
+                                    <td t-esc="l.uom_id.name"/>
+                                    <td t-if="priced" class="text-end" t-esc="v._sb_fmt_cost(l.unit_cost)"/>
+                                    <td t-if="priced" class="text-end" t-esc="'{:,.2f}'.format(l.value)"/>
+                                </tr>
+                            </tbody>
+                            <tfoot t-if="priced">
+                                <tr><td colspan="6" class="text-end"><b>Total</b></td><td class="text-end"><b t-esc="'{:,.2f}'.format(v.amount_total)"/></td></tr>
+                            </tfoot>
+                        </table>
+                        <t t-set="sign" t-value="{'grn': ['Delivered by', 'Received by (store)', 'Checked by (quality)', 'Approved by'],
+                            'giv': ['Requested by', 'Issued by (store)', 'Received by', 'Approved by'],
+                            'transfer': ['Issued by (from store)', 'Carried by', 'Received by (to store)', 'Approved by'],
+                            'fprr': ['Handed over by (production)', 'Received by (store)', 'Checked by (quality)', 'Approved by'],
+                            'build': ['Prepared by (production)', 'Store', 'Checked by (quality)', 'Approved by']}.get(v.voucher_type,
+                            ['Prepared by', 'Checked by', 'Approved by'])"/>
+                        <table style="width:100%; margin-top: 40px; font-size: 11px">
+                            <tr>
+                                <td t-foreach="sign" t-as="s" style="padding-right: 14px; vertical-align: top">
+                                    <div style="border-top: 1px solid #333; padding-top: 4px"><b t-esc="s"/></div>
+                                    <div style="color:#666">Name / signature / date</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_gate_pass" model="ir.actions.report">
+        <field name="name">Gate Pass</field>
+        <field name="model">sb.gate.pass</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_inventory.report_gate_pass</field>
+        <field name="print_report_name">'Gate pass %s' % object.name</field>
+        <field name="binding_model_id" ref="model_sb_gate_pass"/>
+    </record>
+    <template id="report_gate_pass">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="g">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-size: 12px">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid #0B2D63; padding-bottom: 6px; margin-bottom: 10px">
+                            <h3 style="margin:0; color:#0B2D63">Gate Pass <span style="font-size:13px; color:#666" t-esc="'(IN)' if g.direction == 'in' else '(OUT)'"/></h3>
+                            <div style="text-align:right">
+                                <div style="font-size:16px; font-weight:bold" t-esc="g.name"/>
+                                <div><span t-esc="g.date.strftime('%d %b %Y') if g.date else ''"/> · <span t-esc="g.date_ec"/></div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 10px">
+                            <t t-foreach="g._fields['purpose'].selection" t-as="p">
+                                <span style="display:inline-block; margin-right: 14px; white-space: nowrap">
+                                    <span t-esc="'☒' if g.purpose == p[0] else '☐'" style="font-size: 14px"/> <span t-esc="p[1]"/>
+                                </span>
+                            </t>
+                        </div>
+                        <table style="width:100%; margin-bottom: 10px">
+                            <tr>
+                                <td style="width:50%; vertical-align:top">
+                                    <div t-if="g.partner_id"><b>Customer / to:</b> <span t-esc="g.partner_id.name"/></div>
+                                    <div t-if="g.destination"><b>Destination:</b> <span t-esc="g.destination"/></div>
+                                    <div t-if="g.source"><b>Documents:</b> <span t-esc="g.source"/></div>
+                                    <div t-if="g.warehouse_id"><b>Store:</b> <span t-esc="g.warehouse_id.name"/></div>
+                                </td>
+                                <td style="width:50%; vertical-align:top; text-align:right">
+                                    <div t-if="g.vehicle"><b>Vehicle:</b> <span t-esc="g.vehicle"/></div>
+                                    <div t-if="g.driver"><b>Driver:</b> <span t-esc="g.driver"/> <span t-if="g.driver_phone" t-esc="g.driver_phone"/></div>
+                                    <div t-if="g.carried_by"><b>Carried by:</b> <span t-esc="g.carried_by"/></div>
+                                    <div t-if="g.purpose == 'returnable'"><b>To come back by:</b> <span t-esc="g.expected_return.strftime('%d %b %Y') if g.expected_return else ''"/></div>
+                                </td>
+                            </tr>
+                        </table>
+                        <table class="table table-sm" style="font-size: 12px">
+                            <thead style="background:#0B2D63; color:#fff">
+                                <tr><th style="color:#fff; background:#0B2D63">S.No</th><th style="color:#fff; background:#0B2D63">Description of items</th><th style="color:#fff; background:#0B2D63" class="text-end">Quantity</th><th style="color:#fff; background:#0B2D63">Unit</th><th style="color:#fff; background:#0B2D63">Remarks</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="g.line_ids" t-as="l">
+                                    <td t-esc="l_index + 1"/>
+                                    <td><t t-if="l.product_id.default_code"><span t-esc="l.product_id.default_code"/> · </t><span t-esc="l.name"/></td>
+                                    <td class="text-end" t-esc="'{:,.4f}'.format(l.quantity).rstrip('0').rstrip('.')"/>
+                                    <td t-esc="l.uom_id.name or ''"/>
+                                    <td t-esc="l.remarks or ''"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-if="g.note" t-field="g.note"/>
+                        <table style="width:100%; margin-top: 40px; font-size: 11px">
+                            <tr>
+                                <td t-foreach="['Prepared by (store)', 'Approved by', 'Security guard', 'Driver / carrier']" t-as="s" style="padding-right: 14px">
+                                    <div style="border-top: 1px solid #333; padding-top: 4px"><b t-esc="s"/></div>
+                                    <div style="color:#666">Name / signature / time</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

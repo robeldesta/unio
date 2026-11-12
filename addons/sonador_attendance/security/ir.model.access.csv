@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_site_user,site,model_sb_att_site,base.group_user,1,0,0,0
+access_site_hr,site hr,model_sb_att_site,sonador_books.group_sb_hr,1,1,1,1
+access_device_hr,device hr,model_sb_att_device,sonador_books.group_sb_hr,1,1,1,1
+access_punch_hr,punch hr,model_sb_att_punch,sonador_books.group_sb_hr,1,1,1,1
+access_day_hr,day hr,model_sb_att_day,sonador_books.group_sb_hr,1,1,1,1
+access_warning_hr,warning hr,model_sb_att_warning,sonador_books.group_sb_hr,1,1,1,1
+access_bio_hr,bio hr,model_sb_att_bio,sonador_books.group_sb_hr,1,1,1,1
+access_ot_upload_hr,ot upload hr,model_sb_att_ot_upload,sonador_books.group_sb_hr,1,1,1,0
+access_ot_upload_line_hr,ot upload line hr,model_sb_att_ot_upload_line,sonador_books.group_sb_hr,1,1,1,1
+access_ot_upload_clerk,ot upload clerk,model_sb_att_ot_upload,group_ot_clerk,1,0,0,0
+access_ot_upload_line_clerk,ot upload line clerk,model_sb_att_ot_upload_line,group_ot_clerk,1,0,0,0

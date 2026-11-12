@@ -1,0 +1,2 @@
+https://github.com/muk-it/odoo-modules branch 19.0 commit 858224fe20d5208155c1d059a2b86a52f557d682
+https://github.com/odoomates/odooapps branch 19.0 commit 94cd16affb6675373998c9f6e407b549cb9ba459 (LGPL-3): accounting_pdf_reports om_account_daily_reports om_account_asset om_fiscal_year om_account_reconcile om_account_bank_statement_import om_currency_revaluation om_account_budget

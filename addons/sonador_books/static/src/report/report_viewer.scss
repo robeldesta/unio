@@ -1,0 +1,123 @@
+.o_sb_rep {
+    background-color: $sb-band;
+    color: $sb-ink;
+    outline: none;
+    .o_sb_rep_bar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #fff;
+        border-bottom: 1px solid $sb-line;
+        .o_sb_select { border-radius: 8px; }
+    }
+    .o_sb_search {
+        position: relative;
+        .fa-search { position: absolute; left: .6rem; top: 50%; transform: translateY(-50%); color: $sb-muted; font-size: .8rem; }
+        input { padding-left: 1.8rem; width: 13rem; border-radius: 8px; }
+    }
+    .o_sb_rep_pop {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 20;
+        min-width: 17rem;
+        max-height: 26rem;
+        overflow: auto;
+        background: #fff;
+        border: 1px solid $sb-line;
+        border-radius: 10px;
+    }
+    .o_sb_rep_pop_right { left: auto; right: 0; }
+    .o_sb_rep_head {
+        .o_sb_rep_company { color: $sb-muted; font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; }
+        .o_sb_rep_title { font-size: 1.9rem; font-weight: 700; color: $sb-navy; margin: .1rem 0 .15rem; }
+        .o_sb_rep_period { font-size: 1rem; color: $sb-ink; }
+        .o_sb_rep_blurb { color: $sb-muted; margin-top: .25rem; max-width: 52rem; }
+    }
+    .o_sb_rep_tablewrap { overflow: auto; container-type: inline-size; }
+    // a wide statement (the trial balance: seven amount columns) in a narrow pane (1,440 px screen with the report
+    // list open): smaller type and padding, so every column stays on screen without scrolling sideways
+    @container (max-width: 1100px) {
+        .o_sb_rep_tablewrap .o_sb_rep_table:has(thead th:nth-child(9)) {
+            font-size: .72rem;
+            th, td { padding: .35rem .2rem; }
+            thead th { font-size: .62rem; letter-spacing: 0; }
+            .o_sb_rep_section.o_sb_rep_l0 td { font-size: .76rem; }
+            .o_sb_rep_first { min-width: 7rem; max-width: 9rem; }
+            td:nth-child(2) { min-width: 5rem; }
+            .o_sb_th_menu, .o_sb_td_menu { width: 1.2rem; padding: 0; }
+        }
+    }
+    .o_sb_rep_table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-variant-numeric: tabular-nums;
+        font-size: .95rem;
+        th, td { padding: .55rem .6rem; border-bottom: 1px solid $sb-line; }
+        // amounts never break; text columns (description, reference) wrap instead of pushing amounts off screen
+        td:not(.o_sb_num):not(.o_sb_rep_first) { overflow-wrap: break-word; }
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #fff;
+            color: $sb-muted;
+            font-weight: 600;
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            vertical-align: bottom;
+            border-bottom: 2px solid $sb-line;
+            .o_sb_th_sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .75rem; }
+        }
+        .o_sb_sticky { position: sticky; left: 0; z-index: 1; background: inherit; }
+        thead .o_sb_sticky { z-index: 3; background: #fff; }
+        tbody tr { background: #fff; transition: background-color .12s; }
+        tbody tr:hover { background: #f2f7fa; }
+        .o_sb_rep_section { background: $sb-band; td { font-weight: 700; color: $sb-navy; } }
+        .o_sb_rep_section.o_sb_rep_l0 td { font-size: 1rem; }
+        .o_sb_rep_group td { font-weight: 600; }
+        .o_sb_rep_line .o_sb_rep_first { color: $sb-ink; }
+        .o_sb_rep_detail td { color: #4c5b66; font-size: .9rem; background: #fcfdfe; }
+        .o_sb_rep_note td { font-style: italic; color: $sb-muted; }
+        .o_sb_rep_total td { font-weight: 700; border-top: 1.5px solid $sb-ink; background: #fff; }
+        .o_sb_rep_total.o_sb_rep_l0 td { border-bottom: 3px double $sb-ink; }
+        .o_sb_rep_selected td { background: rgba($sb-steel, .16) !important; }
+        .o_sb_caret { color: $sb-steel; width: 1rem; }
+        .o_sb_neg { color: $sb-bad; }
+        .o_sb_rep_numlink { color: inherit; text-decoration: none; border-bottom: 1px dotted transparent; }
+        .o_sb_rep_numlink:hover { color: $sb-steel; border-bottom-color: $sb-steel; }
+        // the name column wraps (long vendor and account names) so the amounts stay on screen at 1440 px
+        .o_sb_rep_first { white-space: normal; min-width: 11rem; max-width: 22rem; overflow-wrap: anywhere; }
+        .o_sb_th_menu, .o_sb_td_menu { width: 2rem; padding: 0 .3rem; }
+        .o_sb_dots { border: 0; background: none; color: $sb-muted; visibility: hidden; padding: .1rem .35rem; border-radius: 6px; }
+        tr:hover .o_sb_dots { visibility: visible; }
+        .o_sb_dots:hover { background: $sb-band; }
+        .o_sb_rowmenu {
+            position: absolute; right: .3rem; top: 100%; z-index: 10; min-width: 15rem; background: #fff;
+            border: 1px solid $sb-line; border-radius: 8px; padding: .3rem 0;
+            a { padding: .35rem .9rem; color: $sb-ink; text-decoration: none; font-size: .88rem; }
+            a:hover { background: $sb-band; }
+        }
+        .text-danger td { color: $sb-bad; }
+        &.o_sb_loading { opacity: .5; transition: opacity .2s; }
+        // eight or more columns (aged balances, bank reconciliation, Find Transactions): tighter, so every amount shows
+        &:has(thead th:nth-child(8)) {
+            font-size: .84rem;
+            th, td { padding: .45rem .4rem; }
+            thead th { font-size: .72rem; letter-spacing: 0; }
+            .o_sb_rep_first { min-width: 9rem; max-width: 16rem; }
+        }
+        &:has(thead th:nth-child(9)) {
+            font-size: .78rem;
+            th, td { padding: .4rem .25rem; }
+            .o_sb_rep_first { min-width: 7rem; max-width: 12rem; }
+        }
+    }
+    .o_sb_pick_list { position: absolute; left: 0; right: 0; top: 100%; z-index: 25; border-radius: 6px; max-height: 14rem; overflow: auto;
+        a { color: $sb-ink; text-decoration: none; } a:hover { background: $sb-band; } }
+    .o_sb_filter_chip { font-weight: 500; font-size: .8rem; color: $sb-ink; .fa-times { color: $sb-muted; } .fa-times:hover { color: $sb-bad; } }
+    .o_sb_empty { text-align: center; padding: 2.5rem 1rem; color: $sb-muted; }
+    .o_sb_keys { color: $sb-muted; font-size: .8rem; kbd { background: #fff; color: $sb-ink; border: 1px solid $sb-line; box-shadow: none; } }
+}

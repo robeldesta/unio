@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="seq_student" model="ir.sequence">
+        <field name="name">Student number</field>
+        <field name="code">school.student</field>
+        <field name="prefix">ST</field>
+        <field name="padding">5</field>
+    </record>
+    <record id="seq_bill" model="ir.sequence">
+        <field name="name">Fee bill</field>
+        <field name="code">school.bill</field>
+        <field name="prefix">FEE/</field>
+        <field name="padding">5</field>
+    </record>
+    <!-- every subject out of 100 -->
+    <record id="ass_test1" model="school.assessment"><field name="name">Test 1</field><field name="name_am">ፈተና 1</field><field name="sequence">10</field><field name="max_mark">10</field></record>
+    <record id="ass_test2" model="school.assessment"><field name="name">Test 2</field><field name="name_am">ፈተና 2</field><field name="sequence">20</field><field name="max_mark">10</field></record>
+    <record id="ass_assign" model="school.assessment"><field name="name">Assignment</field><field name="name_am">የቤት ሥራ</field><field name="sequence">30</field><field name="max_mark">10</field></record>
+    <record id="ass_mid" model="school.assessment"><field name="name">Mid-term</field><field name="name_am">የመካከለኛ ፈተና</field><field name="sequence">40</field><field name="max_mark">20</field></record>
+    <record id="ass_final" model="school.assessment"><field name="name">Final</field><field name="name_am">የመጨረሻ ፈተና</field><field name="sequence">50</field><field name="max_mark">50</field></record>
+    <!-- subjects -->
+    <record id="sub_amh" model="school.subject"><field name="name">Amharic</field><field name="name_am">አማርኛ</field><field name="sequence">1</field></record>
+    <record id="sub_eng" model="school.subject"><field name="name">English</field><field name="name_am">እንግሊዝኛ</field><field name="sequence">2</field></record>
+    <record id="sub_mat" model="school.subject"><field name="name">Mathematics</field><field name="name_am">ሒሳብ</field><field name="sequence">3</field></record>
+    <record id="sub_env" model="school.subject"><field name="name">Environmental Science</field><field name="name_am">አካባቢ ሳይንስ</field><field name="sequence">4</field></record>
+    <record id="sub_gsc" model="school.subject"><field name="name">General Science</field><field name="name_am">አጠቃላይ ሳይንስ</field><field name="sequence">5</field></record>
+    <record id="sub_sst" model="school.subject"><field name="name">Social Studies</field><field name="name_am">ማኅበራዊ ሳይንስ</field><field name="sequence">6</field></record>
+    <record id="sub_cit" model="school.subject"><field name="name">Citizenship</field><field name="name_am">ሥነ ዜጋ</field><field name="sequence">7</field></record>
+    <record id="sub_pe" model="school.subject"><field name="name">Health and PE</field><field name="name_am">ጤና እና ሰውነት ማጎልመሻ</field><field name="sequence">8</field></record>
+    <record id="sub_art" model="school.subject"><field name="name">Performing and Visual Arts</field><field name="name_am">ሥነ ጥበብ</field><field name="sequence">9</field></record>
+    <record id="sub_ict" model="school.subject"><field name="name">ICT</field><field name="name_am">አይሲቲ</field><field name="sequence">10</field></record>
+    <record id="sub_phy" model="school.subject"><field name="name">Physics</field><field name="name_am">ፊዚክስ</field><field name="sequence">11</field></record>
+    <record id="sub_che" model="school.subject"><field name="name">Chemistry</field><field name="name_am">ኬሚስትሪ</field><field name="sequence">12</field></record>
+    <record id="sub_bio" model="school.subject"><field name="name">Biology</field><field name="name_am">ባዮሎጂ</field><field name="sequence">13</field></record>
+    <record id="sub_geo" model="school.subject"><field name="name">Geography</field><field name="name_am">ጂኦግራፊ</field><field name="sequence">14</field></record>
+    <record id="sub_his" model="school.subject"><field name="name">History</field><field name="name_am">ታሪክ</field><field name="sequence">15</field></record>
+    <!-- grades -->
+    <record id="g_kg1" model="school.grade"><field name="name">KG1</field><field name="name_am">ኬጂ 1</field><field name="sequence">1</field><field name="level">kg</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_env')])]"/></record>
+    <record id="g_kg2" model="school.grade"><field name="name">KG2</field><field name="name_am">ኬጂ 2</field><field name="sequence">2</field><field name="level">kg</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_env')])]"/></record>
+    <record id="g_kg3" model="school.grade"><field name="name">KG3</field><field name="name_am">ኬጂ 3</field><field name="sequence">3</field><field name="level">kg</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_env')])]"/></record>
+    <record id="g_1" model="school.grade"><field name="name">Grade 1</field><field name="name_am">1ኛ ክፍል</field><field name="sequence">11</field><field name="level">primary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_env'), ref('sub_pe'), ref('sub_art')])]"/></record>
+    <record id="g_2" model="school.grade"><field name="name">Grade 2</field><field name="name_am">2ኛ ክፍል</field><field name="sequence">12</field><field name="level">primary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_env'), ref('sub_pe'), ref('sub_art')])]"/></record>
+    <record id="g_3" model="school.grade"><field name="name">Grade 3</field><field name="name_am">3ኛ ክፍል</field><field name="sequence">13</field><field name="level">primary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_env'), ref('sub_pe'), ref('sub_art')])]"/></record>
+    <record id="g_4" model="school.grade"><field name="name">Grade 4</field><field name="name_am">4ኛ ክፍል</field><field name="sequence">14</field><field name="level">primary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_env'), ref('sub_pe'), ref('sub_art')])]"/></record>
+    <record id="g_5" model="school.grade"><field name="name">Grade 5</field><field name="name_am">5ኛ ክፍል</field><field name="sequence">15</field><field name="level">primary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_gsc'), ref('sub_sst'), ref('sub_cit'), ref('sub_pe'), ref('sub_art')])]"/></record>
+    <record id="g_6" model="school.grade"><field name="name">Grade 6</field><field name="name_am">6ኛ ክፍል</field><field name="sequence">16</field><field name="level">primary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_gsc'), ref('sub_sst'), ref('sub_cit'), ref('sub_pe'), ref('sub_art')])]"/></record>
+    <record id="g_7" model="school.grade"><field name="name">Grade 7</field><field name="name_am">7ኛ ክፍል</field><field name="sequence">17</field><field name="level">middle</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_gsc'), ref('sub_sst'), ref('sub_cit'), ref('sub_pe'), ref('sub_ict')])]"/></record>
+    <record id="g_8" model="school.grade"><field name="name">Grade 8</field><field name="name_am">8ኛ ክፍል</field><field name="sequence">18</field><field name="level">middle</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_gsc'), ref('sub_sst'), ref('sub_cit'), ref('sub_pe'), ref('sub_ict')])]"/></record>
+    <record id="g_9" model="school.grade"><field name="name">Grade 9</field><field name="name_am">9ኛ ክፍል</field><field name="sequence">19</field><field name="level">secondary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_phy'), ref('sub_che'), ref('sub_bio'), ref('sub_geo'), ref('sub_his'), ref('sub_cit'), ref('sub_ict'), ref('sub_pe')])]"/></record>
+    <record id="g_10" model="school.grade"><field name="name">Grade 10</field><field name="name_am">10ኛ ክፍል</field><field name="sequence">20</field><field name="level">secondary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_amh'), ref('sub_eng'), ref('sub_mat'), ref('sub_phy'), ref('sub_che'), ref('sub_bio'), ref('sub_geo'), ref('sub_his'), ref('sub_cit'), ref('sub_ict'), ref('sub_pe')])]"/></record>
+    <record id="g_11" model="school.grade"><field name="name">Grade 11</field><field name="name_am">11ኛ ክፍል</field><field name="sequence">21</field><field name="level">secondary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_eng'), ref('sub_mat'), ref('sub_phy'), ref('sub_che'), ref('sub_bio'), ref('sub_ict'), ref('sub_pe')])]"/></record>
+    <record id="g_12" model="school.grade"><field name="name">Grade 12</field><field name="name_am">12ኛ ክፍል</field><field name="sequence">22</field><field name="level">secondary</field>
+        <field name="subject_ids" eval="[(6, 0, [ref('sub_eng'), ref('sub_mat'), ref('sub_phy'), ref('sub_che'), ref('sub_bio'), ref('sub_ict'), ref('sub_pe')])]"/></record>
+    <record id="g_kg1" model="school.grade"><field name="next_grade_id" ref="g_kg2"/></record>
+    <record id="g_kg2" model="school.grade"><field name="next_grade_id" ref="g_kg3"/></record>
+    <record id="g_kg3" model="school.grade"><field name="next_grade_id" ref="g_1"/></record>
+    <record id="g_1" model="school.grade"><field name="next_grade_id" ref="g_2"/></record>
+    <record id="g_2" model="school.grade"><field name="next_grade_id" ref="g_3"/></record>
+    <record id="g_3" model="school.grade"><field name="next_grade_id" ref="g_4"/></record>
+    <record id="g_4" model="school.grade"><field name="next_grade_id" ref="g_5"/></record>
+    <record id="g_5" model="school.grade"><field name="next_grade_id" ref="g_6"/></record>
+    <record id="g_6" model="school.grade"><field name="next_grade_id" ref="g_7"/></record>
+    <record id="g_7" model="school.grade"><field name="next_grade_id" ref="g_8"/></record>
+    <record id="g_8" model="school.grade"><field name="next_grade_id" ref="g_9"/></record>
+    <record id="g_9" model="school.grade"><field name="next_grade_id" ref="g_10"/></record>
+    <record id="g_10" model="school.grade"><field name="next_grade_id" ref="g_11"/></record>
+    <record id="g_11" model="school.grade"><field name="next_grade_id" ref="g_12"/></record>
+    <!-- fees (amounts are examples; each school sets its own) -->
+    <record id="fee_tuition" model="school.fee.item"><field name="name">Tuition</field><field name="name_am">የትምህርት ክፍያ</field><field name="kind">monthly</field><field name="amount">3000</field><field name="sequence">1</field></record>
+    <record id="fee_transport" model="school.fee.item"><field name="name">Transport</field><field name="name_am">የትራንስፖርት ክፍያ</field><field name="kind">monthly</field><field name="amount">1200</field><field name="transport_only" eval="True"/><field name="discountable" eval="False"/><field name="sequence">2</field></record>
+    <record id="fee_registration" model="school.fee.item"><field name="name">Registration</field><field name="name_am">የምዝገባ ክፍያ</field><field name="kind">annual</field><field name="amount">1500</field><field name="discountable" eval="False"/><field name="sequence">3</field></record>
+    <record id="fee_books" model="school.fee.item"><field name="name">Books and materials</field><field name="name_am">የመጻሕፍት ክፍያ</field><field name="kind">term</field><field name="amount">800</field><field name="discountable" eval="False"/><field name="sequence">4</field></record>
+</odoo>

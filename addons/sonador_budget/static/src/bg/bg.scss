@@ -1,0 +1,10 @@
+.o_bg {
+    .o_bg_wrap { overflow-x: auto; }
+    .o_bg_table { min-width: 1200px; font-variant-numeric: tabular-nums; }
+    .o_bg_acc { white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+    .o_bg_in { width: 6.5rem; text-align: right; border: 1px solid transparent; background: transparent; border-radius: 4px; padding: 1px 4px;
+        &:hover, &:focus { border-color: var(--border-color, #ccd); background: var(--o-view-background-color, #fff); outline: none; } }
+    .o_bg_group td { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: .75rem; color: var(--text-muted, #667); padding-top: 14px; }
+    .o_bg_sub td { font-weight: 600; border-top: 1px solid var(--border-color, #dde); }
+    .o_bg_total td { font-weight: 700; border-top: 2px solid var(--border-color, #bbc); }
+}

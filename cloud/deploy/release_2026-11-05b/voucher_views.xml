@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_voucher_list" model="ir.ui.view">
+        <field name="name">sb.voucher.list</field>
+        <field name="model">sb.voucher</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'void'" decoration-info="state == 'draft'">
+                <field name="voucher_type" column_invisible="1"/>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="date_ec" optional="show"/>
+                <field name="partner_id"/>
+                <field name="reference" optional="show"/>
+                <field name="memo" optional="hide"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="payment_state" optional="show" widget="badge"/>
+                <field name="amount_residual" optional="hide" sum="Balance"/>
+                <field name="state" widget="badge" decoration-success="state == 'posted'"
+                       decoration-info="state == 'draft'" decoration-muted="state == 'void'"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="sb_voucher_search" model="ir.ui.view">
+        <field name="name">sb.voucher.search</field>
+        <field name="model">sb.voucher</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="reference"/>
+                <field name="memo"/>
+                <filter name="draft" string="Not posted" domain="[('state', '=', 'draft')]"/>
+                <filter name="posted" string="Posted" domain="[('state', '=', 'posted')]"/>
+                <filter name="void" string="Void" domain="[('state', '=', 'void')]"/>
+                <separator/>
+                <filter name="open" string="Unpaid" domain="[('payment_state', 'in', ('not_paid', 'partial'))]"/>
+                <separator/>
+                <filter name="date" string="Date" date="date"/>
+                <group>
+                    <filter name="by_partner" string="Customer / Vendor" context="{'group_by': 'partner_id'}"/>
+                    <filter name="by_month" string="Month" context="{'group_by': 'date:month'}"/>
+                    <filter name="by_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="sb_voucher_form" model="ir.ui.view">
+        <field name="name">sb.voucher.form</field>
+        <field name="model">sb.voucher</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_post_close" type="object" string="Post &amp; Close" class="btn-primary"
+                            invisible="state != 'draft'" data-hotkey="p"/>
+                    <button name="action_post_new" type="object" string="Post &amp; New" class="btn-primary"
+                            invisible="state != 'draft'" data-hotkey="n"/>
+                    <button name="action_post" type="object" string="Post" invisible="state != 'draft'"/>
+                    <button name="action_edit" type="object" string="Edit" invisible="state != 'posted'" groups="sonador_books.group_sb_accountant"
+                            confirm="Reopen this voucher for editing? It is taken off the ledger until you post it again."/>
+                    <button name="action_void" type="object" string="Void" invisible="state != 'posted'" groups="sonador_books.group_sb_accountant"
+                            confirm="Void this voucher? A reversing entry will be posted (dated today if the period is closed)."/>
+                    <button name="action_new_return" type="object" string="Return / Credit Note"
+                            invisible="state != 'posted' or voucher_type not in ('sale', 'cash_sale', 'bill', 'cash_purchase')"/>
+                    <button name="action_view_move" type="object" string="Behind the Screens"
+                            invisible="not move_id" groups="account.group_account_invoice"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
+                </header>
+                <sheet>
+                    <field name="voucher_type" invisible="1"/>
+                    <field name="move_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="amount_currency_id" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_sb_view_origin" type="object" class="oe_stat_button" icon="fa-file-text-o" invisible="not origin_id"
+                                string="Original"/>
+                        <button name="action_sb_view_paid_by" type="object" class="oe_stat_button" icon="fa-money" invisible="not sb_paid_by_count">
+                            <field name="sb_paid_by_count" widget="statinfo" string="Payments"/>
+                        </button>
+                        <button name="action_sb_view_paid" type="object" class="oe_stat_button" icon="fa-file-text" invisible="not sb_paid_count">
+                            <field name="sb_paid_count" widget="statinfo" string="Invoices paid"/>
+                        </button>
+                        <button name="action_sb_view_returns" type="object" class="oe_stat_button" icon="fa-undo" invisible="not sb_return_count">
+                            <field name="sb_return_count" widget="statinfo" string="Returns"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Void" bg_color="text-bg-danger" invisible="state != 'void'"/>
+                    <widget name="web_ribbon" title="Paid" invisible="payment_state != 'paid' or state != 'posted'"/>
+                    <div class="oe_title">
+                        <span class="o_form_label"><field name="voucher_type" readonly="1" nolabel="1"/></span>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id" string="Customer" invisible="voucher_type not in ('sale', 'cash_sale', 'sale_return')"
+                                   required="voucher_type in ('sale', 'sale_return')" readonly="state != 'draft'"
+                                   context="{'res_partner_search_mode': 'customer'}"/>
+                            <field name="partner_id" string="Vendor" invisible="voucher_type not in ('bill', 'cash_purchase', 'purchase_return')"
+                                   required="voucher_type in ('bill', 'purchase_return')" readonly="state != 'draft'"
+                                   context="{'res_partner_search_mode': 'supplier'}"/>
+                            <field name="partner_id" string="Received from" invisible="voucher_type != 'receipt'"
+                                   readonly="state != 'draft'" placeholder="Customer, shareholder, bank, employee ..."/>
+                            <field name="partner_id" string="Paid to" invisible="voucher_type != 'payment'"
+                                   readonly="state != 'draft'" placeholder="Vendor, shareholder, bank, employee, tax office ..."/>
+                            <field name="payer_type" string="Who" invisible="voucher_type not in ('receipt', 'payment')"
+                                   readonly="state != 'draft'"/>
+                            <field name="purpose_id" invisible="voucher_type not in ('receipt', 'payment')"
+                                   readonly="state != 'draft'" options="{'no_create': True}"
+                                   placeholder="Capital injection, loan, VAT paid ... (optional)"/>
+                            <field name="origin_id" invisible="voucher_type not in ('sale_return', 'purchase_return')"
+                                   readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="reference" readonly="state != 'draft'"
+                                   placeholder="PO no., vendor invoice no., cheque no."/>
+                            <field name="memo" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="date_ec"/>
+                            <field name="due_date" invisible="voucher_type not in ('sale', 'bill')"
+                                   readonly="state != 'draft'" placeholder="From payment terms"/>
+                            <field name="doc_currency_id" invisible="voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return')"
+                                   readonly="state != 'draft'" options="{'no_create': True}" groups="base.group_multi_currency"/>
+                            <field name="received_amount" string="Amount received" invisible="voucher_type != 'receipt'"
+                                   readonly="state != 'draft'" placeholder="Optional: extra becomes an advance"/>
+                            <field name="received_amount" string="Amount paid" invisible="voucher_type != 'payment'"
+                                   readonly="state != 'draft'" placeholder="Optional: extra becomes an advance"/>
+                            <field name="cash_account_id" string="Transfer from" invisible="voucher_type != 'transfer'"
+                                   required="voucher_type == 'transfer'" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="payment_state" invisible="voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return') or state == 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="lines" string="Lines">
+                            <field name="line_ids" readonly="state != 'draft'" context="{'default_voucher_id': id}">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="voucher_type" column_invisible="1"/>
+                                    <field name="company_id" column_invisible="1"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="doc_currency_id" column_invisible="1"/>
+                                    <field name="product_id" column_invisible="parent.voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return', 'cash_sale', 'cash_purchase')"/>
+                                    <field name="quantity" column_invisible="parent.voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return', 'cash_sale', 'cash_purchase')"/>
+                                    <field name="account_id" options="{'no_create': True}"
+                                           required="parent.voucher_type in ('journal', 'receipt', 'payment', 'transfer', 'opening')"/>
+                                    <field name="name"/>
+                                    <field name="partner_id" column_invisible="parent.voucher_type not in ('journal', 'receipt', 'payment', 'transfer', 'opening')"/>
+                                    <field name="due_date" column_invisible="parent.voucher_type != 'opening'"/>
+                                    <field name="price_unit" column_invisible="parent.voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return', 'cash_sale', 'cash_purchase')"/>
+                                    <field name="tax_ids" widget="many2many_tags" options="{'no_create': True}"
+                                           column_invisible="parent.voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return', 'cash_sale', 'cash_purchase')"
+                                           domain="[('type_tax_use', '=', parent.voucher_type in ('sale', 'cash_sale', 'sale_return') and 'sale' or 'purchase')]"/>
+                                    <field name="price_subtotal" string="Amount" column_invisible="parent.voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return', 'cash_sale', 'cash_purchase')"/>
+                                    <field name="amount" sum="Total" column_invisible="parent.voucher_type not in ('receipt', 'payment', 'transfer')"/>
+                                    <field name="tax_ids" string="VAT" widget="many2many_tags" options="{'no_create': True}"
+                                           column_invisible="parent.voucher_type not in ('receipt', 'payment')"
+                                           domain="[('type_tax_use', '=', parent.voucher_type == 'receipt' and 'sale' or 'purchase')]"/>
+                                    <field name="debit" sum="Debit" column_invisible="parent.voucher_type not in ('journal', 'opening')"/>
+                                    <field name="credit" sum="Credit" column_invisible="parent.voucher_type not in ('journal', 'opening')"/>
+                                </list>
+                            </field>
+                            <group invisible="voucher_type not in ('receipt', 'payment', 'cash_sale', 'cash_purchase') or (sb_wht_none and not withholding)">
+                                <group>
+                                    <field name="sb_wht_country" invisible="1"/>
+                                    <field name="sb_wht_none" invisible="1"/>
+                                    <field name="wht_supply" widget="radio" options="{'horizontal': true}" readonly="state != 'draft'"
+                                           invisible="not sb_wht_country or voucher_type not in ('payment', 'cash_purchase')"
+                                           required="sb_wht_country and voucher_type in ('payment', 'cash_purchase') and state == 'draft' and not sb_wht_none"/>
+                                    <field name="amount_incl_vat" readonly="state != 'draft'" invisible="voucher_type not in ('receipt', 'payment')"/>
+                                    <field name="withholding" readonly="state != 'draft'"/>
+                                    <field name="wht_rule" invisible="not withholding or not wht_rule"/>
+                                    <field name="wht_base" invisible="not withholding" readonly="state != 'draft'"/>
+                                    <field name="wht_amount" invisible="not withholding" readonly="state != 'draft'"/>
+                                    <field name="wht_certificate_no" invisible="not withholding" readonly="state != 'draft'"/>
+                                    <field name="wht_certificate_date" invisible="not withholding" readonly="state != 'draft'"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page name="apply" string="Apply to Invoices / Open Items" invisible="voucher_type not in ('receipt', 'payment')">
+                            <field name="apply_ids" readonly="state != 'draft'">
+                                <list editable="bottom" create="0" decoration-info="kind == 'credit'">
+                                    <field name="line_id" column_invisible="1" force_save="1"/>
+                                    <field name="kind" column_invisible="1"/>
+                                    <field name="item_currency_id" column_invisible="1"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="document"/>
+                                    <field name="item_type" optional="show"/>
+                                    <field name="invoice_ref" optional="show"/>
+                                    <field name="invoice_date" optional="hide"/>
+                                    <field name="invoice_date_due"/>
+                                    <field name="amount_total"/>
+                                    <field name="amount_residual"/>
+                                    <field name="pay" widget="boolean_toggle"/>
+                                    <field name="amount_applied"/>
+                                    <field name="discount" optional="show"/>
+                                    <field name="rate" optional="hide"/>
+                                    <field name="amount_applied_company" optional="hide"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                    <div invisible="voucher_type not in ('receipt', 'payment', 'cash_sale', 'cash_purchase') + ('transfer',)">
+                        <h5 class="mt-3">
+                            <span invisible="voucher_type not in ('receipt', 'cash_sale')">Deposited to</span>
+                            <span invisible="voucher_type not in ('payment', 'cash_purchase')">Paid from</span>
+                            <span invisible="voucher_type != 'transfer'">Transfer to</span>
+                        </h5>
+                        <field name="cash_line_ids" readonly="state != 'draft'">
+                            <list editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="currency_id" column_invisible="1"/>
+                                <field name="row_currency_id" column_invisible="1"/>
+                                <field name="voucher_type" column_invisible="1"/>
+                                <field name="account_id" options="{'no_create': True}" required="1"/>
+                                <field name="method"/>
+                                <field name="amount_currency" sum="Total"/>
+                                <field name="rate" optional="hide" readonly="row_currency_id == currency_id"/>
+                                <field name="amount" optional="hide" sum="Total ETB"/>
+                                <field name="charges" optional="show"/>
+                                <field name="reference"/>
+                                <field name="cheque_bank" optional="show" readonly="method != 'cheque'"/>
+                                <field name="cheque_date" optional="show" readonly="method != 'cheque'"/>
+                                <field name="cheque_state" optional="show" readonly="1"/>
+                            </list>
+                        </field>
+                    </div>
+                    <group class="oe_subtotal_footer">
+                        <field name="amount_untaxed" string="Subtotal" invisible="voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return', 'cash_sale', 'cash_purchase')"/>
+                        <field name="amount_tax" string="VAT / tax" invisible="voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return', 'cash_sale', 'cash_purchase')"/>
+                        <field name="amount_applied" string="Applied to items" invisible="voucher_type not in ('receipt', 'payment')"/>
+                        <field name="amount_credits" string="Less advances / credits used" invisible="not amount_credits"/>
+                        <field name="amount_discount" string="Discounts / write-offs" invisible="not amount_discount"/>
+                        <field name="amount_untaxed" string="Other GL lines" invisible="voucher_type not in ('receipt', 'payment')"/>
+                        <field name="amount_tax" string="VAT" invisible="voucher_type not in ('receipt', 'payment') or not amount_tax"/>
+                        <field name="amount_unapplied" string="Unapplied, kept as advance" invisible="not amount_unapplied"/>
+                        <field name="amount_untaxed" string="Fees" invisible="voucher_type != 'transfer'"/>
+                        <field name="wht_amount" string="Less withholding" invisible="not withholding"/>
+                        <field name="amount_total" string="Total" invisible="voucher_type in ('receipt', 'payment', 'journal', 'opening')"/>
+                        <field name="amount_cash" string="Cash amount" invisible="voucher_type not in ('receipt', 'payment', 'cash_sale', 'cash_purchase')"/>
+                        <field name="amount_to_allocate" string="Remaining to allocate" invisible="not amount_to_allocate"
+                               decoration-danger="amount_to_allocate != 0"/>
+                        <field name="total_debit" invisible="voucher_type not in ('journal', 'opening')"/>
+                        <field name="total_credit" invisible="voucher_type not in ('journal', 'opening')"/>
+                        <field name="amount_residual" string="Balance due" invisible="voucher_type not in ('sale', 'bill', 'sale_return', 'purchase_return') or state == 'draft'"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- one action per voucher type, as in Peachtree's Tasks menu -->
+    <record id="action_sb_sale" model="ir.actions.act_window">
+        <field name="name">Sales Invoices</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'sale')]</field>
+        <field name="context">{'default_voucher_type': 'sale'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Enter a sales invoice</p>
+            <p>Credit (on-account) sale: Dr Trade Debtors, Cr Sales and VAT. It stays in receivables until receipts (CRV) settle it.
+            For money received on the spot use Cash Sale.</p></field>
+    </record>
+    <record id="action_sb_cash_sale" model="ir.actions.act_window">
+        <field name="name">Cash Sales</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'cash_sale')]</field>
+        <field name="context">{'default_voucher_type': 'cash_sale'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Record a cash sale</p>
+            <p>One entry: Dr Bank or Cash, Cr Sales and VAT. Trade Debtors is not touched.</p></field>
+    </record>
+    <record id="action_sb_cash_purchase" model="ir.actions.act_window">
+        <field name="name">Cash Purchases</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'cash_purchase')]</field>
+        <field name="context">{'default_voucher_type': 'cash_purchase'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Record a cash purchase</p>
+            <p>One entry: Dr expense or stock and VAT, Cr Bank or Cash (less withholding). Trade Creditors is not touched.</p></field>
+    </record>
+    <record id="action_sb_receipt" model="ir.actions.act_window">
+        <field name="name">Receipts (CRV)</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'receipt')]</field>
+        <field name="context">{'default_voucher_type': 'receipt'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Record money received</p>
+            <p>Any money in: pick who paid and tick their invoices, or choose a purpose (capital injection, loan,
+            customer advance, other income ...) to post straight to the GL. Both can be mixed.</p></field>
+    </record>
+    <record id="action_sb_bill" model="ir.actions.act_window">
+        <field name="name">Purchase Bills</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'bill')]</field>
+        <field name="context">{'default_voucher_type': 'bill'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Enter a vendor bill</p>
+            <p>Credit purchase: Dr expense or stock and VAT, Cr Trade Creditors, settled later by payments (CPV).
+            For purchases paid on the spot use Cash Purchase.</p></field>
+    </record>
+    <record id="action_sb_payment" model="ir.actions.act_window">
+        <field name="name">Payments (CPV)</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'payment')]</field>
+        <field name="context">{'default_voucher_type': 'payment'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Write a payment voucher</p>
+            <p>Any money out: pick who is paid and tick their bills, or choose a purpose (loan repayment, VAT, salaries,
+            dividends, advances ...) to post straight to the GL. Withholding is computed for you.</p></field>
+    </record>
+    <record id="action_sb_transfer" model="ir.actions.act_window">
+        <field name="name">Bank Transfers</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'transfer')]</field>
+        <field name="context">{'default_voucher_type': 'transfer'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Move money between bank and cash accounts</p>
+            <p>Cash deposited to the bank, bank to bank, petty cash top-up. Add a line for any transfer fee.</p></field>
+    </record>
+    <record id="sb_purpose_list" model="ir.ui.view">
+        <field name="name">sb.voucher.purpose.list</field>
+        <field name="model">sb.voucher.purpose</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="voucher_type"/>
+                <field name="name"/>
+                <field name="payer_type"/>
+                <field name="account_id" options="{'no_create': True}"/>
+                <field name="company_id" column_invisible="1"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_sb_purpose" model="ir.actions.act_window">
+        <field name="name">Receipt / Payment Purposes</field>
+        <field name="res_model">sb.voucher.purpose</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+    <record id="action_sb_sale_return" model="ir.actions.act_window">
+        <field name="name">Sales Returns / Credit Notes</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'sale_return')]</field>
+        <field name="context">{'default_voucher_type': 'sale_return'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Record a sales return or credit note</p>
+            <p>Against an open invoice it settles it; otherwise the customer keeps a credit you can refund (Payment) or use on the next Receipt.</p></field>
+    </record>
+    <record id="action_sb_purchase_return" model="ir.actions.act_window">
+        <field name="name">Purchase Returns / Debit Notes</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'purchase_return')]</field>
+        <field name="context">{'default_voucher_type': 'purchase_return'}</field>
+    </record>
+    <record id="action_sb_opening" model="ir.actions.act_window">
+        <field name="name">Opening Balances</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'opening')]</field>
+        <field name="context">{'default_voucher_type': 'opening'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Enter opening balances</p>
+            <p>One line per GL balance; for customers and vendors one line per open invoice (reference, due date) so ageing works.
+            Any difference goes to Opening balance equity until the import is complete.</p></field>
+    </record>
+    <record id="sb_cash_row_list" model="ir.ui.view">
+        <field name="name">sb.voucher.cash.cheques</field>
+        <field name="model">sb.voucher.cash</field>
+        <field name="arch" type="xml">
+            <list create="0" decoration-muted="cheque_state in ('cleared', 'bounced')" decoration-danger="cheque_state == 'bounced'">
+                <field name="currency_id" column_invisible="1"/>
+                <field name="voucher_id"/>
+                <field name="voucher_date"/>
+                <field name="direction"/>
+                <field name="partner_id"/>
+                <field name="reference" string="Cheque No."/>
+                <field name="cheque_bank"/>
+                <field name="cheque_date"/>
+                <field name="account_id" string="Bank"/>
+                <field name="amount" sum="Total"/>
+                <field name="cheque_state"/>
+                <field name="settle_voucher_id" optional="show"/>
+                <button name="action_cheque_clear" type="object" string="Deposit / Clear" icon="fa-university"
+                        invisible="cheque_state != 'open'"/>
+                <button name="action_cheque_bounce" type="object" string="Bounced / Cancel" icon="fa-undo"
+                        invisible="cheque_state not in ('open', 'cleared') or (cheque_state == 'cleared' and direction == 'out')"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_cash_row_search" model="ir.ui.view">
+        <field name="name">sb.voucher.cash.search</field>
+        <field name="model">sb.voucher.cash</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="reference"/>
+                <field name="partner_id"/>
+                <filter name="open" string="On hand / outstanding" domain="[('cheque_state', '=', 'open')]"/>
+                <filter name="received" string="Received" domain="[('direction', '=', 'in')]"/>
+                <filter name="issued" string="Issued" domain="[('direction', '=', 'out')]"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_sb_cheques" model="ir.actions.act_window">
+        <field name="name">Cheques</field>
+        <field name="res_model">sb.voucher.cash</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="sb_cash_row_list"/>
+        <field name="domain">[('method', '=', 'cheque'), ('cheque_state', '!=', 'none')]</field>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+    <record id="sb_cheque_wizard_form" model="ir.ui.view">
+        <field name="name">sb.cheque.wizard.form</field>
+        <field name="model">sb.cheque.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="row_id" readonly="1"/>
+                    <field name="action" readonly="1"/>
+                    <field name="direction" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="date"/>
+                    <field name="account_id" options="{'no_create': True}"/>
+                    <field name="charges"/>
+                    <field name="reference"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirm" class="btn-primary"/>
+                    <button special="cancel" string="Cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_bank_accounts" model="ir.actions.act_window">
+        <field name="name">Bank, Cash and Mobile-Money Accounts</field>
+        <field name="res_model">account.journal</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('type', 'in', ('bank', 'cash'))]</field>
+        <field name="context">{'default_type': 'bank'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Add each bank account</p>
+            <p>Each bank account (one per currency: a USD account is its own account), mobile money and petty cash. Each gets its own GL account and appears in Deposited to / Paid from.</p></field>
+    </record>
+
+    <record id="action_sb_journal" model="ir.actions.act_window">
+        <field name="name">Journal Vouchers</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'journal')]</field>
+        <field name="context">{'default_voucher_type': 'journal'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Enter a general journal voucher</p>
+            <p>Debits must equal credits.</p></field>
+    </record>
+
+    <!-- Ethiopian date on standard journal entries -->
+    <record id="view_move_form_ec" model="ir.ui.view">
+        <field name="name">account.move.form.sb.ec</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date']" position="after">
+                <field name="sb_date_ec"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

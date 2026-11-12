@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="sonador_report_designer.App">
+    <div class="o_rd">
+        <!-- my reports -->
+        <t t-if="!state.r and state.home">
+            <t t-set="h" t-value="state.home"/>
+            <div class="o_rd_head"><div><div class="o_rd_kicker" t-esc="h.me"/><h1>Reports</h1></div></div>
+            <div class="o_rd_body">
+                <section t-if="!h.templates.length and !h.mine.length and !h.to_read.length" class="o_rd_card">
+                    <p class="text-muted mb-0">No report is yours to write: reports are written by role (department heads and the people named on each report).</p>
+                </section>
+                <section t-if="h.templates.length" class="o_rd_card">
+                    <h2>Write a report</h2>
+                    <div class="o_rd_tiles">
+                        <div t-foreach="h.templates" t-as="t" t-key="t.id" class="o_rd_tile">
+                            <i class="fa fa-file-text-o"/><b t-esc="t.name"/>
+                            <button t-foreach="t.open" t-as="o" t-key="o.kind + o.from" class="btn btn-sm btn-light border o_rd_open"
+                                    t-on-click="() => this.start(t.id, o.kind, o.from)"><b t-esc="o.kind_name"/> <small t-esc="o.label"/></button>
+                            <details t-if="t.earlier.length" class="o_rd_late">
+                                <summary>Earlier periods</summary>
+                                <button t-foreach="t.earlier" t-as="o" t-key="o.kind + o.from" class="btn btn-sm btn-link o_rd_open"
+                                        t-on-click="() => this.start(t.id, o.kind, o.from)"><span t-esc="o.kind_name"/> <small t-esc="o.label"/></button>
+                            </details>
+                        </div>
+                    </div>
+                    <p t-if="h.next.length" class="text-muted small mt-2 mb-0">Next to open:
+                        <t t-foreach="h.next" t-as="n" t-key="n.kind"><t t-esc="n.kind"/> <t t-esc="n.when"/><t t-if="!n_last">, </t></t>.
+                        Weekly reports open Friday 10:00 until Saturday noon; monthly on the 30th for 5 days; quarterly, half-yearly and yearly are always open.</p>
+                </section>
+                <section t-if="h.reopen.length" class="o_rd_card">
+                    <h2>Closed reports</h2>
+                    <p class="text-muted small">The week and the month just before the current ones. Reopen one for its writer: it stays open until they send it, marked late.</p>
+                    <div t-foreach="h.reopen" t-as="x" t-key="x.template_id + '_' + x.employee_id + x.kind" class="o_rd_row nohover">
+                        <span><b t-esc="x.who"/> · <t t-esc="x.report"/> <span class="o_rd_kind" t-esc="x.kind_name"/> <span class="text-muted" t-esc="x.label"/></span>
+                        <span t-if="['sent', 'accepted'].includes(x.state)" t-attf-class="o_rd_state {{ x.state }}" t-esc="stateLabel(x.state)"/>
+                        <span t-elif="x.reopened" class="o_rd_state returned">Reopened</span>
+                        <button t-else="" class="btn btn-sm btn-light border" t-on-click="() => this.reopen(x)"><i class="fa fa-unlock me-1"/>Reopen</button>
+                    </div>
+                </section>
+                <section t-if="h.to_read.length" class="o_rd_card">
+                    <h2>To read <span class="o_rd_count" t-esc="h.to_read.length"/></h2>
+                    <div t-foreach="h.to_read" t-as="x" t-key="x.id" class="o_rd_row" t-on-click="() => this.open(x.id)">
+                        <span><b t-esc="x.who"/> · <t t-esc="x.name"/> <span class="o_rd_kind" t-esc="x.kind"/><span t-if="x.late" class="o_rd_kind late">late</span></span><span class="text-muted" t-esc="x.period"/>
+                    </div>
+                </section>
+                <section t-if="h.templates.length or h.mine.length" class="o_rd_card">
+                    <h2>My reports</h2>
+                    <p t-if="!h.mine.length" class="text-muted">None yet: pick a report above.</p>
+                    <div t-foreach="h.mine" t-as="x" t-key="x.id" class="o_rd_row" t-on-click="() => this.open(x.id)">
+                        <span><b t-esc="x.name"/> <span class="o_rd_kind" t-esc="x.kind"/><span t-if="x.late" class="o_rd_kind late">late</span> <span class="text-muted" t-esc="x.period"/></span>
+                        <span t-attf-class="o_rd_state {{ x.state }}" t-esc="stateLabel(x.state)"/>
+                    </div>
+                </section>
+                <section t-if="h.everyone.length" class="o_rd_card">
+                    <h2>All reports</h2>
+                    <div t-foreach="h.everyone" t-as="x" t-key="x.id" class="o_rd_row" t-on-click="() => this.open(x.id)">
+                        <span><b t-esc="x.who"/> · <t t-esc="x.name"/> <span class="o_rd_kind" t-esc="x.kind"/><span t-if="x.late" class="o_rd_kind late">late</span> <span class="text-muted" t-esc="x.period"/></span>
+                        <span t-attf-class="o_rd_state {{ x.state }}" t-esc="stateLabel(x.state)"/>
+                    </div>
+                </section>
+                <section t-if="h.read.length" class="o_rd_card">
+                    <h2>Read</h2>
+                    <div t-foreach="h.read" t-as="x" t-key="x.id" class="o_rd_row" t-on-click="() => this.open(x.id)">
+                        <span><b t-esc="x.who"/> · <t t-esc="x.name"/> <span class="o_rd_kind" t-esc="x.kind"/><span t-if="x.late" class="o_rd_kind late">late</span> <span class="text-muted" t-esc="x.period"/></span>
+                        <span t-attf-class="o_rd_state {{ x.state }}" t-esc="stateLabel(x.state)"/>
+                    </div>
+                </section>
+            </div>
+        </t>
+
+        <!-- one report -->
+        <t t-if="state.r">
+            <t t-set="r" t-value="state.r"/>
+            <div class="o_rd_head">
+                <div>
+                    <button class="btn btn-link px-0 o_rd_back" t-on-click="loadHome"><i class="fa fa-arrow-left me-1"/>Reports</button>
+                    <h1 t-esc="r.name"/>
+                    <div class="o_rd_kicker"><t t-esc="r.who"/> · <t t-esc="r.kind"/> · <t t-esc="r.period"/>
+                        <span t-attf-class="o_rd_state ms-2 {{ r.state }}" t-esc="stateLabel(r.state)"/>
+                        <span t-if="r.frozen" class="ms-2 text-muted"><i class="fa fa-lock me-1"/>figures as sent</span>
+                        <span t-if="r.mine and r.state === 'draft'" class="ms-2 text-muted"><i t-attf-class="fa {{ r.open ? 'fa-clock-o' : 'fa-lock' }} me-1"/><t t-esc="r.late ? 'written late' : !r.closes ? 'always open' : r.open ? 'open until ' + r.closes : 'closed ' + r.closes"/></span></div>
+                </div>
+                <div class="o_rd_actions">
+                    <div class="btn-group">
+                        <button class="btn btn-light border" t-on-click="() => this.exportAs('pdf')"><i class="fa fa-file-pdf-o me-1"/>PDF</button>
+                        <button class="btn btn-light border" t-on-click="() => this.exportAs('xlsx')"><i class="fa fa-file-excel-o me-1"/>Excel</button>
+                        <button class="btn btn-light border" t-on-click="() => this.exportAs('pptx')"><i class="fa fa-file-powerpoint-o me-1"/>PowerPoint</button>
+                    </div>
+                    <t t-if="editable">
+                        <button class="btn btn-light border" t-att-disabled="state.saved" t-on-click="() => this.save(false)">Save</button>
+                        <button class="btn btn-primary" t-att-disabled="!r.manager" t-on-click="send"><i class="fa fa-paper-plane me-1"/>Send to <t t-esc="r.manager or 'manager'"/></button>
+                    </t>
+                    <t t-if="r.is_manager and r.state === 'sent'">
+                        <button class="btn btn-success" t-on-click="() => this.decide(true)"><i class="fa fa-check me-1"/>Accept</button>
+                        <button class="btn btn-light border" t-on-click="() => this.decide(false)"><i class="fa fa-reply me-1"/>Return</button>
+                    </t>
+                </div>
+            </div>
+            <div t-if="state.returning" class="o_rd_card o_rd_note">
+                <textarea class="form-control" placeholder="What should change? The author sees this." t-on-input="(ev) => this.state.note = ev.target.value"/>
+                <div class="mt-2"><button class="btn btn-danger btn-sm" t-att-disabled="!state.note.trim()" t-on-click="() => this.decide(false)">Return the report</button>
+                    <button class="btn btn-link btn-sm" t-on-click="() => this.state.returning = false">Keep</button></div>
+            </div>
+            <div t-if="r.manager_note and r.state === 'returned'" class="o_rd_card o_rd_note"><b>Returned:</b> <t t-esc="r.manager_note"/></div>
+
+            <div t-attf-class="o_rd_grid {{ editable ? '' : 'readonly' }}">
+                <!-- the report -->
+                <div class="o_rd_sections">
+                    <section t-foreach="r.sections" t-as="s" t-key="s.id"
+                             t-attf-class="o_rd_card o_rd_section {{ state.over === s.id ? 'over' : '' }}"
+                             t-on-dragover="(ev) => this.onDragOver(ev, s)" t-on-dragleave="() => this.state.over = null" t-on-drop="(ev) => this.onDrop(ev, s)">
+                        <h2><t t-esc="s.title"/><span t-if="s.required and editable" class="o_rd_req" title="Words required">*</span></h2>
+                        <textarea t-if="editable" class="form-control o_rd_text" t-att-placeholder="s.prompt" t-att-value="s.narrative"
+                                  t-on-input="(ev) => this.setNarrative(s, ev.target.value)" t-on-blur="() => this.state.saved or this.save(true)"/>
+                        <p t-elif="s.narrative" class="o_rd_words" t-esc="s.narrative"/>
+                        <div t-foreach="s.blocks" t-as="code" t-key="code" class="o_rd_block">
+                            <t t-set="b" t-value="r.blocks[code] or {}"/>
+                            <div class="o_rd_block_head">
+                                <b t-esc="b.title or blockTitle(code)"/>
+                                <span t-if="editable" class="o_rd_tools">
+                                    <button class="btn btn-sm btn-link" title="Up" t-on-click="() => this.moveBlock(s, code, -1)"><i class="fa fa-arrow-up"/></button>
+                                    <button class="btn btn-sm btn-link" title="Down" t-on-click="() => this.moveBlock(s, code, 1)"><i class="fa fa-arrow-down"/></button>
+                                    <button class="btn btn-sm btn-link text-danger" title="Remove" t-on-click="() => this.removeBlock(s, code)"><i class="fa fa-times"/></button>
+                                </span>
+                            </div>
+                            <p t-if="b.error" class="text-muted small" t-esc="b.error"/>
+                            <p t-if="b.note" class="text-muted small" t-esc="b.note"/>
+                            <div t-if="b.kpis" class="o_rd_kpis">
+                                <div t-foreach="b.kpis" t-as="k" t-key="k_index" class="o_rd_kpi">
+                                    <small t-esc="k.label"/>
+                                    <b t-esc="fmt(k.value, k.money)"/>
+                                    <span t-if="k.change !== null and k.change !== undefined" t-attf-class="o_rd_change {{ k.change >= 0 ? 'up' : 'down' }}">
+                                        <t t-esc="k.change >= 0 ? '+' : ''"/><t t-esc="k.change"/>%</span>
+                                </div>
+                            </div>
+                            <div t-if="b.table and b.table.rows.length" class="o_rd_table_wrap">
+                                <table class="o_rd_table">
+                                    <thead><tr><th t-foreach="b.table.columns" t-as="c" t-key="c_index" t-att-class="isNum(b.table.rows[0][c_index]) ? 'num' : ''" t-esc="c"/></tr></thead>
+                                    <tbody>
+                                        <tr t-foreach="b.table.rows" t-as="row" t-key="row_index">
+                                            <td t-foreach="row" t-as="v" t-key="v_index" t-att-class="isNum(v) ? 'num' : ''" t-esc="fmt(v, (b.table.money or []).includes(v_index))"/>
+                                        </tr>
+                                        <tr t-if="b.table.total" class="total">
+                                            <td t-foreach="b.table.total" t-as="v" t-key="v_index" t-att-class="isNum(v) ? 'num' : ''" t-esc="fmt(v, (b.table.money or []).includes(v_index))"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p t-elif="b.table" class="text-muted small">Nothing in this period.</p>
+                        </div>
+                        <div t-if="editable" class="o_rd_drop">
+                            <i class="fa fa-plus me-1"/>Drag a block here, or
+                            <select class="form-select form-select-sm d-inline-block w-auto ms-1" t-on-change="(ev) => { this.addBlock(s, ev.target.value); ev.target.value = ''; }">
+                                <option value="">add one…</option>
+                                <option t-foreach="r.library" t-as="b" t-key="b.code" t-att-value="b.code" t-esc="b.title"/>
+                            </select>
+                        </div>
+                    </section>
+                </div>
+                <!-- the block library -->
+                <aside t-if="editable" class="o_rd_library">
+                    <div class="o_rd_card">
+                        <h2>Blocks</h2>
+                        <input class="form-control form-control-sm mb-2" placeholder="Search blocks" t-on-input="(ev) => this.state.filter = ev.target.value"/>
+                        <div class="o_rd_chips">
+                            <button t-attf-class="o_rd_chip {{ !state.dept ? 'active' : '' }}" t-on-click="() => this.state.dept = ''">All</button>
+                            <button t-foreach="r.departments" t-as="d" t-key="d.code" t-attf-class="o_rd_chip {{ state.dept === d.code ? 'active' : '' }}"
+                                    t-on-click="() => this.state.dept = d.code" t-esc="d.name"/>
+                        </div>
+                        <t t-foreach="library" t-as="d" t-key="d.code">
+                            <div class="o_rd_dept" t-esc="d.name"/>
+                            <div t-foreach="d.blocks" t-as="b" t-key="b.code" class="o_rd_lib" draggable="true"
+                                 t-on-dragstart="(ev) => this.onDragStart(ev, b.code)" t-att-title="b.about">
+                                <i class="fa fa-arrows me-2 text-muted"/><span><b t-esc="b.title"/><small class="d-block text-muted" t-esc="b.about"/></span>
+                            </div>
+                        </t>
+                    </div>
+                </aside>
+            </div>
+        </t>
+        <div t-if="state.busy" class="o_rd_busy"><i class="fa fa-spinner fa-spin me-2"/>Filling the blocks…</div>
+    </div>
+</t>
+</templates>

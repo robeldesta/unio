@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tax invoice / cash sale receipt / credit note, printed from the voucher -->
+    <record id="action_report_sale_document" model="ir.actions.report">
+        <field name="name">Tax Invoice</field>
+        <field name="model">sb.voucher</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_books.report_sale_document</field>
+        <field name="print_report_name">'%s %s' % ({'sale_return': 'Credit note', 'cash_sale': 'Cash sale'}.get(object.voucher_type, 'Invoice'), object.name)</field>
+        <field name="binding_model_id" ref="model_sb_voucher"/>
+        <field name="binding_type">report</field>
+    </record>
+    <template id="report_sale_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="v">
+                <t t-call="web.external_layout">
+                    <t t-set="cur" t-value="v.currency_id"/>
+                    <t t-set="title" t-value="{'sale': 'Tax Invoice', 'cash_sale': 'Tax Invoice (cash sale)', 'sale_return': 'Credit Note'}.get(v.voucher_type, 'Invoice')"/>
+                    <div class="page" style="font-size: 12px">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid #1F2D36; padding-bottom: 6px; margin-bottom: 12px">
+                            <div>
+                                <h3 style="margin:0; color:#1F2D36" t-esc="title"/>
+                                <div style="color:#555">Seller TIN <b t-esc="v.company_id.vat or '—'"/></div>
+                            </div>
+                            <div style="text-align:right">
+                                <div style="font-size:16px; font-weight:bold" t-esc="v.name"/>
+                                <div t-esc="v.date_ec"/>
+                                <div t-if="v.due_date and v.voucher_type == 'sale'" style="color:#555">Due <span t-field="v.due_date"/></div>
+                            </div>
+                        </div>
+                        <table style="width:100%; margin-bottom: 12px">
+                            <tr>
+                                <td style="width:55%; vertical-align:top">
+                                    <div style="color:#888; font-size:10px; text-transform:uppercase; letter-spacing:1px">Bill to</div>
+                                    <div style="font-weight:bold; font-size:13px" t-esc="v.partner_id.name or 'Cash customer'"/>
+                                    <div t-if="v.partner_id.vat">TIN <span t-esc="v.partner_id.vat"/></div>
+                                    <div t-if="v.partner_id.street or v.partner_id.city"><span t-esc="v.partner_id.street or ''"/> <span t-esc="v.partner_id.city or ''"/></div>
+                                    <div t-if="v.partner_id.phone" t-esc="v.partner_id.phone"/>
+                                </td>
+                                <td style="width:45%; vertical-align:top; text-align:right">
+                                    <div t-if="v.reference"><b>Your reference:</b> <span t-esc="v.reference"/></div>
+                                    <div t-if="'sb_sale_order_id' in v._fields and v.sb_sale_order_id"><b>Order:</b> <span t-esc="v.sb_sale_order_id.name"/></div>
+                                    <div t-if="v.state == 'void'" style="color:#C0392B; font-weight:bold">VOID</div>
+                                    <div t-if="v.state == 'draft'" style="color:#C0392B; font-weight:bold">DRAFT - NOT A TAX INVOICE</div>
+                                </td>
+                            </tr>
+                        </table>
+                        <table class="table table-sm" style="font-size: 12px">
+                            <thead><tr style="background:#1F2D36"><th style="color:#fff; background:#1F2D36">#</th><th style="color:#fff; background:#1F2D36">Description</th>
+                                <th style="color:#fff; background:#1F2D36" class="text-end">Quantity</th><th style="color:#fff; background:#1F2D36" class="text-end">Unit price</th>
+                                <th style="color:#fff; background:#1F2D36">Tax</th><th style="color:#fff; background:#1F2D36" class="text-end">Amount</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="v.line_ids.filtered(lambda l: l.price_subtotal or l.product_id)" t-as="l">
+                                    <td t-esc="l_index + 1"/>
+                                    <td><t t-esc="l.name or l.product_id.display_name"/><div t-if="l.product_id.default_code and l.product_id.default_code not in (l.name or '')" style="color:#888; font-size:10px" t-esc="l.product_id.default_code"/></td>
+                                    <td class="text-end" t-esc="'{:,.4f}'.format(l.quantity).rstrip('0').rstrip('.')"/>
+                                    <td class="text-end" t-esc="'{:,.2f}'.format(l.price_unit)"/>
+                                    <td t-esc="', '.join(l.tax_ids.mapped('name')) or 'Exempt'"/>
+                                    <td class="text-end" t-esc="'{:,.2f}'.format(l.price_subtotal)"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table style="width:100%">
+                            <tr>
+                                <td style="width:55%; vertical-align:top; padding-right: 20px">
+                                    <div id="sb_fiscal"/>
+                                    <div style="color:#555; margin-top:6px"><b>Amount in words:</b> <span t-esc="cur.amount_to_text(v.amount_total)"/></div>
+                                    <div t-if="v.memo" style="margin-top:6px; color:#555" t-esc="v.memo"/>
+                                    <t t-set="banks" t-value="v.company_id.partner_id.bank_ids.filtered(lambda b: b.active)"/>
+                                    <div t-if="banks and v.voucher_type == 'sale'" style="margin-top:8px">
+                                        <div style="color:#888; font-size:10px; text-transform:uppercase; letter-spacing:1px">Pay to</div>
+                                        <div t-foreach="banks" t-as="b"><b t-esc="b.bank_id.name or 'Bank'"/> · account <b t-esc="b.acc_number"/>
+                                            · <span t-esc="b.acc_holder_name or b.partner_id.name"/><t t-if="b.currency_id"> (<t t-esc="b.currency_id.name"/>)</t></div>
+                                    </div>
+                                </td>
+                                <td style="width:45%; vertical-align:top">
+                                    <table style="width:100%">
+                                        <tr><td>Amount before tax</td><td class="text-end" t-esc="'{:,.2f}'.format(v.amount_untaxed)"/></tr>
+                                        <tr><td>VAT</td><td class="text-end" t-esc="'{:,.2f}'.format(v.amount_tax)"/></tr>
+                                        <tr style="font-size:14px; font-weight:bold; border-top:2px solid #1F2D36"><td>Total <span t-esc="cur.name"/></td>
+                                            <td class="text-end" t-esc="'{:,.2f}'.format(v.amount_total)"/></tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                        <table style="width:100%; margin-top: 36px; font-size: 11px">
+                            <tr>
+                                <td t-foreach="['Prepared by', 'Received by (customer)']" t-as="s" style="padding-right: 14px; vertical-align: top; width:50%">
+                                    <div style="border-top: 1px solid #333; padding-top: 4px"><b t-esc="s"/></div>
+                                    <div style="color:#666">Name / signature / date</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,28 @@
+.o_spd {
+    .o_spd_body { display: grid; grid-template-columns: 200px 300px 1fr; min-height: 0; overflow: hidden; }
+    .o_spd_kinds { border-right: 1px solid var(--border-color, #e3e6ee); overflow-y: auto; padding: 10px 6px;
+        button { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 7px 10px; border-radius: 6px; font-size: .9rem; color: inherit;
+            &.active { background: var(--o-brand-primary, #2d6bff); color: #fff; } &:hover:not(.active) { background: rgba(0,0,0,.05); } } }
+    .o_spd_panel { border-right: 1px solid var(--border-color, #e3e6ee); overflow-y: auto; padding: 12px 14px 30px;
+        label { display: block; font-weight: 600; font-size: .82rem; margin: 12px 0 4px; } }
+    .o_spd_tabs, .o_spd_seg { display: flex; gap: 4px; margin-bottom: 4px;
+        button { flex: 1; border: 1px solid var(--border-color, #dde); background: transparent; border-radius: 6px; padding: 5px; font-size: .82rem; color: inherit;
+            &.active { background: #1b2240; color: #fff; border-color: #1b2240; } } }
+    .o_spd_tpls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        button { border: 1px solid var(--border-color, #dde); background: transparent; border-radius: 8px; padding: 6px; font-size: .8rem; color: inherit; display: grid; gap: 4px; justify-items: center;
+            &.active { border-color: #2d6bff; box-shadow: 0 0 0 2px rgba(45,107,255,.25); } } }
+    .o_spd_thumb { width: 56px; height: 40px; border: 1px solid #ccd; border-radius: 3px; background: #fff; display: grid; gap: 3px; padding: 4px; align-content: start;
+        i { display: block; height: 4px; background: #d4d8e3; border-radius: 2px; } }
+    .o_spd_thumb_modern i:first-child, .o_spd_thumb_bold i:first-child { height: 9px; background: #1b2240; }
+    .o_spd_thumb_bold i:first-child { background: #2d6bff; }
+    .o_spd_thumb_classic { border-width: 2px; }
+    .o_spd_thumb_compact i { height: 2px; }
+    .o_spd_row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .o_spd_check { font-weight: 400 !important; display: flex !important; gap: 8px; align-items: center; margin: 6px 0 !important; }
+    .o_spd_preview { background: #e9ebf1; overflow: auto; padding: 22px; display: flex; justify-content: center; }
+    .o_spd_paper { position: relative; background: #fff; box-shadow: 0 6px 24px rgba(20,25,45,.15); width: 794px; min-height: 1060px;
+        iframe { border: 0; width: 100%; height: 100%; min-height: 1060px; } }
+    .o_spd_paper_a5 { width: 560px; min-height: 790px; iframe { min-height: 790px; } }
+    .o_spd_paper_receipt { width: 320px; min-height: 700px; iframe { min-height: 700px; } }
+    .o_spd_busy { position: absolute; top: 10px; right: 12px; color: #889; }
+}

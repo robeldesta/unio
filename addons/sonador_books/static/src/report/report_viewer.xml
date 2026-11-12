@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.ReportViewer">
+        <div class="o_sb_rep o_action h-100 d-flex flex-column" t-ref="root" tabindex="-1" t-on-click="() => this.state.rowMenu = null">
+            <!-- toolbar -->
+            <div class="o_sb_rep_bar px-4 py-2 d-flex flex-wrap align-items-center gap-2">
+                <t t-if="state.periods">
+                    <SbPeriodPicker periods="state.periods" dateFrom="state.options.date_from" dateTo="state.options.date_to"
+                                    asOf="!!features.asOf" onChange.bind="onPeriod"/>
+                </t>
+                <t t-if="features.comparison">
+                    <select class="form-select form-select-sm w-auto o_sb_select" t-on-change="(ev) => this.onOption('comparison', ev)" title="Compare with">
+                        <option value="none" t-att-selected="state.options.comparison === 'none'">No comparison</option>
+                        <option value="previous" t-att-selected="state.options.comparison === 'previous'">vs previous period</option>
+                        <option value="last_year" t-att-selected="state.options.comparison === 'last_year'">vs same period last year</option>
+                        <option t-if="!features.asOf and !features.noMonths" value="months" t-att-selected="state.options.comparison === 'months'">Month by month</option>
+                    </select>
+                    <input t-if="state.options.comparison === 'previous' or state.options.comparison === 'last_year'"
+                           type="number" min="1" max="24" class="form-control form-control-sm o_sb_select" style="width:4.2rem"
+                           t-att-value="state.options.comparison_count" t-on-change="(ev) => this.onOption('comparison_count', ev)"
+                           title="How many periods to compare"/>
+                </t>
+                <div t-if="features.partnerType" class="btn-group btn-group-sm">
+                    <button t-attf-class="btn {{ state.options.partner_type === 'customer' ? 'btn-dark' : 'btn-outline-secondary' }}"
+                            t-on-click="() => this.setPartnerType('customer')">Customers</button>
+                    <button t-attf-class="btn {{ state.options.partner_type === 'vendor' ? 'btn-dark' : 'btn-outline-secondary' }}"
+                            t-on-click="() => this.setPartnerType('vendor')">Vendors</button>
+                </div>
+                <div class="position-relative">
+                    <button class="btn btn-sm btn-light border" t-on-click.stop="() => this.state.showFilters = !state.showFilters">
+                        <i class="fa fa-filter me-1"/>Filters
+                        <span t-if="filtersOn" class="badge rounded-pill text-bg-warning ms-1">on</span>
+                    </button>
+                    <div t-if="state.showFilters" class="o_sb_rep_pop shadow p-3" t-on-click.stop="">
+                        <div class="fw-semibold small mb-2">Show</div>
+                        <label class="d-block small mb-1"><input type="checkbox" class="me-2" t-att-checked="state.options.posted_only"
+                               t-on-change="(ev) => this.onOption('posted_only', ev)"/>Posted entries only</label>
+                        <label t-attf-class="d-block small {{ features.voided ? 'mb-1' : 'mb-3' }}"><input type="checkbox" class="me-2" t-att-checked="state.options.hide_zero"
+                               t-on-change="(ev) => this.onOption('hide_zero', ev)"/>Hide lines that are all zero</label>
+                        <label t-if="features.voided" t-attf-class="d-block small {{ features.preClosing ? 'mb-1' : 'mb-3' }}"><input type="checkbox" class="me-2" t-att-checked="state.options.hide_voided"
+                               t-on-change="(ev) => this.onOption('hide_voided', ev)"/>Hide voided entries and their reversals</label>
+                        <label t-if="features.preClosing" class="d-block small mb-3" title="The trial balance before the year-end closing entry and its reversal (if the year was reopened)">
+                            <input type="checkbox" class="me-2" t-att-checked="state.options.exclude_closing"
+                                   t-on-change="(ev) => this.onOption('exclude_closing', ev)"/>Leave out year-end closing entries (pre-closing)</label>
+                        <t t-if="features.pickers">
+                            <t t-foreach="[['account_ids', 'Accounts', 'Account number or name'], ['partner_ids', 'Customers / vendors', 'Name']]" t-as="pk" t-key="pk[0]">
+                                <div class="fw-semibold small mb-1" t-esc="pk[1]"/>
+                                <div class="position-relative mb-3">
+                                    <input class="form-control form-control-sm" t-att-placeholder="pk[2]"
+                                           t-att-value="state.pick.field === pk[0] ? state.pick.q : ''" t-on-input="(ev) => this.onPick(pk[0], ev)"/>
+                                    <div t-if="state.pick.field === pk[0] and state.pick.results.length" class="o_sb_pick_list border bg-white shadow-sm">
+                                        <a t-foreach="state.pick.results" t-as="r" t-key="r.id" href="#" class="d-block small px-2 py-1"
+                                           t-on-click.prevent="() => this.addPick(pk[0], r)" t-esc="r.display_name"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </t>
+                        <div t-if="(state.options.move_ids || []).length" class="small mb-3">
+                            <span class="badge text-bg-info me-1" t-esc="state.options.move_ids.length"/>selected entries only
+                            <a href="#" class="ms-1" t-on-click.prevent="() => { this.state.options.move_ids = []; this.load(); }">show all</a>
+                        </div>
+                        <t t-if="features.analytic and (state.plans.length or state.analytics.length)">
+                            <div class="fw-semibold small mb-2">Analytic</div>
+                            <div class="o_sb_rep_pop_scroll mb-3" style="max-height: 14rem; overflow-y: auto">
+                                <label t-foreach="state.plans" t-as="p" t-key="'plan' + p.id" class="d-block small mb-1">
+                                    <input type="checkbox" class="me-2" t-att-checked="(state.options.analytic_plan_ids || []).includes(p.id)"
+                                           t-on-change="() => this.toggleIn('analytic_plan_ids', p.id)"/>
+                                    <span class="text-muted">Plan</span> · <t t-esc="p.name"/>
+                                </label>
+                                <label t-foreach="state.analytics" t-as="a" t-key="a.id" class="d-block small mb-1">
+                                    <input type="checkbox" class="me-2" t-att-checked="(state.options.analytic_ids || []).includes(a.id)"
+                                           t-on-change="() => this.toggleIn('analytic_ids', a.id)"/>
+                                    <span t-if="a.code" class="text-muted" t-esc="a.code + ' · '"/><t t-esc="a.name"/>
+                                </label>
+                            </div>
+                        </t>
+                        <t t-if="features.buckets">
+                            <div class="fw-semibold small mb-1">Ageing buckets (days)</div>
+                            <input class="form-control form-control-sm mb-2" t-att-value="(state.options.buckets || []).join(', ')" t-on-change="onBuckets"/>
+                            <div class="fw-semibold small mb-1">Age by</div>
+                            <select class="form-select form-select-sm mb-3" t-on-change="(ev) => this.onOption('aged_by', ev)">
+                                <option value="due" t-att-selected="state.options.aged_by !== 'invoice'">Due date (days overdue)</option>
+                                <option value="invoice" t-att-selected="state.options.aged_by === 'invoice'">Invoice date (days since the document)</option>
+                            </select>
+                        </t>
+                        <div class="fw-semibold small mb-2">Journals</div>
+                        <label t-foreach="state.journals" t-as="j" t-key="j.id" class="d-block small mb-1">
+                            <input type="checkbox" class="me-2" t-att-checked="state.options.journal_ids.includes(j.id)"
+                                   t-on-change="() => this.toggleJournal(j.id)"/>
+                            <span class="text-muted" t-esc="j.code"/> · <t t-esc="j.name"/>
+                        </label>
+                    </div>
+                </div>
+                <div class="o_sb_search">
+                    <i class="fa fa-search"/>
+                    <input t-ref="search" class="form-control form-control-sm" placeholder="Search   /"
+                           t-att-value="state.options.search" t-on-input="onSearch"/>
+                </div>
+                <div class="ms-auto d-flex gap-1 align-items-center flex-wrap">
+                    <div t-if="hasChart" class="btn-group btn-group-sm me-1">
+                        <button t-attf-class="btn {{ state.view === 'table' ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => this.setView('table')" title="Table"><i class="fa fa-table"/></button>
+                        <button t-attf-class="btn {{ state.view === 'both' ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => this.setView('both')" title="Chart and table"><i class="fa fa-columns"/></button>
+                        <button t-attf-class="btn {{ state.view === 'chart' ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => this.setView('chart')" title="Chart"><i class="fa fa-bar-chart"/></button>
+                    </div>
+                    <div class="position-relative">
+                        <button class="btn btn-sm btn-light border" t-on-click.stop="() => this.state.showViews = !state.showViews" title="Saved views">
+                            <i class="fa fa-star-o"/>
+                        </button>
+                        <div t-if="state.showViews" class="o_sb_rep_pop o_sb_rep_pop_right shadow p-3" t-on-click.stop="">
+                            <div class="fw-semibold small mb-2">Saved views</div>
+                            <div t-if="!state.views.length" class="small text-muted mb-2">None yet.</div>
+                            <div t-foreach="state.views" t-as="v" t-key="v.id" class="d-flex align-items-center small mb-1">
+                                <a href="#" class="me-auto" t-on-click.prevent="() => this.applyView(v)" t-esc="v.name"/>
+                                <i t-if="v.mine" class="fa fa-trash text-muted ms-2" role="button" t-on-click="() => this.removeView(v)"/>
+                            </div>
+                            <button class="btn btn-sm btn-link px-0" t-on-click="saveView">Save these filters…</button>
+                        </div>
+                    </div>
+                    <div class="position-relative" t-if="state.doc">
+                        <button class="btn btn-sm btn-light border" t-on-click.stop="() => this.state.showColumns = !state.showColumns" title="Columns">
+                            <i class="fa fa-columns"/>
+                        </button>
+                        <div t-if="state.showColumns" class="o_sb_rep_pop o_sb_rep_pop_right shadow p-3" t-on-click.stop="">
+                            <div class="fw-semibold small mb-2">Columns</div>
+                            <label t-foreach="state.doc.columns.slice(1)" t-as="c" t-key="c.key" class="d-block small mb-1">
+                                <input type="checkbox" class="me-2" t-att-checked="!(state.options.hidden_cols || []).includes(c.key)"
+                                       t-on-change="() => this.toggleColumn(c.key)"/>
+                                <t t-esc="c.label"/>
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-light border" t-on-click="copyReport" title="Save as my own report"><i class="fa fa-copy"/></button>
+                    <button class="btn btn-sm btn-light border" t-on-click="expandAll" title="Expand all"><i class="fa fa-plus-square-o"/></button>
+                    <button class="btn btn-sm btn-light border" t-on-click="collapseAll" title="Collapse all"><i class="fa fa-minus-square-o"/></button>
+                    <button class="btn btn-sm btn-success" t-on-click="() => this.export('xlsx')"><i class="fa fa-file-excel-o me-1"/>Excel</button>
+                    <button class="btn btn-sm btn-primary" t-on-click="() => this.export('pdf')"><i class="fa fa-file-pdf-o me-1"/>PDF</button>
+                    <button class="btn btn-sm btn-light border" t-on-click="() => this.export('pdf', true)" title="Print"><i class="fa fa-print"/></button>
+                </div>
+            </div>
+
+            <!-- filters a drill-down or a pick set, each removable: what the report leaves out is always in view -->
+            <div t-if="chips.length" class="o_sb_rep_chips px-4 pt-2 d-flex flex-wrap gap-1 align-items-center">
+                <span class="small text-muted me-1">Showing only:</span>
+                <span t-foreach="chips" t-as="chip" t-key="chip.key + '_' + (chip.id || '')" class="badge rounded-pill text-bg-light border o_sb_filter_chip">
+                    <t t-esc="chip.label"/>
+                    <i class="fa fa-times ms-1" role="button" title="Remove this filter" t-on-click="() => this.removeChip(chip)"/>
+                </span>
+            </div>
+            <div class="o_sb_rep_body flex-grow-1 overflow-auto px-4 pb-5">
+                <t t-if="state.doc">
+                    <!-- title block -->
+                    <div class="o_sb_rep_head pt-4 pb-3">
+                        <div class="o_sb_rep_company" t-esc="state.doc.company"/>
+                        <h1 class="o_sb_rep_title" t-esc="state.doc.title"/>
+                        <div class="o_sb_rep_period" t-esc="state.doc.subtitle"/>
+                        <div t-if="state.doc.filters and state.doc.filters.length" class="small text-muted" t-esc="'Filters: ' + state.doc.filters.join('; ')"/>
+                        <div t-if="state.doc.blurb" class="o_sb_rep_blurb" t-esc="state.doc.blurb"/>
+                    </div>
+                    <!-- KPI strip -->
+                    <div t-if="state.doc.summary and state.doc.summary.length" class="o_sb_kpis mb-3">
+                        <div t-foreach="state.doc.summary" t-as="k" t-key="k_index" t-attf-class="o_sb_kpi_card {{ k.tone ? 'o_sb_' + k.tone : '' }}">
+                            <div class="o_sb_kpi_label" t-esc="k.label"/>
+                            <div class="o_sb_kpi_value">
+                                <span t-if="k.kind === 'badge'" class="o_sb_badge"><i t-attf-class="fa {{ k.tone === 'good' ? 'fa-check-circle' : 'fa-exclamation-circle' }} me-1"/><t t-esc="k.value"/></span>
+                                <t t-else="" t-esc="kpiValue(k)"/>
+                            </div>
+                            <div class="o_sb_kpi_hint">
+                                <span t-if="k.delta !== null and k.delta !== undefined" t-attf-class="{{ k.delta &gt;= 0 ? 'o_sb_delta_up' : 'o_sb_delta_down' }} me-1">
+                                    <i t-attf-class="fa {{ k.delta &gt;= 0 ? 'fa-caret-up' : 'fa-caret-down' }}"/> <t t-esc="Math.abs(k.delta).toFixed(1)"/>%
+                                </span>
+                                <t t-esc="k.hint || ''"/>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- chart -->
+                    <div t-if="hasChart and state.view !== 'table'" class="o_sb_card p-3 mb-3">
+                        <div t-if="state.doc.chart.title" class="small text-muted mb-1" t-esc="state.doc.chart.title"/>
+                        <SbChart type="state.doc.chart.type" labels="state.doc.chart.labels" series="state.doc.chart.series"
+                                 height="state.view === 'chart' ? 420 : 240" horizontal="state.doc.chart.type === 'bar_stacked'"/>
+                    </div>
+                    <!-- table -->
+                    <div t-if="state.view !== 'chart' or !hasChart" class="o_sb_card o_sb_rep_tablewrap">
+                        <table t-attf-class="o_sb_rep_table {{ state.loading ? 'o_sb_loading' : '' }}">
+                            <thead>
+                                <tr>
+                                    <th t-foreach="shownColumns" t-as="col" t-key="col.key"
+                                        t-attf-class="{{ isNum(col) ? 'text-end' : '' }} {{ col_first ? 'o_sb_sticky' : '' }}">
+                                        <div t-esc="col.label"/>
+                                        <div t-if="col.sub" class="o_sb_th_sub" t-esc="col.sub"/>
+                                    </th>
+                                    <th class="o_sb_th_menu"/>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="visibleRows" t-as="row" t-key="row.id">
+                                    <tr t-att-class="rowClass(row, row_index)" t-on-click="() => this.onRowClick(row, row_index)"
+                                        t-on-dblclick="(ev) => this.activate(row, ev)">
+                                        <t t-foreach="shownColumns" t-as="col" t-key="col.key">
+                                            <td t-if="col_first" class="o_sb_rep_first o_sb_sticky" t-attf-style="padding-left: {{ 0.9 + (row.level || 0) * 1.4 }}rem">
+                                                <i t-if="hasChildren(row)" t-attf-class="fa fa-fw {{ state.expanded.has(row.id) ? 'fa-angle-down' : 'fa-angle-right' }} o_sb_caret"/>
+                                                <span t-esc="cell(row, col, col_index)"/>
+                                            </td>
+                                            <td t-else="" t-attf-class="{{ isNum(col) ? 'text-end text-nowrap o_sb_num' : '' }} {{ isNegative(row, col) ? 'o_sb_neg' : '' }}">
+                                                <a t-if="isNum(col) and cellDrill(row, col) and row.kind === 'line'" href="#" class="o_sb_rep_numlink"
+                                                   t-on-click.prevent.stop="(ev) => this.activate(row, ev, col)"
+                                                   t-on-auxclick.prevent.stop="(ev) => this.activate(row, ev, col)" t-esc="cell(row, col, col_index)"/>
+                                                <t t-else="" t-esc="cell(row, col, col_index)"/>
+                                            </td>
+                                        </t>
+                                        <td class="o_sb_td_menu position-relative">
+                                            <button class="o_sb_dots" t-on-click="(ev) => this.toggleRowMenu(row, ev)" title="More"><i class="fa fa-ellipsis-h"/></button>
+                                            <div t-if="state.rowMenu === row.id" class="o_sb_rowmenu shadow">
+                                                <a t-foreach="rowActions(row)" t-as="a" t-key="a[0]" href="#" class="d-block"
+                                                   t-on-click.prevent.stop="() => this.rowAction(row, a[0])" t-esc="a[1]"/>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                        <div t-if="!visibleRows.length or (visibleRows.length === 1 and visibleRows[0].kind === 'total')" class="o_sb_empty">
+                            <i class="fa fa-inbox fa-2x mb-2"/>
+                            <div class="fw-semibold" t-esc="emptyText"/>
+                            <div class="small text-muted mb-2">Try a longer period:</div>
+                            <span class="o_sb_chip me-1" t-on-click="() => this.tryPeriod('fy')">This fiscal year</span>
+                            <span class="o_sb_chip" t-on-click="() => this.tryPeriod('last_fy')">Last fiscal year</span>
+                        </div>
+                    </div>
+                    <div class="o_sb_keys mt-3">
+                        <kbd>/</kbd> search · <kbd>↑</kbd><kbd>↓</kbd> move · <kbd>→</kbd><kbd>←</kbd> open / close ·
+                        <kbd>Enter</kbd> drill down · <kbd>Esc</kbd> back · double-click a line to open it
+                    </div>
+                </t>
+                <div t-else="" class="pt-4">
+                    <div class="o_sb_skeleton mb-2" style="height: 14px; width: 12rem"/>
+                    <div class="o_sb_skeleton mb-4" style="height: 30px; width: 24rem"/>
+                    <div class="o_sb_kpis mb-3">
+                        <div class="o_sb_skeleton" style="height: 84px"/><div class="o_sb_skeleton" style="height: 84px"/>
+                        <div class="o_sb_skeleton" style="height: 84px"/><div class="o_sb_skeleton" style="height: 84px"/>
+                    </div>
+                    <div class="o_sb_skeleton" style="height: 320px"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

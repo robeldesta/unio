@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_voucher_form_vehicle" model="ir.ui.view">
+        <field name="name">sb.voucher.form.vehicle</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='line_ids']/list/field[@name='name']" position="after">
+                <field name="vehicle_id" optional="hide" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_stock_voucher_form_vehicle" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.vehicle</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='line_ids']/list/field[@name='value']" position="after">
+                <field name="vehicle_id" column_invisible="parent.voucher_type != 'giv'" optional="hide" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

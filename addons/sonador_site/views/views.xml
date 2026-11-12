@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- the Website app -->
+    <record id="action_site" model="ir.actions.client">
+        <field name="name">Website</field>
+        <field name="tag">sonador_site.app</field>
+    </record>
+    <record id="action_site_orders" model="ir.actions.act_window">
+        <field name="name">Web orders</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('site_order', '=', True)]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+    <record id="action_site_messages" model="ir.actions.act_window">
+        <field name="name">Messages</field>
+        <field name="res_model">unio.site.message</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_site_categories" model="ir.actions.act_window">
+        <field name="name">Shop categories</field>
+        <field name="res_model">unio.site.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_site_message_list" model="ir.ui.view">
+        <field name="name">unio.site.message.list</field>
+        <field name="model">unio.site.message</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="done">
+                <field name="create_date" string="Date"/>
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="message"/>
+                <field name="done" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_site_message_form" model="ir.ui.view">
+        <field name="name">unio.site.message.form</field>
+        <field name="model">unio.site.message</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="phone" widget="phone"/>
+                        <field name="email" widget="email"/>
+                        <field name="message"/>
+                        <field name="done"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_site_category_list" model="ir.ui.view">
+        <field name="name">unio.site.category.list</field>
+        <field name="model">unio.site.category</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="slug" string="Web address"/>
+                <field name="image" widget="image" options="{'size': [40, 40]}"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_site_category_form" model="ir.ui.view">
+        <field name="name">unio.site.category.form</field>
+        <field name="model">unio.site.category</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <field name="image" widget="image" class="oe_avatar"/>
+                    <group>
+                        <field name="name"/>
+                        <field name="slug" string="Web address"/>
+                        <field name="product_ids" widget="many2many_tags"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_order_list_site" model="ir.ui.view">
+        <field name="name">sale.order.list.site</field>
+        <field name="model">sale.order</field>
+        <field name="mode">primary</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="site_delivery" optional="show"/>
+                <field name="site_payment" optional="show"/>
+            </field>
+        </field>
+    </record>
+    <record id="action_site_orders_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_order_list_site"/>
+        <field name="act_window_id" ref="action_site_orders"/>
+    </record>
+    <record id="view_order_form_site" model="ir.ui.view">
+        <field name="name">sale.order.form.site</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="after">
+                <group invisible="not site_order" string="Website order">
+                    <group>
+                        <field name="site_order" invisible="1"/>
+                        <field name="site_delivery" string="Pickup or delivery"/>
+                        <field name="site_payment" string="Payment"/>
+                    </group>
+                    <group>
+                        <field name="site_address" string="Deliver to"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_form_site" model="ir.ui.view">
+        <field name="name">product.template.form.site</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Website" name="site" invisible="not sale_ok">
+                    <group>
+                        <group>
+                            <field name="site_published" widget="boolean_toggle"/>
+                            <field name="site_featured" widget="boolean_toggle"/>
+                            <field name="site_category_ids" widget="many2many_tags"/>
+                            <field name="site_slug"/>
+                        </group>
+                        <group>
+                            <field name="description_sale" string="Short description"/>
+                        </group>
+                    </group>
+                    <field name="site_description" placeholder="The full description on the product page."/>
+                    <field name="site_image_ids" mode="kanban" class="mt-3">
+                        <kanban>
+                            <field name="image"/>
+                            <templates>
+                                <t t-name="card">
+                                    <field name="image" widget="image" options="{'size': [120, 120]}"/>
+                                </t>
+                            </templates>
+                        </kanban>
+                        <form>
+                            <field name="image" widget="image"/>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <menuitem id="menu_site_root" name="Website" sequence="35" action="action_site" web_icon="sonador_site,static/description/icon.png"
+              groups="sales_team.group_sale_salesman"/>
+    <menuitem id="menu_site_home" name="Site" parent="menu_site_root" action="action_site" sequence="1"/>
+    <menuitem id="menu_site_orders" name="Orders" parent="menu_site_root" action="action_site_orders" sequence="2"/>
+    <menuitem id="menu_site_messages" name="Messages" parent="menu_site_root" action="action_site_messages" sequence="3"/>
+    <menuitem id="menu_site_categories" name="Categories" parent="menu_site_root" action="action_site_categories" sequence="4"
+              groups="sales_team.group_sale_manager"/>
+</odoo>

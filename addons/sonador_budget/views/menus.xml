@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_budget" model="ir.actions.client">
+        <field name="name">Budgets</field>
+        <field name="tag">sonador_budget.app</field>
+    </record>
+    <menuitem id="menu_sb_budget" name="Budgets" parent="sonador_books.menu_sb_gl" action="action_budget" sequence="32"
+              groups="sonador_books.group_sb_accountant"/>
+</odoo>

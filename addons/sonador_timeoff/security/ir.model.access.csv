@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_type_user,type,model_sb_leave_type,base.group_user,1,0,0,0
+access_type_hr,type hr,model_sb_leave_type,sonador_books.group_sb_hr,1,1,1,1
+access_leave_hr,leave hr,model_sb_leave,sonador_books.group_sb_hr,1,1,1,1
+access_adjust_hr,adjust hr,model_sb_leave_adjust,sonador_books.group_sb_hr,1,1,1,1

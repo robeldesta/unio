@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sale_order_form_sb" model="ir.ui.view">
+        <field name="name">sale.order.form.sb</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_sb_invoice" type="object" string="Sales Invoice (credit)" class="btn-primary"
+                        invisible="state != 'sale' or sb_status != 'to_invoice'"/>
+                <button name="action_sb_cash_sale" type="object" string="Cash Sale" class="btn-primary"
+                        invisible="state != 'sale' or sb_status != 'to_invoice'"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_sb_view_invoices" type="object" class="oe_stat_button" icon="fa-file-text" invisible="not sb_invoice_count">
+                    <field name="sb_invoice_count" widget="statinfo" string="Invoices"/>
+                </button>
+                <button name="action_sb_view_deliveries" type="object" class="oe_stat_button" icon="fa-truck" invisible="not sb_delivery_count">
+                    <field name="sb_delivery_count" widget="statinfo" string="Deliveries"/>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="sb_status" invisible="state != 'sale'" widget="badge"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="after">
+                <field name="sb_qty_invoiced" optional="show" column_invisible="parent.state != 'sale'"/>
+                <field name="sb_qty_delivered" optional="show" column_invisible="parent.state != 'sale'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Layout: Customer (who, terms, their reference, our salesperson) | Order (dates, numbers, status), then Delivery.
+         Each block answers one question; the lines show only what is ordered, delivered and invoiced, once. -->
+    <record id="sale_order_form_sb_layout" model="ir.ui.view">
+        <field name="name">sale.order.form.sb.layout</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">120</field>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='partner_details']" position="attributes">
+                <attribute name="string">Customer</attribute>
+            </xpath>
+            <xpath expr="//group[@name='order_details']" position="attributes">
+                <attribute name="string">Order</attribute>
+            </xpath>
+            <xpath expr="//group[@name='partner_details']" position="inside">
+                <xpath expr="//field[@name='payment_term_id']" position="move"/>
+                <xpath expr="//field[@name='client_order_ref']" position="move"/>
+                <xpath expr="//field[@name='user_id']" position="move"/>
+            </xpath>
+            <xpath expr="//group[@name='sale_header']" position="after">
+                <group name="sb_delivery" string="Delivery">
+                    <group name="sb_delivery_where"/>
+                    <group name="sb_delivery_how"/>
+                </group>
+            </xpath>
+            <xpath expr="//group[@name='sb_delivery_where']" position="inside">
+                <xpath expr="//field[@name='sb_channel']" position="move"/>
+            </xpath>
+            <!-- delivered / invoiced once: from the delivery orders and vouchers -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='qty_delivered']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='qty_invoiced']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/widget[@name='qty_at_date_widget']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='sb_qty_delivered']" position="attributes">
+                <attribute name="string">Delivered</attribute>
+                <attribute name="options">{'hide_trailing_zeros': true}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='sb_qty_invoiced']" position="attributes">
+                <attribute name="string">Invoiced</attribute>
+                <attribute name="options">{'hide_trailing_zeros': true}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="attributes">
+                <attribute name="options">{'hide_trailing_zeros': true}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Odoo's own invoicing and delivery buttons: vouchers and delivery orders replace them -->
+    <record id="sale_order_form_sb_hide" model="ir.ui.view">
+        <field name="name">sale.order.form.sb.hide</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='%(sale.action_view_sale_advance_payment_inv)d'][1]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='%(sale.action_view_sale_advance_payment_inv)d'][last()]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_view_invoice']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_voucher_form_sales" model="ir.ui.view">
+        <field name="name">sb.voucher.form.sales</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_voucher_form_stock"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='sb_warehouse_id']" position="after">
+                <field name="sb_deliver_later" invisible="voucher_type not in ('cash_sale', 'sale') or not sb_has_stock" readonly="state != 'draft'"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_sb_view_sale_order" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="not sb_sale_order_id">
+                    <div class="o_stat_info"><span class="o_stat_text">Sales order</span><span class="o_stat_value"><field name="sb_sale_order_id" readonly="1" options="{'no_open': True}"/></span></div>
+                </button>
+                <button name="action_sb_view_delivery" type="object" class="oe_stat_button" icon="fa-truck" invisible="not sb_delivery_id">
+                    <div class="o_stat_info"><span class="o_stat_text">Delivery</span><span class="o_stat_value"><field name="sb_delivery_id" readonly="1" options="{'no_open': True}"/></span></div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Sales documents: left = who and what (customer, reference, description); right = when, number, terms, from
+         which warehouse; cost of sales with the totals -->
+    <record id="sb_voucher_form_sales_layout" model="ir.ui.view">
+        <field name="name">sb.voucher.form.sales.layout</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
+        <field name="priority">120</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='doc_currency_id']" position="after">
+                <xpath expr="//field[@name='sb_warehouse_id']" position="move"/>
+                <xpath expr="//field[@name='sb_deliver_later']" position="move"/>
+            </xpath>
+            <xpath expr="//group[hasclass('oe_subtotal_footer')]" position="inside">
+                <xpath expr="//field[@name='sb_cogs']" position="move"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_sb_quotations" model="ir.actions.act_window">
+        <field name="name">Quotations</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ('draft', 'sent'))]</field>
+    </record>
+    <record id="action_sb_sale_orders" model="ir.actions.act_window">
+        <field name="name">Sales Orders</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'not in', ('draft', 'sent'))]</field>
+    </record>
+
+    <menuitem id="menu_sb_quotations" name="Quotations" parent="sonador_books.menu_sb_customers" action="action_sb_quotations" sequence="2"/>
+    <menuitem id="menu_sb_sale_orders" name="Sales Orders" parent="sonador_books.menu_sb_customers" action="action_sb_sale_orders" sequence="3"/>
+    <menuitem id="menu_sb_delivery_orders" name="Delivery Orders" parent="sonador_books.menu_sb_customers" action="action_sb_delivery_orders" sequence="20"/>
+    <menuitem id="menu_sb_delivery_batches" name="Delivery Batches" parent="sonador_books.menu_sb_customers" action="action_sb_delivery_batches" sequence="21"/>
+
+    <function model="ir.ui.menu" name="_sb_hide_sales_app"/>
+</odoo>

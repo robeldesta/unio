@@ -1,0 +1,583 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="sonador_performance.App">
+        <div class="o_pp o_pf o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker">People</div>
+                        <h1 class="o_pp_title"><i class="fa fa-line-chart me-2"/>Performance</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-foreach="[['overview','Overview','fa-dashboard'],['goals','Goals','fa-bullseye'],['scorecards','KPI scorecards','fa-tachometer'],['reviews','Reviews','fa-star-half-o'],['checkins','Check-ins','fa-check-square-o'],['one2ones','1:1s','fa-comments-o'],['praise','Praise','fa-heart-o']]"
+                                t-as="n" t-key="n[0]" t-att-class="state.page === n[0] ? 'active' : ''" t-on-click="() => this.go(n[0])">
+                            <i t-attf-class="fa {{ n[2] }}"/> <t t-esc="n[1]"/>
+                        </button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'kpis' ? 'active' : ''" t-on-click="() => this.go('kpis')"><i class="fa fa-sliders"/> KPI setup</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'overview' and state.ov" t-call="sonador_performance.Overview"/>
+                <t t-if="state.page === 'goals'" t-call="sonador_performance.Goals"/>
+                <t t-if="state.page === 'scorecards'" t-call="sonador_performance.Scorecards"/>
+                <t t-if="state.page === 'reviews'" t-call="sonador_performance.Reviews"/>
+                <t t-if="state.page === 'checkins' and state.ci.data" t-call="sonador_performance.Checkins"/>
+                <t t-if="state.page === 'one2ones' and state.oo.data" t-call="sonador_performance.One2ones"/>
+                <t t-if="state.page === 'praise'" t-call="sonador_performance.Praise"/>
+                <t t-if="state.page === 'kpis'" t-call="sonador_performance.KpiSetup"/>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================================================================ overview -->
+    <t t-name="sonador_performance.Overview">
+        <t t-set="o" t-value="state.ov"/>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi" t-on-click="() => this.go('scorecards')"><span>My KPI score</span>
+                <b t-attf-class="{{ pctClass(o.my_score) }}"><t t-esc="o.my_score === null or o.my_score === undefined ? '—' : o.my_score + '%'"/></b><small t-esc="o.my_score_month or ''"/></div>
+            <div class="o_pp_kpi" t-on-click="() => this.go('goals')"><span>My goals</span><b t-esc="(o.my_goals or []).length"/><small>active</small></div>
+            <div class="o_pp_kpi" t-on-click="() => this.go('reviews')"><span>Reviews to write</span><b t-attf-class="{{ (o.todo or []).length ? 'o_pp_badtxt' : '' }}" t-esc="(o.todo or []).length"/><small>open cycles</small></div>
+            <div class="o_pp_kpi" t-on-click="() => this.go('checkins')"><span>This week's check-in</span><b t-attf-class="{{ o.checkin_done ? 'o_pp_good' : 'o_pp_badtxt' }}" t-esc="o.checkin_done ? 'Done' : 'Not yet'"/>
+                <small t-if="o.team_size">team: <t t-esc="o.team_checkins"/> of <t t-esc="o.team_size"/></small></div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-flag"/>Company goals</div>
+                <div class="o_pp_list">
+                    <div t-foreach="o.company_goals" t-as="g" t-key="g.id" class="o_pp_li" t-on-click="() => this.go('goals')">
+                        <div class="flex-grow-1"><b t-esc="g.name"/><div class="o_pf_bar"><div t-attf-style="width: {{ g.progress }}%" t-attf-class="o_pf_fill {{ g.status }}"/></div></div>
+                        <div class="o_pf_pct" t-esc="fmt(g.progress) + '%'"/>
+                    </div>
+                    <div t-if="!o.company_goals.length" class="o_pp_empty">No company goals yet<t t-if="ctx.is_hr">: set them under Goals</t>.</div>
+                </div>
+            </div>
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-bullseye"/>My goals</div>
+                <div class="o_pp_list">
+                    <div t-foreach="o.my_goals or []" t-as="g" t-key="g.id" class="o_pp_li" t-on-click="() => this.go('goals')">
+                        <div class="flex-grow-1"><b t-esc="g.name"/><div class="small text-muted"><t t-esc="statusLabel(g.status)"/><t t-if="g.due_ec"> · due <t t-esc="g.due_ec"/></t></div>
+                            <div class="o_pf_bar"><div t-attf-style="width: {{ g.progress }}%" t-attf-class="o_pf_fill {{ g.status }}"/></div></div>
+                        <div class="o_pf_pct" t-esc="fmt(g.progress) + '%'"/>
+                    </div>
+                    <div t-if="!(o.my_goals or []).length" class="o_pp_empty">No goals yet. <a href="#" t-on-click.prevent="() => this.go('goals')">Set one</a>.</div>
+                </div>
+            </div>
+            <div t-if="(o.todo or []).length or (o.my_reviews or []).length" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-star-half-o"/>Reviews</div>
+                <div class="o_pp_list">
+                    <div t-foreach="o.todo" t-as="r" t-key="r.id" class="o_pp_li" t-on-click="() => this.openMyReview(r)">
+                        <img class="o_pp_av sm" t-att-src="r.employee.avatar"/>
+                        <div class="flex-grow-1"><b>Write: <t t-esc="r.employee.name"/></b><div class="small text-muted"><t t-esc="roleLabel(r.role)"/> review · <t t-esc="r.cycle"/></div></div>
+                        <span class="o_pp_badge">To do</span>
+                    </div>
+                    <div t-foreach="o.my_reviews" t-as="r" t-key="r.id" class="o_pp_li" t-on-click="() => this.openMyReview(r)">
+                        <i class="fa fa-file-text-o o_pp_ico"/>
+                        <div class="flex-grow-1"><b>My <t t-esc="roleLabel(r.role).toLowerCase()"/> review</b><div class="small text-muted" t-esc="r.cycle"/></div>
+                        <div t-attf-class="o_pf_pct {{ pctClass(r.score) }}"><t t-esc="r.score ? r.score + '%' : stateLabel(r.state)"/></div>
+                    </div>
+                </div>
+            </div>
+            <div t-if="o.team" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-users"/>My team: KPI scores <small class="text-muted ms-1" t-esc="o.my_score_month"/></div>
+                <div class="o_pp_list">
+                    <div t-foreach="o.team" t-as="m" t-key="m.id" class="o_pp_li" t-on-click="() => this.openScorecard(m.id)">
+                        <img class="o_pp_av sm" t-att-src="m.avatar"/>
+                        <div class="flex-grow-1"><b t-esc="m.name"/><div class="small text-muted" t-esc="m.job"/></div>
+                        <div t-attf-class="o_pf_pct {{ pctClass(m.score) }}" t-esc="m.score === null ? '—' : m.score + '%'"/>
+                    </div>
+                </div>
+            </div>
+            <div t-if="o.dept_scores" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-building-o"/>KPI score by department <small class="text-muted ms-1" t-esc="o.my_score_month"/></div>
+                <div class="o_pp_list">
+                    <div t-foreach="o.dept_scores" t-as="d" t-key="d.name" class="o_pp_li">
+                        <div class="flex-grow-1"><b t-esc="d.name"/><div class="o_pf_bar"><div t-attf-style="width: {{ d.score }}%" t-attf-class="o_pf_fill {{ pctClass(d.score) }}"/></div></div>
+                        <div t-attf-class="o_pf_pct {{ pctClass(d.score) }}" t-esc="d.score + '%'"/>
+                    </div>
+                    <div t-if="!o.dept_scores.length" class="o_pp_empty">No KPI results for the month yet.</div>
+                </div>
+            </div>
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-heart"/>Praise wall</div>
+                <div class="o_pp_list">
+                    <t t-foreach="o.wall" t-as="w" t-key="w.id" t-call="sonador_performance.WallItem"/>
+                    <div t-if="!o.wall.length" class="o_pp_empty">No praise yet. Be the first: <a href="#" t-on-click.prevent="() => this.go('praise')">give praise</a>.</div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_performance.WallItem">
+        <div class="o_pf_wall">
+            <img class="o_pp_av sm" t-att-src="w.to.avatar"/>
+            <div class="flex-grow-1">
+                <div><b t-esc="w.from.name"/> <span class="text-muted"><t t-esc="w.kind === 'praise' ? 'praised' : 'gave feedback to'"/></span> <b t-esc="w.to.name"/>
+                    <span t-if="w.value" class="o_pf_value" t-esc="w.value"/><i t-if="w.visibility === 'private'" class="fa fa-lock text-muted ms-1" title="Private"/></div>
+                <div class="o_pf_wall_text" t-esc="w.text"/>
+                <div class="small text-muted" t-esc="w.date_ec"/>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================================================================ goals -->
+    <t t-name="sonador_performance.Goals">
+        <div class="o_pp_toolbar">
+            <div class="btn-group btn-group-sm">
+                <button t-foreach="[['all','All'],['mine','Mine'],['team','My team']]" t-as="f" t-key="f[0]"
+                        t-attf-class="btn {{ state.goals.scope === f[0] ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => this.setScope(f[0])" t-esc="f[1]"/>
+            </div>
+            <div class="ms-auto d-flex gap-2">
+                <button t-if="ctx.is_hr" class="btn btn-light border btn-sm" t-on-click="() => this.newGoal('company')"><i class="fa fa-flag me-1"/>Company goal</button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.newGoal('department')"><i class="fa fa-building-o me-1"/>Department goal</button>
+                <button class="btn btn-primary btn-sm" t-on-click="() => this.newGoal('person')"><i class="fa fa-plus me-1"/>Goal</button>
+            </div>
+        </div>
+        <t t-if="state.goals.edit" t-call="sonador_performance.GoalForm"/>
+        <div class="o_pp_card">
+            <div t-foreach="goalTree" t-as="row" t-key="row.g.id" class="o_pf_goal" t-attf-style="padding-left: {{ 1 + row.depth * 1.6 }}rem" t-on-click="() => row.g.can_edit and this.editGoal(row.g)">
+                <span t-attf-class="o_pf_level {{ row.g.level }}" t-esc="row.g.level === 'company' ? 'Company' : row.g.level === 'department' ? row.g.department : ''"/>
+                <img t-if="row.g.owner" class="o_pp_av xs" t-att-src="row.g.owner.avatar" t-att-title="row.g.owner.name"/>
+                <div class="flex-grow-1">
+                    <b t-esc="row.g.name"/><i t-if="row.g.private" class="fa fa-lock text-muted ms-1"/>
+                    <div class="small text-muted"><t t-if="row.g.owner"><t t-esc="row.g.owner.name"/> · </t><t t-esc="statusLabel(row.g.status)"/><t t-if="row.g.due_ec"> · due <t t-esc="row.g.due_ec"/></t>
+                        <t t-if="row.g.krs.length"> · <t t-esc="row.g.krs.length"/> key result<t t-if="row.g.krs.length > 1">s</t></t></div>
+                </div>
+                <div class="o_pf_bar w"><div t-attf-style="width: {{ row.g.progress }}%" t-attf-class="o_pf_fill {{ row.g.status }}"/></div>
+                <div class="o_pf_pct" t-esc="fmt(row.g.progress) + '%'"/>
+            </div>
+            <div t-if="!goalTree.length" class="o_pp_empty p-4">No goals here yet. Company goals first, then departments align to them, then people.</div>
+        </div>
+    </t>
+
+    <t t-name="sonador_performance.GoalForm">
+        <t t-set="g" t-value="state.goals.edit"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-bullseye"/><t t-esc="g.id ? 'Edit goal' : 'New ' + (g.level === 'person' ? '' : g.level + ' ') + 'goal'"/></div>
+            <div class="o_pp_formgrid">
+                <label class="wide">Goal<input class="form-control" t-model="g.name" placeholder="e.g. Grow Addis Ababa sales by 20% this half"/></label>
+                <label t-if="g.level === 'person'">Owner<select class="form-select" t-model="g.employee_id"><option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label t-if="g.level === 'department'">Department<select class="form-select" t-model="g.department_id"><option value="">—</option><option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-esc="d.name"/></select></label>
+                <label>Aligned to<select class="form-select" t-model="g.parent_id"><option value="">— (top level)</option>
+                    <option t-foreach="state.goals.parents" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="(p.level === 'company' ? 'Company: ' : 'Dept: ') + p.name"/></select></label>
+                <label>Start<input type="date" class="form-control" t-model="g.date_from"/></label>
+                <label>Due<input type="date" class="form-control" t-model="g.date_to"/></label>
+                <label>Status<select class="form-select" t-model="g.status"><option t-foreach="ctx.status" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></label>
+                <label t-if="!g.krs.length">Progress %<input type="number" class="form-control" t-model="g.progress_manual"/></label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="g.private"/> Private (owner, managers, HR)</label>
+            </div>
+            <div class="px-3 pb-2">
+                <div class="o_pp_kicker mb-1">Key results (progress = average of these)</div>
+                <table class="o_pp_table">
+                    <thead><tr><th>Key result</th><th>Measured by</th><th class="num">Start</th><th class="num">Target</th><th class="num">Now</th><th>Unit</th><th/></tr></thead>
+                    <tbody>
+                        <tr t-foreach="g.krs" t-as="k" t-key="k_index">
+                            <td><input class="form-control form-control-sm" t-model="k.name" placeholder="e.g. Litres sold in Addis"/></td>
+                            <td>
+                                <select class="form-select form-select-sm" t-model="k.measure"><option value="manual">Entered</option><option value="kpi">A KPI</option><option value="plan">Monthly plan tasks</option></select>
+                                <select t-if="k.measure === 'kpi'" class="form-select form-select-sm mt-1" t-model="k.kpi_id"><option value="">KPI…</option><option t-foreach="ctx.kpi_list" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select>
+                                <select t-if="k.measure === 'kpi'" class="form-select form-select-sm mt-1" t-model="k.rollup"><option value="sum">Total over the goal period</option><option value="avg">Monthly average</option><option value="latest">Latest month</option></select>
+                                <small t-if="k.measure !== 'manual' and k.source_note" class="text-muted" t-esc="k.source_note"/>
+                            </td>
+                            <td><input type="number" class="form-control form-control-sm" t-model="k.start_value"/></td>
+                            <td><input type="number" class="form-control form-control-sm" t-model="k.target_value"/></td>
+                            <td><input t-if="!k.measure or k.measure === 'manual'" type="number" class="form-control form-control-sm" t-model="k.current_value"/><span t-else="" class="small" t-esc="fmt(k.current_value)" title="Refreshed from its source on save and daily"/></td>
+                            <td><input class="form-control form-control-sm" t-model="k.unit"/></td>
+                            <td><button class="btn btn-link text-danger p-0" t-on-click="() => g.krs.splice(k_index, 1)"><i class="fa fa-trash"/></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="btn btn-link btn-sm px-0" t-on-click="addKr"><i class="fa fa-plus me-1"/>Key result</button>
+            </div>
+            <div class="o_pp_panel_foot">
+                <button t-if="g.id" class="btn btn-link text-danger me-auto" t-on-click="() => this.dropGoal(g)">Drop goal</button>
+                <span t-else="" class="me-auto"/>
+                <button class="btn btn-light border" t-on-click="() => state.goals.edit = null">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="!g.name" t-on-click="saveGoal"><i class="fa fa-check me-1"/>Save</button>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================================================================ scorecards -->
+    <t t-name="sonador_performance.Scorecards">
+        <t t-set="d" t-value="state.sc.data"/>
+        <div class="o_pp_toolbar">
+            <select class="form-select w-auto" t-model="state.sc.employee" t-on-change="pickScorecard">
+                <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name + (p.department ? ' · ' + p.department : '')"/>
+            </select>
+            <select class="form-select w-auto" t-model="state.sc.month" t-on-change="pickScorecard">
+                <option t-foreach="ctx.months" t-as="m" t-key="m.key" t-att-value="m.key" t-esc="m.label"/>
+            </select>
+            <div class="ms-auto d-flex gap-2" t-if="d and d.can_edit">
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.computeAuto(false)"><i class="fa fa-refresh me-1"/>Compute from system data</button>
+                <button t-if="ctx.is_hr" class="btn btn-light border btn-sm" t-on-click="() => this.computeAuto(true)"><i class="fa fa-refresh me-1"/>Everyone</button>
+                <button t-if="!state.sc.edit" class="btn btn-primary btn-sm" t-on-click="editScores"><i class="fa fa-pencil me-1"/>Enter results</button>
+            </div>
+        </div>
+        <t t-if="d">
+            <div class="o_pp_grid mb-3">
+                <div class="o_pp_card o_pf_scorehead">
+                    <img class="o_pp_av lg" t-att-src="d.employee.avatar"/>
+                    <div class="flex-grow-1"><h3 class="m-0" t-esc="d.employee.name"/><div class="text-muted"><t t-esc="d.employee.job"/> · <t t-esc="d.employee.department"/></div>
+                        <a href="#" class="small" t-on-click.prevent="() => this.openPeople(d.employee.id)">Profile</a></div>
+                    <div class="text-end"><div class="o_pp_kicker" t-esc="d.month.label"/>
+                        <div t-attf-class="o_pf_big {{ pctClass(d.total) }}" t-esc="d.total === null ? '—' : d.total + '%'"/><div class="small" t-esc="d.rating"/></div>
+                </div>
+                <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-line-chart"/>Last 12 months</div>
+                    <div class="p-2"><SbChart type="'line'" labels="trendChart.labels" series="trendChart.series" height="150"/></div></div>
+            </div>
+            <div class="o_pp_card">
+                <table class="o_pp_table">
+                    <thead><tr><th>KPI</th><th class="num">Weight</th><th class="num">Target</th><th class="num">Actual</th><th class="num">Achieved</th><th class="num">Score (1-5)</th><th>Level</th><th>Note</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="state.sc.edit or d.rows" t-as="r" t-key="r.kpi_id">
+                            <td><b t-esc="r.name" t-att-title="r.how"/><div class="small text-muted"><i t-if="r.source === 'auto'" class="fa fa-bolt me-1" title="Computed from system data"/><t t-esc="r.unit"/><t t-if="r.frequency !== 'monthly'"> · <t t-esc="r.frequency"/></t><t t-if="!r.higher_is_better"> · lower is better</t></div></td>
+                            <td class="num" t-esc="fmt(r.weight * 100) + '%'"/>
+                            <td class="num" t-esc="fmt(r.target)"/>
+                            <td class="num">
+                                <input t-if="state.sc.edit and r.source !== 'auto'" type="number" class="form-control form-control-sm text-end" t-model="r.actual"/>
+                                <t t-else="" t-esc="fmt(r.actual)"/>
+                            </td>
+                            <td class="num" t-esc="r.achievement === null ? '—' : fmt(r.achievement, 1) + '%'"/>
+                            <td class="num"><span t-if="r.score" t-attf-class="o_pf_score s{{ r.score }}" t-esc="r.score"/></td>
+                            <td><span t-if="r.level" class="badge" t-attf-style="background: {{ r.level_color or '#6c757d' }}" t-esc="r.level"/></td>
+                            <td><input t-if="state.sc.edit and r.source !== 'auto'" class="form-control form-control-sm" t-model="r.note"/><t t-else="" t-esc="r.note"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div t-if="!d.rows.length" class="o_pp_empty p-3">No KPIs assigned to <t t-esc="d.employee.name"/><t t-if="ctx.is_hr">: assign them under KPI setup (by department, position or person)</t>.</div>
+                <div t-if="state.sc.edit" class="o_pp_panel_foot">
+                    <span class="small text-muted me-auto">Score: achievement against the KPI's performance levels (standard: 95%+ = 5, 85% = 4, 75% = 3, 60% = 2, below = 1). Total = weighted scores out of 5, over the KPIs with a result.</span>
+                    <button class="btn btn-light border" t-on-click="() => state.sc.edit = null">Cancel</button>
+                    <button class="btn btn-primary" t-on-click="saveScores"><i class="fa fa-check me-1"/>Save results</button>
+                </div>
+            </div>
+        </t>
+        <div t-else="" class="o_pp_card o_pp_empty p-4">Your login is not linked to an employee. Pick someone above.</div>
+    </t>
+
+    <!-- ================================================================ reviews -->
+    <t t-name="sonador_performance.Reviews">
+        <t t-if="state.cyc.review" t-call="sonador_performance.ReviewForm"/>
+        <t t-elif="state.cyc.cur" t-call="sonador_performance.Cycle"/>
+        <t t-else="">
+            <div class="o_pp_toolbar"><div class="me-auto small text-muted">Review cycles: self and manager reviews on the appraisal form, then calibration and pay review.</div>
+                <button t-if="ctx.is_hr" class="btn btn-primary btn-sm" t-on-click="newCycle"><i class="fa fa-plus me-1"/>New review cycle</button></div>
+            <div t-if="state.cyc.create" class="o_pp_card o_pp_panel">
+                <t t-set="c" t-value="state.cyc.create"/>
+                <div class="o_pp_card_head"><i class="fa fa-star-half-o"/>New review cycle</div>
+                <div class="o_pp_formgrid">
+                    <label class="wide">Name<input class="form-control" t-model="c.name" placeholder="e.g. Bi-annual review, first half 2019 E.C."/></label>
+                    <label>Type<select class="form-select" t-model="c.kind"><option value="bi_annual">Bi-annual</option><option value="annual">Annual</option><option value="quarterly">Quarterly</option><option value="monthly">Monthly</option><option value="probation">End of probation</option></select></label>
+                    <label>Period from<input type="date" class="form-control" t-model="c.date_from"/></label>
+                    <label>Period to<input type="date" class="form-control" t-model="c.date_to"/></label>
+                    <label>Reviews due<input type="date" class="form-control" t-model="c.deadline"/></label>
+                    <label>Form<select class="form-select" t-model="c.template_id"><option t-foreach="state.cyc.templates" t-as="t" t-key="t.id" t-att-value="t.id" t-esc="t.name"/></select></label>
+                    <label>Only department<select class="form-select" t-model="c.department_id"><option value="">Everyone</option><option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-esc="d.name"/></select></label>
+                    <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="c.self_review"/> Self review</label>
+                </div>
+                <div class="o_pp_panel_foot"><span class="small text-muted me-auto">Each person gets a manager review (by their manager) and a self review.</span>
+                    <button class="btn btn-light border" t-on-click="() => state.cyc.create = null">Cancel</button>
+                    <button class="btn btn-primary" t-att-disabled="!c.name or !c.date_from or !c.date_to" t-on-click="createCycle">Create</button></div>
+            </div>
+            <div class="o_pp_card">
+                <table class="o_pp_table">
+                    <thead><tr><th>Cycle</th><th>Period</th><th>Status</th><th class="num">People</th><th class="num">Done</th><th class="num">Average</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="state.cyc.list" t-as="c" t-key="c.id" class="o_pf_click" t-on-click="() => this.openCycle(c.id)">
+                            <td><b t-esc="c.name"/><div class="small text-muted" t-esc="c.template"/></td><td t-esc="c.period_ec"/>
+                            <td><span t-attf-class="o_pf_state {{ c.state }}" t-esc="stateLabel(c.state)"/></td>
+                            <td class="num" t-esc="c.people"/><td class="num"><t t-esc="c.done"/> / <t t-esc="c.total"/></td>
+                            <td class="num"><span t-attf-class="{{ pctClass(c.avg) }}" t-esc="c.avg === null ? '—' : c.avg + '%'"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div t-if="!state.cyc.list.length" class="o_pp_empty p-3">No review cycles yet.</div>
+            </div>
+        </t>
+    </t>
+
+    <t t-name="sonador_performance.Cycle">
+        <t t-set="cc" t-value="state.cyc.cur"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-light border btn-sm" t-on-click="closeCycle"><i class="fa fa-arrow-left me-1"/>Cycles</button>
+            <h4 class="m-0 ms-2" t-esc="cc.cycle.name"/><span t-attf-class="o_pf_state {{ cc.cycle.state }}" t-esc="stateLabel(cc.cycle.state)"/>
+            <div class="ms-auto d-flex gap-2" t-if="cc.is_hr">
+                <button t-if="cc.cycle.state === 'draft'" class="btn btn-primary btn-sm" t-on-click="() => this.cycleState('open')">Launch</button>
+                <button t-if="cc.cycle.state === 'open'" class="btn btn-primary btn-sm" t-on-click="() => this.cycleState('calibration')">Start calibration</button>
+                <button t-if="cc.cycle.state === 'calibration'" class="btn btn-primary btn-sm" t-on-click="() => this.cycleState('closed')">Close cycle</button>
+                <button t-if="cc.cycle.state === 'closed'" class="btn btn-light border btn-sm" t-on-click="() => this.cycleState('calibration')">Reopen</button>
+            </div>
+        </div>
+        <div class="o_pp_tabs">
+            <button t-att-class="state.cyc.tab === 'people' ? 'active' : ''" t-on-click="() => state.cyc.tab = 'people'"><i class="fa fa-users"/> People (<t t-esc="cc.rows.length"/>)</button>
+            <button t-att-class="state.cyc.tab === 'nine' ? 'active' : ''" t-on-click="() => state.cyc.tab = 'nine'"><i class="fa fa-th"/> 9-box</button>
+            <button t-if="cc.is_hr" t-att-class="state.cyc.tab === 'pay' ? 'active' : ''" t-on-click="() => state.cyc.tab = 'pay'"><i class="fa fa-money"/> Pay review</button>
+        </div>
+        <div t-if="state.cyc.tab === 'people'" class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>Person</th><th>Manager review</th><th class="num">Score</th><th>Rating</th><th>Self review</th><th class="num">Self score</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="cc.rows" t-as="r" t-key="r.employee.id">
+                        <td><div class="d-flex align-items-center gap-2"><img class="o_pp_av xs" t-att-src="r.employee.avatar"/><div><b t-esc="r.employee.name"/><div class="small text-muted" t-esc="r.employee.department"/></div></div></td>
+                        <td><a t-if="r.manager" href="#" t-on-click.prevent="() => this.openReview(r.manager.id)"><span t-attf-class="o_pf_state {{ r.manager.state }}" t-esc="stateLabel(r.manager.state)"/> <small class="text-muted" t-esc="r.manager.reviewer"/></a></td>
+                        <td class="num"><span t-if="r.manager" t-attf-class="{{ pctClass(r.manager.score) }}" t-esc="r.manager.score ? r.manager.score + '%' : '—'"/></td>
+                        <td t-esc="r.manager ? r.manager.rating : ''"/>
+                        <td><a t-if="r.self" href="#" t-on-click.prevent="() => this.openReview(r.self.id)"><span t-attf-class="o_pf_state {{ r.self.state }}" t-esc="stateLabel(r.self.state)"/></a></td>
+                        <td class="num" t-esc="r.self and r.self.score ? r.self.score + '%' : ''"/>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div t-if="state.cyc.tab === 'nine'">
+            <div class="small text-muted mb-2">Manager reviews with a score and a potential set. Performance: below 60% low, 60–80% medium, 80%+ high.</div>
+            <div class="o_pf_nine">
+                <div class="o_pf_axis y">Potential →</div>
+                <div class="o_pf_grid9">
+                    <t t-foreach="['3','2','1']" t-as="pot" t-key="pot">
+                        <t t-foreach="[1,2,3]" t-as="perf" t-key="perf">
+                            <div t-attf-class="o_pf_cell c{{ pot }}{{ perf }}">
+                                <div class="o_pf_cell_t" t-esc="nineLabel(pot, perf)"/>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <img t-foreach="nineCell(pot, perf)" t-as="p" t-key="p.id" class="o_pp_av xs" t-att-src="p.avatar" t-att-title="p.name + ' ' + p.score + '%'"/>
+                                </div>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+                <div class="o_pf_axis x">Performance →</div>
+            </div>
+        </div>
+        <div t-if="state.cyc.tab === 'pay'" class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>Person</th><th class="num">Score</th><th>Rating</th><th class="num">Proposed raise</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="raiseRows" t-as="r" t-key="r.employee.id"><td t-esc="r.employee.name"/><td class="num" t-esc="r.manager.score + '%'"/><td t-esc="r.manager.rating"/><td class="num" t-esc="r.manager.raise + '%'"/></tr>
+                </tbody>
+            </table>
+            <div t-if="!raiseRows.length" class="o_pp_empty p-3">No raises proposed yet: managers propose them on the manager review.</div>
+            <div t-else="" class="o_pp_panel_foot">
+                <span class="small text-muted me-auto">Applying records a new basic salary from the date in each person's job and pay history (payroll follows).</span>
+                <input type="date" class="form-control w-auto" t-model="state.cyc.raiseDate"/>
+                <button class="btn btn-primary" t-on-click="applyRaises">Apply raises</button>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_performance.ReviewForm">
+        <t t-set="r" t-value="state.cyc.review"/>
+        <t t-set="f" t-value="state.cyc.form"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-light border btn-sm" t-on-click="closeReview"><i class="fa fa-arrow-left me-1"/>Back</button>
+            <img class="o_pp_av sm" t-att-src="r.employee.avatar"/>
+            <div><b t-esc="r.employee.name"/><div class="small text-muted"><t t-esc="roleLabel(r.role)"/> review · <t t-esc="r.cycle"/><t t-if="r.reviewer"> · by <t t-esc="r.reviewer"/></t></div></div>
+            <span t-attf-class="o_pf_state {{ r.state }}" t-esc="stateLabel(r.state)"/>
+            <div class="ms-auto text-end"><div t-attf-class="o_pf_big {{ pctClass(r.can_score ? formPct : r.score) }}" t-esc="(r.can_score ? formPct : r.score) ? (r.can_score ? formPct : r.score) + '%' : '—'"/></div>
+        </div>
+        <div t-if="r.source" class="o_pp_filterchip"><i class="fa fa-history me-1"/><t t-esc="r.source"/></div>
+        <div class="o_pf_reviewgrid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-list-ol"/>Scores (1 = poor, 5 = outstanding)</div>
+                <div t-foreach="f.lines" t-as="l" t-key="l.id" class="o_pf_crit">
+                    <div class="flex-grow-1"><b t-esc="l.name"/> <small class="text-muted">weight <t t-esc="l.weight"/></small>
+                        <input t-if="r.can_score" class="form-control form-control-sm mt-1" t-model="l.comment" placeholder="Comment (optional)"/>
+                        <div t-elif="l.comment" class="small text-muted" t-esc="l.comment"/></div>
+                    <div class="o_pf_stars">
+                        <button t-foreach="[1,2,3,4,5]" t-as="n" t-key="n" t-att-disabled="!r.can_score"
+                                t-attf-class="{{ l.score &gt;= n ? 'on' : '' }}" t-on-click="() => this.setScore(l, n)" t-esc="n"/>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-3">
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-comment-o"/>Summary</div>
+                    <div class="o_pp_formgrid one">
+                        <label>Strengths<textarea class="form-control" rows="2" t-model="f.strengths" t-att-disabled="!r.can_score"/></label>
+                        <label>To improve<textarea class="form-control" rows="2" t-model="f.improvements" t-att-disabled="!r.can_score"/></label>
+                        <label>Overall comment<textarea class="form-control" rows="2" t-model="f.comment" t-att-disabled="!r.can_score"/></label>
+                        <t t-if="r.role === 'manager'">
+                            <label>Potential (9-box)<select class="form-select" t-model="f.potential" t-att-disabled="!r.can_score"><option value="">—</option><option value="1">Low</option><option value="2">Medium</option><option value="3">High</option></select></label>
+                            <label>Proposed raise %<input type="number" step="0.5" class="form-control" t-model="f.raise" t-att-disabled="!r.can_score"/></label>
+                        </t>
+                        <label t-if="r.employee_comment or r.can_acknowledge">Employee comment<textarea class="form-control" rows="2" t-if="r.can_acknowledge" t-model="f.ack"/><div t-else="" t-esc="r.employee_comment"/></label>
+                    </div>
+                    <div class="o_pp_panel_foot">
+                        <t t-if="r.can_score">
+                            <button class="btn btn-light border ms-auto" t-on-click="() => this.saveReview(false)">Save draft</button>
+                            <button class="btn btn-primary" t-on-click="() => this.saveReview(true)"><i class="fa fa-paper-plane me-1"/>Submit</button>
+                        </t>
+                        <button t-if="r.can_acknowledge" class="btn btn-primary ms-auto" t-on-click="acknowledge"><i class="fa fa-check me-1"/>Acknowledge</button>
+                    </div>
+                </div>
+                <div t-if="r.others.length" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-clone"/>Other reviews</div>
+                    <div t-foreach="r.others" t-as="o" t-key="o.id" class="px-3 py-2 border-bottom">
+                        <b t-esc="roleLabel(o.role)"/> <span t-attf-class="{{ pctClass(o.score) }}" t-esc="o.score ? o.score + '%' : ''"/>
+                        <div class="small text-muted"><t t-foreach="o.lines" t-as="ol" t-key="ol_index"><t t-esc="ol.name"/>: <b t-esc="ol.score"/><t t-if="!ol_last"> · </t></t></div>
+                    </div>
+                </div>
+                <div t-if="r.kpi and r.kpi.rows.length" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-tachometer"/>KPI scorecard (end of period)</div>
+                    <div class="px-3 py-2"><b t-attf-class="{{ pctClass(r.kpi.total) }}" t-esc="r.kpi.total === null ? '—' : r.kpi.total + '%'"/> <span class="text-muted" t-esc="r.kpi.rating"/></div>
+                </div>
+                <div t-if="r.goals.length" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-bullseye"/>Goals</div>
+                    <div t-foreach="r.goals" t-as="g" t-key="g.id" class="px-3 py-2 border-bottom d-flex gap-2"><span class="flex-grow-1" t-esc="g.name"/><b t-esc="fmt(g.progress) + '%'"/></div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================================================================ check-ins -->
+    <t t-name="sonador_performance.Checkins">
+        <t t-set="d" t-value="state.ci.data"/>
+        <div class="o_pp_grid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-check-square-o"/>My check-in · week of <t t-esc="d.week_ec"/></div>
+                <div class="o_pp_formgrid one">
+                    <label>How was the week?<div class="o_pf_moods">
+                        <button t-foreach="['1','2','3','4','5']" t-as="m" t-key="m" t-attf-class="{{ state.ci.form.mood === m ? 'on' : '' }}" t-on-click="() => state.ci.form.mood = m" t-esc="moodIcon(m)"/></div></label>
+                    <label>Wins this week<textarea class="form-control" rows="2" t-model="state.ci.form.wins"/></label>
+                    <label>Blockers / need help<textarea class="form-control" rows="2" t-model="state.ci.form.blockers"/></label>
+                    <label>Priorities next week<textarea class="form-control" rows="2" t-model="state.ci.form.priorities"/></label>
+                </div>
+                <div class="o_pp_panel_foot"><span t-if="d.mine and d.mine.reply" class="small me-auto"><b t-esc="d.mine.replied_by"/>: <t t-esc="d.mine.reply"/></span><span t-else="" class="me-auto"/>
+                    <button class="btn btn-primary" t-on-click="saveCheckin"><i class="fa fa-paper-plane me-1"/><t t-esc="d.mine ? 'Update' : 'Send'"/></button></div>
+            </div>
+            <div t-if="d.team.length" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-users"/>My team this week</div>
+                <div class="o_pp_list" style="max-height: 40rem">
+                    <div t-foreach="d.team" t-as="t" t-key="t.employee.id" class="o_pf_ci">
+                        <div class="d-flex align-items-center gap-2"><img class="o_pp_av xs" t-att-src="t.employee.avatar"/><b t-esc="t.employee.name"/>
+                            <span t-if="t.checkin" class="ms-auto" t-esc="moodIcon(t.checkin.mood)"/><span t-else="" class="ms-auto o_pp_badge">no check-in</span></div>
+                        <t t-if="t.checkin">
+                            <div t-if="t.checkin.wins" class="small"><b>Wins:</b> <t t-esc="t.checkin.wins"/></div>
+                            <div t-if="t.checkin.blockers" class="small text-danger"><b>Blockers:</b> <t t-esc="t.checkin.blockers"/></div>
+                            <div t-if="t.checkin.priorities" class="small"><b>Next:</b> <t t-esc="t.checkin.priorities"/></div>
+                            <div t-if="t.checkin.reply" class="small text-muted"><i class="fa fa-reply me-1"/><t t-esc="t.checkin.reply"/></div>
+                            <div t-else="" class="d-flex gap-2 mt-1"><input class="form-control form-control-sm" placeholder="Reply…" t-att-value="state.ci.reply[t.checkin.id] or ''" t-on-input="(ev) => this.setReply(t.checkin.id, ev.target.value)"/>
+                                <button class="btn btn-sm btn-light border" t-on-click="() => this.reply(t.checkin)">Send</button></div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+            <div t-if="d.history.length" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-history"/>My past check-ins</div>
+                <div class="o_pp_list">
+                    <div t-foreach="d.history" t-as="h" t-key="h.id" class="o_pf_ci"><div><b t-esc="h.week_ec"/> <span t-esc="moodIcon(h.mood)"/></div><div class="small" t-esc="h.wins"/></div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================================================================ one-to-ones -->
+    <t t-name="sonador_performance.One2ones">
+        <t t-set="d" t-value="state.oo.data"/>
+        <div class="o_pp_toolbar"><span class="small text-muted me-auto">One-to-ones with your manager and your direct reports: a shared agenda, notes and action items.</span>
+            <t t-foreach="d.with" t-as="p" t-key="p.id"><button class="btn btn-light border btn-sm" t-on-click="() => this.newMeeting(p)"><i class="fa fa-plus me-1"/><t t-esc="p.name"/></button></t></div>
+        <div t-if="state.oo.cur" class="o_pp_card o_pp_panel">
+            <t t-set="m" t-value="state.oo.cur"/>
+            <div class="o_pp_card_head"><i class="fa fa-comments-o"/>One-to-one with <t t-esc="m.with"/></div>
+            <div class="o_pp_formgrid">
+                <label>Date<input type="date" class="form-control" t-model="m.date"/></label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="m.done"/> Held</label>
+                <label class="wide">Shared notes<textarea class="form-control" rows="3" t-model="m.notes"/></label>
+            </div>
+            <div class="px-3 pb-2">
+                <div t-foreach="m.items" t-as="i" t-key="i_index" class="d-flex align-items-center gap-2 mb-1">
+                    <input type="checkbox" class="form-check-input" t-model="i.done"/>
+                    <span t-attf-class="o_pf_kind {{ i.kind }}" t-esc="i.kind === 'agenda' ? 'Talk' : 'Action'"/>
+                    <input class="form-control form-control-sm" t-model="i.name"/>
+                    <button class="btn btn-link text-danger p-0" t-on-click="() => m.items.splice(i_index, 1)"><i class="fa fa-trash"/></button>
+                </div>
+                <button class="btn btn-link btn-sm px-0 me-3" t-on-click="() => this.addItem('agenda')"><i class="fa fa-plus me-1"/>Talking point</button>
+                <button class="btn btn-link btn-sm px-0" t-on-click="() => this.addItem('action')"><i class="fa fa-plus me-1"/>Action item</button>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.oo.cur = null">Cancel</button>
+                <button class="btn btn-primary" t-on-click="saveMeeting"><i class="fa fa-check me-1"/>Save</button></div>
+        </div>
+        <div class="o_pp_card">
+            <div t-foreach="d.meetings" t-as="m" t-key="m.id" class="o_pp_li" t-on-click="() => this.openMeeting(m)">
+                <img class="o_pp_av sm" t-att-src="(m.employee.id === ctx.me ? m.manager : m.employee).avatar"/>
+                <div class="flex-grow-1"><b t-esc="(m.employee.id === ctx.me ? m.manager : m.employee).name"/><div class="small text-muted"><t t-esc="m.items.length"/> items · <t t-esc="m.notes.slice(0, 80)"/></div></div>
+                <div class="text-end small"><b t-esc="m.date_ec"/><div><span t-attf-class="o_pf_state {{ m.done ? 'closed' : 'open' }}" t-esc="m.done ? 'Held' : 'Planned'"/></div></div>
+            </div>
+            <div t-if="!d.meetings.length" class="o_pp_empty p-3">No one-to-ones yet<t t-if="d.with.length">: start one with the buttons above</t>.</div>
+        </div>
+    </t>
+
+    <!-- ================================================================ praise -->
+    <t t-name="sonador_performance.Praise">
+        <t t-set="f" t-value="state.wall.form"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-heart"/>Give praise or feedback</div>
+            <div class="o_pp_formgrid">
+                <label>To<select class="form-select" t-model="f.to_id"><option value="">—</option><option t-foreach="ctx.everyone" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label>Kind<select class="form-select" t-model="f.kind"><option value="praise">Praise (praise wall)</option><option value="feedback">Private feedback</option></select></label>
+                <label>Company value<select class="form-select" t-model="f.value"><option value="">—</option><option value="customer">Customer first</option><option value="quality">Quality</option><option value="teamwork">Teamwork</option><option value="integrity">Integrity</option><option value="ownership">Ownership</option><option value="innovation">Innovation</option></select></label>
+                <label class="wide">Message<textarea class="form-control" rows="2" t-model="f.text"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><span class="small text-muted me-auto">Praise is public. Feedback is seen by the person and their manager.</span>
+                <button class="btn btn-primary" t-att-disabled="!f.to_id or !f.text" t-on-click="give"><i class="fa fa-paper-plane me-1"/>Send</button></div>
+        </div>
+        <div class="o_pp_card">
+            <t t-foreach="state.wall.list" t-as="w" t-key="w.id" t-call="sonador_performance.WallItem"/>
+            <div t-if="!state.wall.list.length" class="o_pp_empty p-3">Nothing yet.</div>
+        </div>
+    </t>
+
+    <!-- ================================================================ KPI setup -->
+    <t t-name="sonador_performance.KpiSetup">
+        <div class="o_pp_toolbar"><span class="small text-muted me-auto">KPIs by department, position or person, with weights and targets. Bolt = computed from system data.</span>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.openBackend('sonador_performance.action_kpi_templates')"><i class="fa fa-clone me-1"/>Templates</button>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.openBackend('sonador_performance.action_kpi_scores')"><i class="fa fa-table me-1"/>Scorecard results</button>
+            <button class="btn btn-primary btn-sm" t-on-click="newKpi"><i class="fa fa-plus me-1"/>KPI</button></div>
+        <div t-if="state.kpi.edit" class="o_pp_card o_pp_panel">
+            <t t-set="k" t-value="state.kpi.edit"/>
+            <div class="o_pp_card_head"><i class="fa fa-sliders"/><t t-esc="k.id ? 'Edit KPI' : 'New KPI'"/></div>
+            <div class="o_pp_formgrid">
+                <label class="wide">KPI<input class="form-control" t-model="k.name"/></label>
+                <label>Department<select class="form-select" t-model="k.department_id"><option value="">—</option><option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-esc="d.name"/></select></label>
+                <label>Unit<input class="form-control" t-model="k.unit" placeholder="%, money, litres"/></label>
+                <label>Code<input class="form-control" t-model="k.code"/></label>
+                <label>Frequency<select class="form-select" t-model="k.frequency"><option t-foreach="ctx.frequency" t-as="f" t-key="f.id" t-att-value="f.id" t-esc="f.name"/></select></label>
+                <label>Target (per period)<input type="number" class="form-control" t-model="k.target"/></label>
+                <label>Source<select class="form-select" t-model="k.source"><option value="manual">Entered</option><option value="auto">Computed from system data</option></select></label>
+                <label t-if="k.source === 'auto'">Measure<select class="form-select" t-model="k.auto_key"><option value="">—</option><option t-foreach="ctx.auto" t-as="a" t-key="a.id" t-att-value="a.id" t-esc="a.name"/></select></label>
+                <label class="wide">Scoring bands<input class="form-control" t-model="k.bands" t-att-disabled="k.levels and k.levels.length"/>
+                    <small t-if="k.levels and k.levels.length" class="text-muted">Set by the KPI's own levels: <t t-foreach="k.levels" t-as="lv" t-key="lv_index"><t t-esc="lv.name"/> <t t-esc="lv.min_pct"/>%<t t-if="!lv_last">, </t></t> <a href="#" t-on-click.prevent="() => this.openKpiForm(k.id)">change</a></small>
+                    <small t-elif="k.id" class="text-muted"><a href="#" t-on-click.prevent="() => this.openKpiForm(k.id)">Full form: performance levels, how it is measured</a></small></label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="k.higher_is_better"/> Higher is better</label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="k.active"/> Active</label>
+            </div>
+            <div class="px-3 pb-2">
+                <div class="o_pp_kicker mb-1">Assigned to (a person's own line wins over the position's, the position's over the department's)</div>
+                <div t-foreach="k.assign" t-as="a" t-key="a_index" class="d-flex gap-2 mb-1">
+                    <select class="form-select form-select-sm" t-model="a.department_id"><option value="">Department…</option><option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-esc="d.name"/></select>
+                    <select class="form-select form-select-sm" t-model="a.job_id"><option value="">or position…</option><option t-foreach="ctx.jobs" t-as="j" t-key="j.id" t-att-value="j.id" t-esc="j.name"/></select>
+                    <select class="form-select form-select-sm" t-model="a.employee_id"><option value="">or person…</option><option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select>
+                    <input type="number" step="0.01" class="form-control form-control-sm" style="max-width: 7rem" t-model="a.weight" title="Weight (e.g. 0.2 = 20%)"/>
+                    <input type="number" class="form-control form-control-sm" style="max-width: 9rem" t-model="a.target" title="Own target (0 = KPI target)"/>
+                    <button class="btn btn-link text-danger p-0" t-on-click="() => k.assign.splice(a_index, 1)"><i class="fa fa-trash"/></button>
+                </div>
+                <button class="btn btn-link btn-sm px-0" t-on-click="addAssign"><i class="fa fa-plus me-1"/>Assignment</button>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.kpi.edit = null">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="!k.name" t-on-click="saveKpi"><i class="fa fa-check me-1"/>Save</button></div>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>KPI</th><th>Department</th><th>Unit</th><th>Frequency</th><th class="num">Target</th><th>Assigned</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.kpi.list" t-as="k" t-key="k.id" class="o_pf_click" t-on-click="() => this.editKpi(k)" t-attf-class="{{ k.active ? '' : 'left' }}">
+                        <td><i t-if="k.source === 'auto'" class="fa fa-bolt text-warning me-1"/><b t-esc="k.name"/></td><td t-esc="k.department"/><td t-esc="k.unit"/><td t-esc="k.frequency"/>
+                        <td class="num" t-esc="fmt(k.target)"/>
+                        <td class="small"><t t-foreach="k.assign" t-as="a" t-key="a.id"><t t-esc="a.employee or a.department or a.job"/> (<t t-esc="fmt(a.weight * 100)"/>%)<t t-if="!a_last">, </t></t></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+</templates>

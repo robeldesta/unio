@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_batch_payment_form" model="ir.ui.view">
+        <field name="name">sb.batch.payment.form</field>
+        <field name="model">sb.batch.payment</field>
+        <field name="arch" type="xml">
+            <form string="Pay Several Bills">
+                <header>
+                    <button name="action_load" type="object" string="Load bills due" class="btn-secondary"/>
+                    <button name="action_pay" type="object" string="Post the payments" class="btn-primary" invisible="not line_ids"
+                            confirm="Post one payment voucher per vendor for the ticked bills?" confirm-label="Post the payments"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1>Pay Several Bills</h1></div>
+                    <p class="text-muted">Load the bills due by a date, tick what to pay (change the amount for a part payment)
+                        and post. One payment voucher (CPV) is created per vendor (and per goods / services) and applied to its bills. Each bill
+                        is withheld on as a single payment of it would be: its value before VAT against the goods or services threshold.</p>
+                    <group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="due_by"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="account_id" options="{'no_create': True}"/>
+                            <field name="method"/>
+                            <field name="withholding"/>
+                            <field name="wht_exempt_reason" invisible="withholding" required="not withholding and wht_due_total"
+                                   placeholder="Exemption certificate no., or why not withheld"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom" create="0">
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="move_line_id" column_invisible="1"/>
+                            <field name="pay" widget="boolean_toggle"/>
+                            <field name="partner_id"/>
+                            <field name="move_id"/>
+                            <field name="ref"/>
+                            <field name="date_due"/>
+                            <field name="residual" sum="Due"/>
+                            <field name="amount" sum="To pay"/>
+                            <field name="wht_needs_supply" column_invisible="1"/>
+                            <field name="wht_supply" required="wht_needs_supply" optional="show"/>
+                            <field name="wht_rule" optional="hide"/>
+                            <field name="wht_due" sum="Due" column_invisible="parent.withholding"/>
+                            <field name="wht_amount" sum="Withheld" column_invisible="not parent.withholding"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="count" string="Vendors"/>
+                        <field name="total" string="Total to pay"/>
+                        <field name="wht_total" invisible="not withholding"/>
+                        <field name="wht_due_total" invisible="withholding or not wht_due_total"/>
+                        <field name="net_total" string="Paid out"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_batch_payment" model="ir.actions.act_window">
+        <field name="name">Pay Several Bills</field>
+        <field name="res_model">sb.batch.payment</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

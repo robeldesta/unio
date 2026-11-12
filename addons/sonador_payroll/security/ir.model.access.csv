@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_profile_hr,profile,model_sb_payroll_profile,sonador_books.group_sb_hr,1,1,1,1
+access_benefit_hr,benefit,model_sb_payroll_benefit,sonador_books.group_sb_hr,1,1,1,1
+access_loan_hr,loan,model_sb_payroll_loan,sonador_books.group_sb_hr,1,1,1,1
+access_lineloan_hr,lineloan,model_sb_payroll_line_loan,sonador_books.group_sb_hr,1,1,1,1
+access_linebenefit_hr,linebenefit,model_sb_payroll_line_benefit,sonador_books.group_sb_hr,1,1,1,1

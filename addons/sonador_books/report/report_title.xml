@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- A printout's title (the PDF viewer's tab, the saved file) is the document or the company, never the software -->
+    <template id="report_layout_title" inherit_id="web.report_layout">
+        <xpath expr="//title" position="replace">
+            <title><t t-esc="title or (res_company and res_company.name) or 'Report'"/></title>
+        </xpath>
+    </template>
+    <template id="report_preview_layout_title" inherit_id="web.report_preview_layout">
+        <xpath expr="//title" position="replace">
+            <title><t t-esc="title or (res_company and res_company.name) or 'Report'"/></title>
+        </xpath>
+    </template>
+</odoo>

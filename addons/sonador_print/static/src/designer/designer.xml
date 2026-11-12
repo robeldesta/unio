@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_print.Designer">
+        <div class="o_pp o_spd o_action h-100 d-flex flex-column">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="state.meta.company"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-print me-2"/>Documents and printing</h1>
+                    </div>
+                    <span t-if="state.dirty" class="small text-muted">Not saved</span>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.save(true)">Use for every document</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="pdf"><i class="fa fa-file-pdf-o me-1"/>PDF</button>
+                    <button class="btn btn-primary btn-sm" t-att-disabled="!state.dirty" t-on-click="() => this.save()"><i class="fa fa-save me-1"/>Save</button>
+                </div>
+            </div>
+            <div class="o_spd_body flex-grow-1">
+                <nav class="o_spd_kinds">
+                    <button t-foreach="kinds" t-as="k" t-key="k.kind" t-att-class="state.kind === k.kind ? 'active' : ''" t-on-click="() => this.open(k.kind)">
+                        <t t-esc="k.label"/><i t-if="k.custom" class="fa fa-circle ms-1 text-success" title="Own design"/>
+                    </button>
+                </nav>
+                <aside class="o_spd_panel" t-if="state.st">
+                    <t t-set="s" t-value="state.st"/>
+                    <div class="o_spd_tabs">
+                        <button t-att-class="state.tab === 'look' ? 'active' : ''" t-on-click="() => this.state.tab = 'look'">Look</button>
+                        <button t-att-class="state.tab === 'show' ? 'active' : ''" t-on-click="() => this.state.tab = 'show'">What to show</button>
+                        <button t-att-class="state.tab === 'text' ? 'active' : ''" t-on-click="() => this.state.tab = 'text'">Texts</button>
+                    </div>
+                    <t t-if="state.tab === 'look'">
+                        <label>Template</label>
+                        <div class="o_spd_tpls">
+                            <button t-foreach="state.meta.templates" t-as="t" t-key="t[0]" t-att-class="s.template === t[0] ? 'active' : ''" t-on-click="() => this.set('template', t[0])">
+                                <span t-attf-class="o_spd_thumb o_spd_thumb_{{ t[0] }}"><i/><i/><i/></span><t t-esc="t[1]"/></button>
+                        </div>
+                        <label>Paper</label>
+                        <select class="form-select form-select-sm" t-on-change="(ev) => this.set('paper', ev.target.value)">
+                            <option t-foreach="state.meta.papers" t-as="p" t-key="p[0]" t-att-value="p[0]" t-att-selected="s.paper === p[0]" t-esc="p[1]"/></select>
+                        <div class="o_spd_row">
+                            <div><label>Main colour</label><input type="color" class="form-control form-control-color" t-att-value="s.color" t-on-input="(ev) => this.set('color', ev.target.value)"/></div>
+                            <div><label>Accent</label><input type="color" class="form-control form-control-color" t-att-value="s.accent" t-on-input="(ev) => this.set('accent', ev.target.value)"/></div>
+                        </div>
+                        <label>Font</label>
+                        <select class="form-select form-select-sm" t-on-change="(ev) => this.set('font', ev.target.value)">
+                            <option t-foreach="state.meta.fonts" t-as="f" t-key="f[0]" t-att-value="f[0]" t-att-selected="s.font === f[0]" t-esc="f[1]"/></select>
+                        <label>Language of the title</label>
+                        <select class="form-select form-select-sm" t-on-change="(ev) => this.set('lang', ev.target.value)">
+                            <option t-foreach="state.meta.langs" t-as="l" t-key="l[0]" t-att-value="l[0]" t-att-selected="s.lang === l[0]" t-esc="l[1]"/></select>
+                        <label>Logo</label>
+                        <div class="o_spd_seg">
+                            <button t-foreach="[['left','Left'],['center','Centre'],['right','Right']]" t-as="p" t-key="p[0]" t-att-class="s.logo_position === p[0] ? 'active' : ''" t-on-click="() => this.set('logo_position', p[0])" t-esc="p[1]"/>
+                        </div>
+                    </t>
+                    <t t-if="state.tab === 'show'">
+                        <label t-foreach="state.meta.show" t-as="o" t-key="o.key" class="o_spd_check">
+                            <input type="checkbox" class="form-check-input" t-att-checked="s[o.key]" t-on-change="(ev) => this.set(o.key, ev.target.checked)"/> <t t-esc="o.label"/>
+                        </label>
+                    </t>
+                    <t t-if="state.tab === 'text'">
+                        <label>Title (empty: the standard one)</label>
+                        <input class="form-control form-control-sm" t-att-value="s.title or ''" t-on-input="(ev) => this.set('title', ev.target.value)"/>
+                        <label>Note under the title</label>
+                        <textarea class="form-control form-control-sm" rows="2" t-on-input="(ev) => this.set('header_note', ev.target.value)" t-esc="s.header_note or ''"/>
+                        <label>Signatures (comma-separated)</label>
+                        <input class="form-control form-control-sm" t-att-value="s.signature_labels or ''" t-on-input="(ev) => this.set('signature_labels', ev.target.value)"/>
+                        <label>Bank accounts to print</label>
+                        <textarea class="form-control form-control-sm" rows="2" t-on-input="(ev) => this.set('bank_details', ev.target.value)" t-esc="s.bank_details or ''"/>
+                        <label>Terms and conditions</label>
+                        <textarea class="form-control form-control-sm" rows="3" t-on-input="(ev) => this.set('terms', ev.target.value)" t-esc="s.terms or ''"/>
+                        <label>Footer</label>
+                        <textarea class="form-control form-control-sm" rows="2" t-on-input="(ev) => this.set('footer', ev.target.value)" t-esc="s.footer or ''"/>
+                    </t>
+                </aside>
+                <section class="o_spd_preview">
+                    <div class="o_spd_paper" t-attf-class="o_spd_paper_{{ state.st and state.st.paper }}">
+                        <div t-if="state.busy" class="o_spd_busy"><i class="fa fa-circle-o-notch fa-spin"/></div>
+                        <iframe t-ref="frame" t-att-srcdoc="state.html" title="Preview"/>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_ctl_settings" model="ir.ui.view">
+        <field name="name">res.company.ctl.settings</field>
+        <field name="model">res.company</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Controller settings" create="0" delete="0">
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group string="Amounts">
+                            <field name="ctl_materiality"/>
+                            <field name="ctl_margin_points"/>
+                            <field name="ctl_start_date"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Days">
+                            <field name="ctl_overdue_days"/>
+                            <field name="ctl_slower_days"/>
+                            <field name="ctl_draft_days"/>
+                            <field name="ctl_duplicate_days"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_ctl_settings" model="ir.actions.server">
+        <field name="name">Settings</field>
+        <field name="model_id" ref="base.model_res_company"/>
+        <field name="state">code</field>
+        <field name="code">action = {'type': 'ir.actions.act_window', 'res_model': 'res.company', 'res_id': env.company.id, 'views': [(env.ref('sonador_controller.view_company_ctl_settings').id, 'form')], 'target': 'current', 'name': 'Controller settings'}</field>
+    </record>
+</odoo>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.SetupGuide">
+        <div class="o_sb_setup o_action h-100 overflow-auto">
+            <div class="o_sb_setup_inner">
+                <div class="d-flex align-items-end gap-3 mb-3">
+                    <div class="me-auto">
+                        <div class="text-muted small text-uppercase">Accounting</div>
+                        <h1 class="o_sb_setup_title">Setup Guide</h1>
+                        <div class="text-muted">Work down the list once. Everything stays editable later.</div>
+                    </div>
+                    <button class="btn btn-light border" t-on-click="refresh"><i class="fa fa-refresh me-1"/>Check again</button>
+                </div>
+                <div class="o_sb_setup_progress mb-4">
+                    <div class="d-flex justify-content-between small mb-1"><span><t t-esc="state.done"/> of <t t-esc="state.total"/> done</span><span t-esc="pct + '%'"/></div>
+                    <div class="o_sb_setup_bar"><div t-attf-style="width: {{ pct }}%"/></div>
+                </div>
+                <div t-foreach="state.steps" t-as="s" t-key="s.key" t-attf-class="o_sb_setup_step {{ s.done ? 'done' : '' }}">
+                    <div class="o_sb_setup_num"><i t-if="s.done" class="fa fa-check"/><t t-else="" t-esc="s_index + 1"/></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold" t-esc="s.title"/>
+                        <div class="small text-muted" t-esc="s.help"/>
+                    </div>
+                    <span t-if="s.note" class="o_sb_setup_note" t-esc="s.note"/>
+                    <button t-attf-class="btn btn-sm {{ s.done ? 'btn-light border' : 'btn-primary' }}" t-on-click="() => this.go(s)"
+                            t-esc="s.done ? 'Review' : 'Do it'"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_farm" model="ir.actions.client">
+        <field name="name">Farm</field>
+        <field name="tag">sonador_farm.app</field>
+        <field name="params" eval="{'page': 'home'}"/>
+    </record>
+    <menuitem id="menu_root" name="Farm" sequence="24" web_icon="sonador_farm,static/description/icon.png"
+              action="action_farm" groups="group_worker"/>
+</odoo>

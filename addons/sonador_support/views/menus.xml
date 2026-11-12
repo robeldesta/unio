@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_root" name="Support" sequence="95" web_icon="sonador_support,static/description/icon.png" action="action_hub"/>
+    <menuitem id="menu_hub" name="Problems" parent="menu_root" action="action_hub" sequence="1"/>
+    <menuitem id="menu_all" name="All problems (list)" parent="menu_root" action="action_tickets" sequence="2" groups="group_agent"/>
+</odoo>

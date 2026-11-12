@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_approval" model="ir.ui.view">
+        <field name="name">sale.order.form.sb.approval</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/*[1]" position="before">
+                <field name="sb_so_approval" invisible="1"/>
+                <field name="sb_so_finance_step" invisible="1"/>
+                <!-- with approvals on: the salesperson submits, finance checks, the commercial manager confirms -->
+                <button name="action_confirm" type="object" string="Submit to Finance Check" class="btn-primary"
+                        invisible="not sb_so_approval or not sb_so_finance_step or state not in ('draft', 'sent') or sb_appr_state in ('finance', 'commercial', 'approved')"/>
+                <button name="action_confirm" type="object" string="Submit for Approval" class="btn-primary"
+                        invisible="not sb_so_approval or sb_so_finance_step or state not in ('draft', 'sent') or sb_appr_state in ('finance', 'commercial', 'approved')"/>
+                <button name="action_sb_so_approve" type="object" string="Check" class="btn-primary" invisible="not sb_appr_can or sb_appr_state != 'finance'"/>
+                <button name="action_sb_so_approve" type="object" string="Confirm" class="btn-primary" invisible="not sb_appr_can or sb_appr_state != 'commercial'"/>
+                <button name="action_sb_so_send_back" type="object" string="Send back" invisible="not sb_appr_can"/>
+            </xpath>
+            <!-- the plain Confirm only when approvals are off -->
+            <xpath expr="//header/button[@name='action_confirm'][@id='action_confirm']" position="attributes">
+                <attribute name="invisible">state != 'sent' or sb_so_approval</attribute>
+            </xpath>
+            <xpath expr="//header/button[@name='action_confirm'][@data-hotkey='q'][not(@id)]" position="attributes">
+                <attribute name="invisible">state != 'draft' or sb_so_approval</attribute>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <field name="sb_appr_can" invisible="1"/>
+                <div class="alert alert-info mb-0" role="alert" invisible="sb_appr_state not in ('finance', 'commercial')">
+                    Waiting for the <field name="sb_appr_state" readonly="1" class="d-inline fw-bold"/>.
+                </div>
+                <div class="alert alert-warning mb-0" role="alert" invisible="sb_appr_state != 'sent_back'">
+                    Sent back: <field name="sb_sent_back_reason" class="d-inline"/>. Fix it and submit again.
+                </div>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <group invisible="not sb_appr_can">
+                    <field name="sb_appr_reason" placeholder="Why it goes back (the salesperson sees it)"/>
+                </group>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Approval" name="sb_approval" invisible="sb_appr_state == 'none'">
+                    <group>
+                        <group>
+                            <field name="sb_appr_state" readonly="1"/>
+                            <field name="sb_submitted_at"/>
+                        </group>
+                        <group>
+                            <field name="sb_finance_by"/>
+                            <field name="sb_finance_at"/>
+                            <field name="sb_commercial_by"/>
+                            <field name="sb_commercial_at"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_company_form_so_approval" model="ir.ui.view">
+        <field name="name">res.company.form.sb.so.approval</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Sales approvals" name="sb_so_approval">
+                    <group>
+                        <field name="sb_so_approval"/>
+                        <field name="sb_so_finance_step" invisible="not sb_so_approval"/>
+                        <field name="sb_so_commercial_step" invisible="not sb_so_approval"/>
+                        <field name="sb_so_approval_above" invisible="not sb_so_approval"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

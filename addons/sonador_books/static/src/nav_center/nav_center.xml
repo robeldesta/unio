@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.NavCenter">
+        <div class="o_sb_nav o_action h-100">
+          <div class="o_sb_nav_inner">
+            <!-- left rail -->
+            <aside class="o_sb_rail d-flex flex-column">
+                <div class="o_sb_rail_brand"><i class="fa fa-book me-2"/>Accounting</div>
+                <t t-foreach="order" t-as="key" t-key="key">
+                    <a href="#" t-attf-class="o_sb_rail_item {{ state.center === key ? 'active' : '' }}" t-on-click.prevent="() => this.go(key)">
+                        <i t-attf-class="fa fa-fw {{ centers[key].icon }} me-2"/><t t-esc="centers[key].title"/>
+                    </a>
+                </t>
+                <div class="o_sb_rail_sc">
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="o_sb_rail_label">Shortcuts</span>
+                        <a href="#" class="ms-auto small" t-on-click.prevent="() => this.state.editShortcuts = !state.editShortcuts"
+                           t-esc="state.editShortcuts ? 'Done' : 'Customize'"/>
+                    </div>
+                    <t t-if="!state.editShortcuts">
+                        <a t-foreach="shortcuts" t-as="s" t-key="s.key" href="#" class="o_sb_rail_link" t-on-click.prevent="() => this.openTile(s)" t-esc="s.label"/>
+                    </t>
+                    <t t-else="">
+                        <label t-foreach="allShortcuts" t-as="s" t-key="s.key" t-if="allowed(s)" class="d-block small mb-1">
+                            <input type="checkbox" class="me-2" t-att-checked="state.shortcuts.includes(s.key)" t-on-change="() => this.toggleShortcut(s.key)"/>
+                            <t t-esc="s.label"/>
+                        </label>
+                    </t>
+                </div>
+            </aside>
+
+            <!-- main -->
+            <main class="flex-grow-1 overflow-auto">
+                <div class="o_sb_top d-flex flex-wrap align-items-center gap-2 px-4 py-3">
+                    <div class="me-auto">
+                        <div class="o_sb_top_company" t-esc="state.data.company"/>
+                        <h1 class="o_sb_top_title"><i t-attf-class="fa {{ center.icon }} me-2"/><t t-esc="center.title"/></h1>
+                    </div>
+                    <label class="o_sb_pill o_sb_asof mb-0" title="Show the figures as they stood at the end of this day">
+                        <i class="fa fa-calendar-o me-1"/><t t-if="state.data.is_today">Today</t><t t-else="">As at</t>
+                        <input type="date" class="o_sb_asof_input border-0 bg-transparent ms-1" t-att-value="state.data.as_of" t-on-change="setAsOf"/>
+                        <span class="ms-1 text-muted" t-esc="state.data.today_ec"/>
+                    </label>
+                    <button t-if="!state.data.is_today" class="btn btn-sm btn-light border" t-on-click="backToToday">Back to today</button>
+                    <span class="o_sb_pill o_sb_pill_period" t-att-title="state.data.period_range">
+                        <i class="fa fa-clock-o me-1"/>Period <t t-esc="state.data.period"/>
+                    </span>
+                    <span t-if="state.data.lock_date_ec" class="o_sb_pill"><i class="fa fa-lock me-1"/>Closed through <t t-esc="state.data.lock_date_ec"/></span>
+                    <button class="btn btn-sm btn-light border" t-on-click="refresh" title="Refresh"><i t-attf-class="fa fa-refresh {{ state.loading ? 'fa-spin' : '' }}"/></button>
+                    <button class="btn btn-sm btn-light border" t-on-click="makeDefault" t-att-disabled="state.defaultCenter === state.center">
+                        <i class="fa fa-home me-1"/><t t-esc="state.defaultCenter === state.center ? 'This is my start page' : 'Make this my start page'"/>
+                    </button>
+                </div>
+                <div class="px-4 pb-5">
+                    <t t-if="state.center === 'business'"><t t-call="sonador_books.NavBusiness"/></t>
+                    <t t-else=""><t t-call="sonador_books.NavCenterBody"/></t>
+                </div>
+            </main>
+          </div>
+        </div>
+    </t>
+
+    <!-- ================= Business Status ================= -->
+    <t t-name="sonador_books.NavBusiness">
+        <t t-set="d" t-value="state.data"/>
+        <div class="o_sb_kpis mb-3">
+            <div class="o_sb_kpi_card o_sb_click" t-on-click="() => this.report('cash_register')">
+                <div class="o_sb_kpi_label">Cash and bank</div>
+                <div class="o_sb_kpi_value" t-esc="money(state.nav.cash)"/>
+                <div class="o_sb_kpi_hint"><t t-esc="(d.balances || []).length"/> accounts</div>
+            </div>
+            <div class="o_sb_kpi_card o_sb_click" t-on-click="() => this.report('aged_ar')">
+                <div class="o_sb_kpi_label">Customers owe us</div>
+                <div class="o_sb_kpi_value" t-esc="money(d.owe_total)"/>
+                <div class="o_sb_kpi_hint" title="Customers whose balance is owed to us. The aged receivables also list customers in credit (advances, overpayments)."><t t-esc="d.owe_count || 0"/> customers with a balance due</div>
+            </div>
+            <div class="o_sb_kpi_card o_sb_click" t-on-click="() => this.report('aged_ap')">
+                <div class="o_sb_kpi_label">We owe vendors</div>
+                <div class="o_sb_kpi_value" t-esc="money(d.pay_total)"/>
+                <div class="o_sb_kpi_hint" title="Vendors we owe. The aged payables also list vendors we paid in advance."><t t-esc="d.pay_count || 0"/> vendors we owe</div>
+            </div>
+            <div class="o_sb_kpi_card o_sb_click" t-on-click="() => this.report('vat_return')">
+                <div class="o_sb_kpi_label">Taxes and payroll payable</div>
+                <div class="o_sb_kpi_value" t-esc="money(d.tax_total)"/>
+                <div class="o_sb_kpi_hint">VAT, PAYE, pension, withholding</div>
+            </div>
+            <div t-attf-class="o_sb_kpi_card o_sb_click {{ d.trend and d.trend.totals.net &lt; 0 ? 'o_sb_bad' : 'o_sb_good' }}" t-on-click="() => this.report('is_ytd')">
+                <div class="o_sb_kpi_label">Net income, year to date</div>
+                <div class="o_sb_kpi_value" t-esc="money(d.trend ? d.trend.totals.net : 0)"/>
+                <div class="o_sb_kpi_hint"><t t-esc="d.fy_label"/></div>
+            </div>
+        </div>
+        <div class="o_sb_grid2">
+            <div class="o_sb_card">
+                <div class="o_sb_card_head"><i class="fa fa-bank text-muted"/>Account balances
+                    <a href="#" class="o_sb_card_link" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_bank_accounts'})">Bank accounts</a></div>
+                <table class="o_sb_mini">
+                    <tr t-foreach="d.balances || []" t-as="b" t-key="b.id" class="o_sb_click" t-on-click="() => this.openAccountRegister(b)">
+                        <td class="text-muted" t-esc="b.code"/><td t-esc="b.name"/>
+                        <td t-attf-class="text-end {{ b.balance &lt; 0 ? 'o_sb_neg' : '' }}" t-esc="money(b.balance)"/>
+                    </tr>
+                </table>
+                <div class="o_sb_card_foot">
+                    <a href="#" t-on-click.prevent="() => this.report('sfp')">View balance sheet</a>
+                    <a href="#" t-on-click.prevent="() => this.openTile({action: 'sonador_books.action_sb_transfer', create: true})">Bank transfer</a>
+                </div>
+            </div>
+            <div class="o_sb_card">
+                <div class="o_sb_card_head"><i class="fa fa-line-chart text-muted"/>Revenue: year to date</div>
+                <div class="d-flex flex-wrap p-3 gap-3">
+                    <div class="flex-grow-1" style="min-width: 15rem">
+                        <SbChart t-if="hasTrend" type="'line'" labels="d.trend.labels" series="trendSeries" height="200"/>
+                        <div t-else="" class="o_sb_empty_small"><i class="fa fa-info-circle me-1"/>No revenue or expenses posted yet in <t t-esc="d.fy_label"/></div>
+                    </div>
+                    <table t-if="d.trend" class="o_sb_legend">
+                        <tr><td>Revenue</td><td class="text-end" t-esc="money(d.trend.totals.revenue, 0)"/></tr>
+                        <tr><td>Cost of sales</td><td class="text-end" t-esc="'– ' + money(d.trend.totals.cogs, 0)"/></tr>
+                        <tr class="o_sb_legend_sum"><td>Gross profit</td><td class="text-end" t-esc="money(d.trend.totals.gross, 0)"/></tr>
+                        <tr><td>Expenses</td><td class="text-end" t-esc="'– ' + money(d.trend.totals.expenses, 0)"/></tr>
+                        <tr class="o_sb_legend_sum"><td>Net income</td><td class="text-end" t-esc="money(d.trend.totals.net, 0)"/></tr>
+                    </table>
+                </div>
+                <div class="o_sb_card_foot">
+                    <a href="#" t-on-click.prevent="() => this.report('is_12')">Income statement by month</a>
+                    <a href="#" t-on-click.prevent="() => this.report('is_ytd')">Income statement</a>
+                </div>
+            </div>
+            <div class="o_sb_card">
+                <div class="o_sb_card_head"><i class="fa fa-users text-muted"/>Customers who owe money</div>
+                <t t-call="sonador_books.NavOpenItems"><t t-set="items" t-value="d.owe || []"/><t t-set="kind" t-value="'customer'"/></t>
+                <div class="o_sb_card_foot">
+                    <a href="#" t-on-click.prevent="() => this.openTile({action: 'sonador_books.action_sb_receipt', create: true})">Receive money</a>
+                    <a href="#" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_sale'})">Sales invoices</a>
+                    <a href="#" t-on-click.prevent="() => this.report('cust_statement')">Customer statements</a>
+                </div>
+            </div>
+            <div class="o_sb_card">
+                <div class="o_sb_card_head"><i class="fa fa-truck text-muted"/>Vendors to pay</div>
+                <t t-call="sonador_books.NavOpenItems"><t t-set="items" t-value="d.pay || []"/><t t-set="kind" t-value="'vendor'"/></t>
+                <div class="o_sb_card_foot">
+                    <a href="#" t-on-click.prevent="() => this.openTile({action: 'sonador_books.action_sb_payment', create: true})">Make a payment</a>
+                    <a href="#" t-on-click.prevent="() => this.report('cash_requirements')">Cash requirements</a>
+                </div>
+            </div>
+            <div class="o_sb_card">
+                <div class="o_sb_card_head"><i class="fa fa-university text-muted"/>Taxes and payroll payable</div>
+                <table class="o_sb_mini">
+                    <tr t-foreach="d.tax || []" t-as="b" t-key="b.id" class="o_sb_click" t-on-click="() => this.openAccountRegister(b)">
+                        <td class="text-muted" t-esc="b.code"/><td t-esc="b.name"/>
+                        <td t-attf-class="text-end {{ b.balance &lt; 0 ? 'o_sb_neg' : '' }}" t-esc="money(b.balance)"/>
+                    </tr>
+                    <tr t-if="!(d.tax || []).length"><td class="text-muted p-3">Nothing owed to the tax authorities or staff.</td></tr>
+                </table>
+                <div class="o_sb_card_foot">
+                    <a href="#" t-on-click.prevent="() => this.report('vat_return')">VAT declaration</a>
+                    <a href="#" t-on-click.prevent="() => this.report('wht_payable')">Withholding register</a>
+                    <a href="#" t-on-click.prevent="() => this.report('emp_income_tax')">PAYE declaration</a>
+                    <a href="#" t-on-click.prevent="() => this.report('poessa')">Pension declaration</a>
+                </div>
+            </div>
+            <div class="o_sb_card">
+                <div class="o_sb_card_head"><i class="fa fa-pie-chart text-muted"/>Aged receivables</div>
+                <t t-call="sonador_books.NavAging"><t t-set="a" t-value="d.aged_ar"/><t t-set="rep" t-value="'aged_ar'"/></t>
+            </div>
+            <div class="o_sb_card">
+                <div class="o_sb_card_head"><i class="fa fa-pie-chart text-muted"/>Aged payables</div>
+                <t t-call="sonador_books.NavAging"><t t-set="a" t-value="d.aged_ap"/><t t-set="rep" t-value="'aged_ap'"/></t>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_books.NavOpenItems">
+        <table class="o_sb_mini">
+            <tr class="o_sb_mini_head"><td>Name</td><td class="text-end">Amount due</td><td class="text-end">Oldest due</td></tr>
+            <tr t-foreach="items" t-as="r" t-key="r_index" class="o_sb_click" t-on-click="() => this.openPartnerLedger(r, kind)">
+                <td t-esc="r.name"/>
+                <td class="text-end" t-esc="money(r.amount)"/>
+                <td t-attf-class="text-end {{ r.overdue ? 'o_sb_neg' : 'text-muted' }}">
+                    <i t-if="r.overdue" class="fa fa-exclamation-circle me-1"/><t t-esc="date(r.due)"/>
+                </td>
+            </tr>
+        </table>
+        <div t-if="!items.length" class="o_sb_empty_small"><i class="fa fa-check-circle me-1"/>Nothing open. All settled.</div>
+    </t>
+
+    <t t-name="sonador_books.NavAging">
+        <div t-if="hasAging(a)" class="d-flex flex-wrap gap-3 p-3 align-items-center">
+            <div style="width: 12rem; min-width: 10rem">
+                <SbChart type="'doughnut'" labels="a.labels" series="agingSeries(a)" palette="aging" height="170"/>
+            </div>
+            <table class="o_sb_mini flex-grow-1">
+                <tr class="o_sb_mini_head"><td>Days</td><td class="text-end">Amount</td><td class="text-end">%</td></tr>
+                <tr t-foreach="a.labels" t-as="l" t-key="l_index">
+                    <td><span class="o_sb_dot" t-attf-style="background: {{ aging[l_index % aging.length] }}"/><t t-esc="l"/></td>
+                    <td class="text-end" t-esc="money(a.values[l_index])"/>
+                    <td class="text-end text-muted" t-esc="pct(a.values[l_index], a.total)"/>
+                </tr>
+                <tr class="fw-bold"><td>Total</td><td class="text-end" t-esc="money(a.total)"/><td/></tr>
+            </table>
+        </div>
+        <div t-else="" class="o_sb_empty_small"><i class="fa fa-check-circle me-1"/>Nothing outstanding.</div>
+        <div class="o_sb_card_foot"><a href="#" t-on-click.prevent="() => this.report(rep)">View the full ageing report</a></div>
+    </t>
+
+    <!-- ================= Centers ================= -->
+    <t t-name="sonador_books.NavTile">
+        <button t-attf-class="o_sb_tile {{ t.coming ? 'o_sb_tile_coming' : '' }}" t-on-click="() => this.openTile(t)" t-att-title="t.coming ? 'Coming in a later release' : (t.hint || t.label)">
+            <span class="o_sb_tile_icon"><i t-attf-class="fa {{ t.icon }}"/></span>
+            <span class="o_sb_tile_label" t-esc="t.label"/>
+            <span t-if="t.hint and !t.coming" class="o_sb_tile_hint" t-esc="t.hint"/>
+            <span t-if="t.coming" class="o_sb_tile_hint">coming</span>
+            <span t-if="t.draft and drafts(t.draft)" class="o_sb_tile_badge" t-att-title="drafts(t.draft) + ' not posted'" t-esc="drafts(t.draft)"/>
+        </button>
+    </t>
+
+    <t t-name="sonador_books.NavCenterBody">
+        <t t-set="c" t-value="center"/>
+        <t t-set="d" t-value="state.data"/>
+        <div class="o_sb_center_grid">
+            <div class="o_sb_card o_sb_tasks">
+                <div class="o_sb_card_head"><i class="fa fa-tasks text-muted"/><t t-esc="c.title"/> tasks</div>
+                <div class="p-3">
+                    <div class="o_sb_tiles_row mb-3 pb-3 border-bottom">
+                        <t t-foreach="c.setup" t-as="t" t-key="t.label"><t t-if="allowed(t)" t-call="sonador_books.NavTile"/></t>
+                    </div>
+                    <div t-foreach="c.flows" t-as="flow" t-key="flow_index" class="o_sb_flow">
+                        <t t-foreach="flow.filter((x) => allowed(x))" t-as="t" t-key="t.label">
+                            <t t-call="sonador_books.NavTile"/>
+                            <span t-if="!t_last" class="o_sb_flow_arrow"><i class="fa fa-long-arrow-right"/></span>
+                        </t>
+                    </div>
+                    <div class="o_sb_tiles_row mt-3 pt-3 border-top">
+                        <t t-foreach="c.more" t-as="t" t-key="t.label"><t t-if="allowed(t)" t-call="sonador_books.NavTile"/></t>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-3">
+                <!-- lists -->
+                <div t-if="d.partners" class="o_sb_card">
+                    <div class="o_sb_card_head"><i t-attf-class="fa {{ c.icon }} text-muted"/><t t-esc="state.center === 'customers' ? 'Customers' : 'Vendors'"/>
+                        <span class="badge text-bg-light ms-1" t-esc="d.partner_count"/>
+                        <a href="#" class="o_sb_card_link" t-on-click.prevent="() => this.report(state.center === 'customers' ? 'cust_master' : 'vend_master')">Detailed list</a></div>
+                    <div class="o_sb_scroll">
+                        <table class="o_sb_mini">
+                            <tr class="o_sb_mini_head"><td>Name</td><td>TIN</td><td>Phone</td><td class="text-end">Balance</td></tr>
+                            <tr t-foreach="d.partners" t-as="p" t-key="p.id" class="o_sb_click" t-on-click="() => this.openPartnerLedger(p, state.center === 'customers' ? 'customer' : 'vendor')">
+                                <td t-esc="p.name"/><td class="text-muted" t-esc="p.vat"/><td class="text-muted" t-esc="p.phone"/>
+                                <td t-attf-class="text-end {{ p.balance &lt; 0 ? 'o_sb_neg' : '' }}" t-esc="money(p.balance)"/>
+                            </tr>
+                        </table>
+                        <div t-if="!d.partners.length" class="o_sb_empty_small">No one yet. Add your first one from the tile on the left.</div>
+                    </div>
+                </div>
+                <div t-if="d.employees" class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-id-badge text-muted"/>Employees
+                        <span class="badge text-bg-light ms-1" t-esc="d.employees.length"/>
+                        <a href="#" class="o_sb_card_link" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_employees'})">Detailed list</a></div>
+                    <table class="o_sb_mini">
+                        <tr class="o_sb_mini_head"><td>Name</td><td>Position</td><td>TIN</td><td class="text-end">Monthly pay</td></tr>
+                        <tr t-foreach="d.employees" t-as="e" t-key="e.id"><td t-esc="e.name"/><td class="text-muted" t-esc="e.job"/>
+                            <td class="text-muted" t-esc="e.tin"/><td class="text-end" t-esc="money(e.basic)"/></tr>
+                    </table>
+                    <div t-if="!d.employees.length" class="o_sb_empty_small">No employees yet.</div>
+                </div>
+                <div t-if="d.runs" class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-calculator text-muted"/>Recent payrolls
+                        <a href="#" class="o_sb_card_link" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_payroll'})">All payrolls</a></div>
+                    <table class="o_sb_mini">
+                        <tr class="o_sb_mini_head"><td>Month</td><td>Status</td><td class="text-end">Net pay</td><td class="text-end">PAYE</td><td class="text-end">Pension</td></tr>
+                        <tr t-foreach="d.runs" t-as="r" t-key="r.id"><td t-esc="r.name"/><td class="text-muted" t-esc="r.state"/>
+                            <td class="text-end" t-esc="money(r.net)"/><td class="text-end" t-esc="money(r.tax)"/><td class="text-end" t-esc="money(r.pension)"/></tr>
+                    </table>
+                </div>
+                <div t-if="d.items" class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-cubes text-muted"/>Inventory
+                        <a href="#" class="o_sb_card_link" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_products'})">Detailed list</a></div>
+                    <div class="o_sb_scroll">
+                        <table class="o_sb_mini">
+                            <tr class="o_sb_mini_head"><td>Item</td><td>Costing</td><td class="text-end">On hand</td><td class="text-end">Unit cost</td></tr>
+                            <tr t-foreach="d.items" t-as="i" t-key="i.id"><td><span class="text-muted me-1" t-esc="i.code"/><t t-esc="i.name"/></td>
+                                <td class="text-muted" t-esc="i.method"/><td class="text-end" t-esc="i.qty"/><td class="text-end" t-esc="money(i.cost)"/></tr>
+                        </table>
+                        <div t-if="!d.items.length" class="o_sb_empty_small">No stocked items yet.</div>
+                    </div>
+                </div>
+                <div t-if="d.pay and state.center !== 'vendors'" class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-file-text text-muted"/>Bills to pay
+                        <a href="#" class="o_sb_card_link" t-on-click.prevent="() => this.report('cash_requirements')">Cash requirements</a></div>
+                    <t t-call="sonador_books.NavOpenItems"><t t-set="items" t-value="d.pay"/><t t-set="kind" t-value="'vendor'"/></t>
+                </div>
+                <div t-if="d.balances" class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-bank text-muted"/>Account balances</div>
+                    <table class="o_sb_mini">
+                        <tr t-foreach="d.balances" t-as="b" t-key="b.id" class="o_sb_click" t-on-click="() => this.openAccountRegister(b)">
+                            <td class="text-muted" t-esc="b.code"/><td t-esc="b.name"/>
+                            <td t-attf-class="text-end {{ b.balance &lt; 0 ? 'o_sb_neg' : '' }}" t-esc="money(b.balance)"/></tr>
+                    </table>
+                    <div t-if="d.cheques_count" class="o_sb_card_foot">
+                        <span>Cheques on hand <b t-esc="money(d.cheques_in)"/> · outstanding <b t-esc="money(d.cheques_out)"/></span>
+                        <a href="#" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_cheques'})">Open cheques</a>
+                    </div>
+                </div>
+                <div class="o_sb_grid2 o_sb_grid2_tight">
+                    <div class="o_sb_card">
+                        <div class="o_sb_card_head"><i class="fa fa-history text-muted"/>Recently used reports</div>
+                        <table class="o_sb_mini">
+                            <tr t-foreach="recentFor(c.category, c.defaults)" t-as="e" t-key="e.key">
+                                <td t-attf-class="{{ e.priority !== 1 ? 'text-muted' : '' }}" t-esc="e.name"/>
+                                <td class="text-end text-nowrap">
+                                    <t t-if="e.priority === 1">
+                                        <a href="#" class="me-2" t-on-click.prevent="() => this.report(e.key)">View</a>
+                                        <a href="#" t-on-click.prevent="() => this.printReport(e.key)">Print</a>
+                                    </t>
+                                    <span t-else="" class="badge text-bg-light">coming</span>
+                                </td>
+                            </tr>
+                        </table>
+                        <div class="o_sb_card_foot"><a href="#" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_report_center'})">All reports</a></div>
+                    </div>
+                    <div t-if="d.aged" class="o_sb_card">
+                        <div class="o_sb_card_head"><i class="fa fa-pie-chart text-muted"/><t t-esc="state.center === 'customers' ? 'Aged receivables' : 'Aged payables'"/></div>
+                        <t t-call="sonador_books.NavAging"><t t-set="a" t-value="d.aged"/><t t-set="rep" t-value="state.center === 'customers' ? 'aged_ar' : 'aged_ap'"/></t>
+                    </div>
+                    <div t-if="c.companyReports" class="o_sb_card">
+                        <div class="o_sb_card_head"><i class="fa fa-shield text-muted"/>Company reports</div>
+                        <table class="o_sb_mini">
+                            <tr t-foreach="c.companyReports" t-as="k" t-key="k">
+                                <td t-esc="entry(k) ? entry(k).name : k"/>
+                                <td class="text-end text-nowrap"><a href="#" class="me-2" t-on-click.prevent="() => this.report(k)">View</a>
+                                    <a href="#" t-on-click.prevent="() => this.printReport(k)">Print</a></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div t-if="d.trend and state.center !== 'customers'" class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-line-chart text-muted"/><t t-esc="state.center === 'inventory' ? 'Revenue and cost of sales' : 'Revenue: year to date'"/></div>
+                    <div class="p-3">
+                        <SbChart t-if="hasTrend" type="'line'" labels="d.trend.labels" series="trendSeries" height="200"/>
+                        <div t-else="" class="o_sb_empty_small"><i class="fa fa-info-circle me-1"/>Nothing posted yet in <t t-esc="d.fy_label"/></div>
+                    </div>
+                </div>
+                <div t-if="d.info" class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-info-circle text-muted"/>Company information
+                        <a href="#" class="o_sb_card_link" t-on-click.prevent="() => this.openList({action: 'sonador_books.action_sb_company_settings'})">Edit</a></div>
+                    <table class="o_sb_mini"><tr t-foreach="d.info" t-as="i" t-key="i_index"><td class="text-muted" t-esc="i[0]"/><td t-esc="i[1]"/></tr></table>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_onboarding" model="ir.actions.client">
+        <field name="name">Onboarding</field>
+        <field name="tag">sonador_onboarding.app</field>
+        <field name="params" eval="{'page': 'overview'}"/>
+    </record>
+    <record id="action_my_tasks" model="ir.actions.client">
+        <field name="name">My Tasks and Policies</field>
+        <field name="tag">sonador_onboarding.app</field>
+        <field name="params" eval="{'page': 'mine'}"/>
+    </record>
+    <menuitem id="menu_onboarding" name="Onboarding" parent="sonador_books.menu_hr_root" action="action_onboarding" sequence="9" groups="sonador_books.group_sb_hr"/>
+    <menuitem id="menu_my_tasks" name="My Tasks and Policies" parent="sonador_books.menu_hr_root" action="action_my_tasks" sequence="10"/>
+</odoo>

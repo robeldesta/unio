@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_visit_auditor,sb.audit.visit auditor,model_sb_audit_visit,group_auditor,1,1,1,0
+access_visit_books,sb.audit.visit books,model_sb_audit_visit,sonador_books.group_sb_accountant,1,0,0,0
+access_check_auditor,sb.audit.check auditor,model_sb_audit_check,group_auditor,1,1,1,1
+access_check_books,sb.audit.check books,model_sb_audit_check,sonador_books.group_sb_accountant,1,0,0,0
+access_finding_auditor,sb.audit.finding auditor,model_sb_audit_finding,group_auditor,1,1,1,0
+access_finding_books,sb.audit.finding books,model_sb_audit_finding,sonador_books.group_sb_accountant,1,0,0,0
+access_recheck_auditor,sb.audit.recheck auditor,model_sb_audit_recheck,group_auditor,1,1,1,1
+access_recheck_books,sb.audit.recheck books,model_sb_audit_recheck,sonador_books.group_sb_accountant,1,0,0,0

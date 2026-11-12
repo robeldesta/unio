@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Settings, About: Unio instead of Odoo's edition, copyright and licence line -->
+    <t t-inherit="res_config_edition" t-inherit-mode="extension">
+        <xpath expr="//h3" position="replace">
+            <h3 class="px-0">Unio</h3>
+        </xpath>
+        <xpath expr="//small" position="replace">
+            <small><a target="_blank" href="https://unio.et" style="text-decoration: underline;">unio.et</a></small>
+        </xpath>
+    </t>
+</templates>

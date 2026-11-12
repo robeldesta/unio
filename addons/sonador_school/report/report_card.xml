@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paper_card" model="report.paperformat">
+        <field name="name">Report card (A4)</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="report_card" model="ir.actions.report">
+        <field name="name">Report card</field>
+        <field name="model">school.student</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_school.report_card_document</field>
+        <field name="report_file">sonador_school.report_card_document</field>
+        <field name="print_report_name">'Report card - %s' % object.name</field>
+        <field name="paperformat_id" ref="paper_card"/>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_card_document">
+        <t t-call="web.basic_layout">
+          <div class="page">
+            <style>
+                <t t-out="font_face"/>
+                .rc { font-family: 'Helvetica Neue', Arial, 'Noto Sans Ethiopic', sans-serif; color: #1B2240; font-size: 14px; page-break-after: always; }
+                .rc:last-child { page-break-after: auto; }
+                .rc .am { font-family: 'Noto Sans Ethiopic', sans-serif; }
+                .rc-head { display: table; width: 100%; border-bottom: 3px solid #1B2240; padding-bottom: 8px; margin-bottom: 10px; }
+                .rc-head > div { display: table-cell; vertical-align: middle; }
+                .rc-logo img { max-height: 64px; max-width: 120px; }
+                .rc-school { text-align: center; }
+                .rc-school h1 { font-size: 20px; margin: 0; font-weight: 700; }
+                .rc-school h2 { font-size: 14px; margin: 4px 0 0; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #4A5168; }
+                .rc-meta { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+                .rc-meta td { padding: 6px 8px; border: 1px solid #D5DAE5; }
+                .rc-meta .l { color: #6B7286; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; width: 16%; }
+                .rc-t { width: 100%; border-collapse: collapse; }
+                .rc-t th { background: #1B2240; color: #fff; padding: 7px 8px; font-size: 12px; text-align: center; }
+                .rc-t th.s { text-align: left; }
+                .rc-t td { border: 1px solid #D5DAE5; padding: 7px 8px; text-align: center; }
+                .rc-t td.s { text-align: left; }
+                .rc-t td.s small { color: #6B7286; }
+                .rc-t tr.sum td { background: #F2F4F9; font-weight: 700; }
+                .rc-t tr.sum td.s { text-transform: none; }
+                .rc-fail { color: #B42318; }
+                .rc-box { border: 1px solid #D5DAE5; padding: 10px 12px; margin-top: 14px; min-height: 70px; }
+                .rc-box .l { color: #6B7286; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+                .rc-result { margin-top: 10px; padding: 8px 10px; font-weight: 700; font-size: 13px; text-align: center; border: 2px solid #1F7A4D; color: #1F7A4D; }
+                .rc-result.no { border-color: #B42318; color: #B42318; }
+                .rc-sign { display: table; width: 100%; margin-top: 60px; }
+                .rc-sign > div { display: table-cell; width: 33%; text-align: center; padding: 0 10px; }
+                .rc-sign > div > span { display: block; border-top: 1px solid #1B2240; padding-top: 4px; font-size: 10px; color: #4A5168; }
+                .rc-scale { margin-top: 12px; font-size: 9.5px; color: #6B7286; }
+            </style>
+            <t t-foreach="cards" t-as="c">
+                <div class="rc">
+                    <div class="rc-head">
+                        <div class="rc-logo" style="width:22%"><img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt=""/></div>
+                        <div class="rc-school">
+                            <h1 t-esc="company.name"/>
+                            <div class="am" style="font-size:12px;color:#4A5168">የተማሪ ውጤት መግለጫ ካርድ</div>
+                            <h2>Student report card</h2>
+                        </div>
+                        <div style="width:22%;text-align:right;font-size:10px;color:#6B7286">
+                            <div t-if="company.phone" t-esc="company.phone"/>
+                            <div t-if="company.city" t-esc="company.city"/>
+                        </div>
+                    </div>
+                    <table class="rc-meta">
+                        <tr>
+                            <td class="l">Name · <span class="am">ስም</span></td>
+                            <td><b t-esc="c['s'].name"/><t t-if="c['s'].name_am"> · <span class="am" t-esc="c['s'].name_am"/></t></td>
+                            <td class="l">Student no.</td><td t-esc="c['s'].student_no"/>
+                        </tr>
+                        <tr>
+                            <td class="l">Class · <span class="am">ክፍል</span></td>
+                            <td><t t-esc="c['section'].display_name"/><t t-if="c['section'].grade_id.name_am"> · <span class="am" t-esc="c['section'].grade_id.name_am"/></t></td>
+                            <td class="l">Academic year</td><td t-esc="c['year'].name"/>
+                        </tr>
+                        <tr>
+                            <td class="l">Sex · <span class="am">ጾታ</span></td>
+                            <td><t t-if="c['s'].sex == 'f'">Female · <span class="am">ሴት</span></t><t t-else="">Male · <span class="am">ወንድ</span></t></td>
+                            <td class="l">Homeroom teacher</td><td t-esc="c['section'].homeroom_id.name or ''"/>
+                        </tr>
+                    </table>
+                    <table class="rc-t">
+                        <thead>
+                            <tr>
+                                <th class="s">Subject · <span class="am">የትምህርት ዓይነት</span></th>
+                                <th t-foreach="c['terms']" t-as="p"><t t-esc="p['term'].name"/><t t-if="p['term'].name_am"><br/><span class="am" t-esc="p['term'].name_am"/></t></th>
+                                <th t-if="len(c['terms']) &gt; 1">Average<br/><span class="am">አማካይ</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="c['subjects']" t-as="sub">
+                                <td class="s"><t t-esc="sub['name']"/><t t-if="sub['name_am']"> <small class="am">· <t t-esc="sub['name_am']"/></small></t></td>
+                                <td t-foreach="sub['marks']" t-as="m" t-att-class="'rc-fail' if m is not None and m &lt; 50 else ''"><t t-if="m is not None" t-esc="'%g' % m"/><t t-else="">–</t></td>
+                                <td t-if="len(c['terms']) &gt; 1" t-att-class="'rc-fail' if sub['average'] is not None and sub['average'] &lt; 50 else ''"><b t-if="sub['average'] is not None" t-esc="'%g' % sub['average']"/></td>
+                            </tr>
+                            <tr class="sum">
+                                <td class="s">Total · <span class="am">ድምር</span></td>
+                                <td t-foreach="c['terms']" t-as="p"><t t-if="p['row']" t-esc="'%g' % p['row']['total']"/></td>
+                                <td t-if="len(c['terms']) &gt; 1"/>
+                            </tr>
+                            <tr class="sum">
+                                <td class="s">Average · <span class="am">አማካይ</span></td>
+                                <td t-foreach="c['terms']" t-as="p"><t t-if="p['row'] and p['row']['average'] is not None" t-esc="'%.2f' % p['row']['average']"/></td>
+                                <td t-if="len(c['terms']) &gt; 1"><t t-if="c['overall'] is not None" t-esc="'%.2f' % c['overall']"/></td>
+                            </tr>
+                            <tr class="sum">
+                                <td class="s">Rank · <span class="am">ደረጃ</span></td>
+                                <td t-foreach="c['terms']" t-as="p"><t t-if="p['row'] and p['row']['rank']"><t t-esc="p['row']['rank']"/> of <t t-esc="p['count']"/></t></td>
+                                <td t-if="len(c['terms']) &gt; 1"/>
+                            </tr>
+                            <tr class="sum">
+                                <td class="s">Conduct · <span class="am">ሥነ ምግባር</span></td>
+                                <td t-foreach="c['conduct']" t-as="x" t-esc="x"/>
+                                <td t-if="len(c['terms']) &gt; 1"/>
+                            </tr>
+                            <tr class="sum">
+                                <td class="s">Days absent · <span class="am">የቀረባቸው ቀናት</span></td>
+                                <td t-foreach="c['terms']" t-as="p"><t t-if="p['row']" t-esc="p['row']['absent']"/></td>
+                                <td t-if="len(c['terms']) &gt; 1"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="rc-box">
+                        <div class="l">Homeroom teacher's comment · <span class="am">የክፍል ኃላፊ መምህር አስተያየት</span></div>
+                        <div t-esc="c['comment']"/>
+                    </div>
+                    <t t-if="c['final']">
+                        <div t-if="c['promoted']" class="rc-result">
+                            Promoted<t t-if="c['next_grade']"> to <t t-esc="c['next_grade'].name"/></t> · <span class="am">ተዛውሯል<t t-if="c['next_grade'].name_am"> ወደ <t t-esc="c['next_grade'].name_am"/></t></span>
+                        </div>
+                        <div t-else="" class="rc-result no">Not promoted · <span class="am">አልተዛወረም</span></div>
+                    </t>
+                    <div class="rc-sign">
+                        <div><span>Homeroom teacher · <span class="am">የክፍል ኃላፊ</span></span></div>
+                        <div><span>Director · <span class="am">ርዕሰ መምህር</span></span></div>
+                        <div><span>Parent / guardian · <span class="am">ወላጅ / አሳዳጊ</span></span></div>
+                    </div>
+                    <div class="rc-scale">Marks are out of 100 per subject; 50 is the pass mark. Conduct: A excellent, B good, C satisfactory, D needs improvement.</div>
+                </div>
+            </t>
+          </div>
+        </t>
+    </template>
+</odoo>

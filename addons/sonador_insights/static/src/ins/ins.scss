@@ -1,0 +1,11 @@
+.o_in {
+    .o_pp_card.wide { grid-column: 1 / -1; }
+    .o_in_scale { display: flex; flex-wrap: wrap; gap: .3rem;
+        button { min-width: 2.3rem; height: 2.3rem; border: 1px solid $sb-line; background: #fff; border-radius: 8px; font-weight: 700; color: $sb-muted;
+            &.wide { padding: 0 .8rem; font-weight: 600; font-size: .85rem; } &.on { background: $sb-teal; border-color: $sb-teal; color: #fff; } } }
+    .o_in_split { display: flex; height: 1rem; border-radius: 6px; overflow: hidden;
+        .pro { background: $sb-good; } .pas { background: $sb-line; } .det { background: $sb-coral; } }
+    .o_in_dist { display: flex; align-items: flex-end; gap: .35rem; height: 4rem; margin-top: .5rem;
+        span { flex: 1; background: $sb-steel; border-radius: 4px 4px 0 0; } }
+    .o_in_comment { background: $sb-band; border-radius: 8px; padding: .5rem .7rem; margin-bottom: .4rem; font-size: .88rem; white-space: pre-wrap; }
+}

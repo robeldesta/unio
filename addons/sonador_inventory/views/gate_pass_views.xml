@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_gate_pass_list" model="ir.ui.view">
+        <field name="name">sb.gate.pass.list</field>
+        <field name="model">sb.gate.pass</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'cancel'" decoration-warning="state == 'issued'"
+                  decoration-danger="purpose == 'returnable' and state == 'out' and expected_return and expected_return &lt; current_date">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="date_ec" optional="hide"/>
+                <field name="direction" optional="show"/>
+                <field name="purpose"/>
+                <field name="partner_id" optional="show"/>
+                <field name="destination" optional="show"/>
+                <field name="source" optional="show"/>
+                <field name="vehicle"/>
+                <field name="driver" optional="show"/>
+                <field name="expected_return" optional="show"/>
+                <field name="state" widget="badge" decoration-info="state == 'issued'" decoration-success="state in ('out', 'returned')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="sb_gate_pass_form" model="ir.ui.view">
+        <field name="name">sb.gate.pass.form</field>
+        <field name="model">sb.gate.pass</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_print" type="object" string="Issue &amp; Print" class="btn-primary" icon="fa-print"
+                            invisible="state != 'draft'" data-hotkey="p"/>
+                    <button name="action_print" type="object" string="Print" icon="fa-print" invisible="state in ('draft', 'cancel')"/>
+                    <button name="action_out" type="object" string="Passed the Gate" class="btn-primary" invisible="state != 'issued' or not sb_can_gate"
+                            help="Security: the goods left (or came in) through the gate."/>
+                    <button name="action_returned" type="object" string="Came Back" class="btn-primary"
+                            invisible="state != 'out' or purpose != 'returnable' or not sb_can_gate"/>
+                    <field name="sb_can_gate" invisible="1"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state not in ('draft', 'issued')" groups="sonador_inventory.group_sb_store_user"/>
+                    <button name="action_draft" type="object" string="Back to draft" invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,issued,out"/>
+                </header>
+                <sheet>
+                    <field name="company_id" invisible="1"/>
+                    <div class="oe_title">
+                        <span class="o_form_label">Gate Pass</span>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="purpose" readonly="state != 'draft'"/>
+                            <field name="direction" readonly="state != 'draft'" widget="radio" options="{'horizontal': true}"/>
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="destination" readonly="state != 'draft'"/>
+                            <field name="source" readonly="state != 'draft'"/>
+                            <field name="stock_voucher_id" readonly="1" invisible="not stock_voucher_id"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="date_ec"/>
+                            <field name="warehouse_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="vehicle" readonly="state not in ('draft', 'issued')"/>
+                            <field name="driver" readonly="state not in ('draft', 'issued')"/>
+                            <field name="driver_phone" readonly="state not in ('draft', 'issued')"/>
+                            <field name="carried_by" readonly="state not in ('draft', 'issued')"/>
+                            <field name="expected_return" invisible="purpose != 'returnable'" required="purpose == 'returnable'"
+                                   readonly="state not in ('draft', 'issued')"/>
+                            <field name="returned_date" invisible="not returned_date"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="state != 'draft'">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="product_id" options="{'no_create': True}"/>
+                            <field name="name"/>
+                            <field name="quantity"/>
+                            <field name="uom_id" options="{'no_create': True}"/>
+                            <field name="remarks"/>
+                        </list>
+                    </field>
+                    <group>
+                        <group>
+                            <field name="issued_by" invisible="not issued_by"/>
+                            <field name="out_time" invisible="not out_time"/>
+                            <field name="guard" readonly="state not in ('issued', 'out')"/>
+                        </group>
+                        <group><field name="note" placeholder="Notes printed on the gate pass"/></group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="sb_gate_pass_search" model="ir.ui.view">
+        <field name="name">sb.gate.pass.search</field>
+        <field name="model">sb.gate.pass</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="vehicle"/>
+                <field name="driver"/>
+                <field name="source"/>
+                <filter name="issued" string="Waiting at the gate" domain="[('state', '=', 'issued')]"/>
+                <filter name="returnable_out" string="Returnable, still out" domain="[('state', '=', 'out'), ('purpose', '=', 'returnable')]"/>
+                <separator/>
+                <filter name="today" string="Today" domain="[('date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <group>
+                    <filter name="by_purpose" string="Purpose" context="{'group_by': 'purpose'}"/>
+                    <filter name="by_state" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sb_gate_pass" model="ir.actions.act_window">
+        <field name="name">Gate Passes</field>
+        <field name="res_model">sb.gate.pass</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No gate passes yet</p>
+            <p>Make one from a GIV, transfer or delivery (button "Gate Pass"), or write one here for tools, returns or waste.</p></field>
+    </record>
+
+    <!-- buttons on inventory documents -->
+    <record id="sb_stock_voucher_form_gate" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.gate</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <button name="action_copy_draft" position="before">
+                <button name="action_print_voucher" type="object" string="Print" icon="fa-print" invisible="state == 'draft'"/>
+                <button name="action_gate_pass" type="object" string="Gate Pass" icon="fa-ticket"
+                        invisible="state != 'posted' or voucher_type not in ('giv', 'transfer')"/>
+            </button>
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_gate_pass" type="object" class="oe_stat_button" icon="fa-ticket" invisible="not gate_pass_count">
+                        <field name="gate_pass_count" widget="statinfo" string="Gate pass"/>
+                    </button>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

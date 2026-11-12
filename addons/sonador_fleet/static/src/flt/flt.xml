@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_fleet.App">
+        <div class="o_pp o_fl o_action h-100 overflow-auto">
+            <div class="o_pp_top o_fl_noprint">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.company"/> · <t t-esc="ctx.today_ec"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-truck me-2"/>Fleet</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-if="ctx.is_officer" t-att-class="state.page === 'dashboard' ? 'active' : ''" t-on-click="() => this.go('dashboard')"><i class="fa fa-tachometer"/> Overview</button>
+                        <button t-if="ctx.is_officer" t-att-class="state.page === 'vehicles' or state.page === 'vehicle' ? 'active' : ''" t-on-click="() => this.go('vehicles')"><i class="fa fa-car"/> Vehicles</button>
+                        <button t-if="ctx.is_officer" t-att-class="state.page === 'fuel' ? 'active' : ''" t-on-click="() => this.go('fuel')"><i class="fa fa-tint"/> Fuel</button>
+                        <button t-if="ctx.is_officer" t-att-class="state.page === 'trips' ? 'active' : ''" t-on-click="() => this.go('trips')"><i class="fa fa-road"/> Trips</button>
+                        <button t-if="ctx.is_officer" t-att-class="state.page === 'maintenance' ? 'active' : ''" t-on-click="() => this.go('maintenance')"><i class="fa fa-wrench"/> Maintenance</button>
+                        <button t-if="ctx.is_manager" t-att-class="state.page === 'costs' ? 'active' : ''" t-on-click="() => this.go('costs')"><i class="fa fa-money"/> Costs</button>
+                        <button t-att-class="state.page === 'my' ? 'active' : ''" t-on-click="() => this.go('my')"><i class="fa fa-user"/> My vehicle</button>
+                        <button t-if="ctx.is_manager" t-att-class="state.page === 'settings' ? 'active' : ''" t-on-click="() => this.go('settings')"><i class="fa fa-cog"/></button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.gate" t-call="sonador_fleet.Gate"/>
+                <t t-if="state.fedit" t-call="sonador_fleet.FuelForm"/>
+                <t t-if="state.tedit" t-call="sonador_fleet.TripForm"/>
+                <t t-if="state.sedit" t-call="sonador_fleet.ServiceForm"/>
+                <div class="o_fl_noprint">
+                    <t t-if="state.page === 'dashboard' and state.dash" t-call="sonador_fleet.Dashboard"/>
+                    <t t-if="state.page === 'my' and state.my" t-call="sonador_fleet.My"/>
+                    <t t-if="state.page === 'vehicles' and state.vlist" t-call="sonador_fleet.Vehicles"/>
+                    <t t-if="state.page === 'vehicle'" t-call="sonador_fleet.Vehicle"/>
+                    <t t-if="state.page === 'fuel' and state.fuel" t-call="sonador_fleet.Fuel"/>
+                    <t t-if="state.page === 'trips' and state.trips" t-call="sonador_fleet.Trips"/>
+                    <t t-if="state.page === 'maintenance' and state.maint" t-call="sonador_fleet.Maintenance"/>
+                    <t t-if="state.page === 'costs' and state.costs" t-call="sonador_fleet.Costs"/>
+                    <t t-if="state.page === 'settings' and state.set" t-call="sonador_fleet.Settings"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ shared bits -->
+    <t t-name="sonador_fleet.Flags">
+        <div t-if="f.flags.length" class="o_fl_flags">
+            <div t-foreach="f.flags" t-as="x" t-key="x_index" t-att-class="'o_fl_flag ' + x.level"><i class="fa fa-exclamation-triangle me-1"/><t t-esc="x.msg"/></div>
+        </div>
+    </t>
+    <t t-name="sonador_fleet.FuelRows">
+        <table class="o_pp_table">
+            <thead><tr><th>No.</th><th t-if="!hideVehicle">Vehicle</th><th>Driver</th><th>Status</th><th>When</th><th class="text-end">Litres</th><th class="text-end">Amount</th>
+                <th class="text-end">Odometer</th><th class="text-end">km/L</th><th>Receipt</th><th>Check</th><th/></tr></thead>
+            <tbody>
+                <tr t-foreach="rows" t-as="f" t-key="f.id" t-att-class="'o_fl_risk_' + f.risk">
+                    <td class="small" t-esc="f.name"/>
+                    <td t-if="!hideVehicle"><b t-esc="f.plate"/></td>
+                    <td class="small" t-esc="f.driver"/>
+                    <td><span t-att-class="'o_fl_st ' + f.state" t-esc="fState(f.state)"/><div t-if="f.reject_note" class="small text-muted" t-esc="f.reject_note"/></td>
+                    <td class="small"><t t-esc="f.state === 'filled' ? f.date_label : f.requested"/><div t-if="f.station" class="text-muted" t-esc="f.station"/></td>
+                    <td class="text-end"><t t-esc="num(f.state === 'filled' ? f.liters : f.liters_req)"/><div t-if="f.full and f.state === 'filled'" class="small text-muted">full</div></td>
+                    <td class="text-end" t-esc="f.state === 'filled' ? money(f.amount) : ''"/>
+                    <td class="text-end" t-esc="f.odometer ? money(f.odometer) : ''"/>
+                    <td class="text-end"><b t-if="f.kml" t-esc="num(f.kml, 2)"/></td>
+                    <td class="small"><t t-esc="f.receipt"/><div t-if="f.receipt_checked" class="text-success"><i class="fa fa-check-circle"/> <t t-esc="money(f.receipt_amount)"/></div>
+                        <button t-elif="f.receipt and f.pay === 'telebirr' and f.state === 'filled'" class="btn btn-link btn-sm p-0" t-on-click="() => this.verify(f)">Check online</button></td>
+                    <td style="min-width:14rem"><span t-att-class="'o_fl_risk ' + f.risk" t-esc="riskLabel(f.risk)"/>
+                        <div t-foreach="f.flags" t-as="x" t-key="x_index" t-att-class="'small o_fl_ftxt ' + x.level" t-esc="x.msg"/></td>
+                    <td class="text-nowrap">
+                        <t t-if="f.state === 'request' and ctx.is_manager"><button class="btn btn-primary btn-sm" t-on-click="() => this.decideFuel(f, true)">Approve</button>
+                            <button class="btn btn-light border btn-sm ms-1" t-on-click="() => this.decideFuel(f, false)">Refuse</button></t>
+                        <button t-if="f.state === 'approved' or (f.state === 'request' and ctx.is_manager)" class="btn btn-light border btn-sm ms-1" t-on-click="() => this.fillRequest(f)">Log fill</button>
+                        <button t-if="f.state === 'filled' and ctx.is_officer" class="btn btn-link btn-sm p-0 ms-1" t-on-click="() => this.editFuel(f)"><i class="fa fa-pencil"/></button>
+                        <button t-if="ctx.is_officer" class="btn btn-link btn-sm p-0 ms-2 text-danger" t-on-click="() => this.removeFuel(f)"><i class="fa fa-trash-o"/></button>
+                    </td>
+                </tr>
+                <tr t-if="!rows.length"><td colspan="12" class="o_pp_empty">Nothing here.</td></tr>
+            </tbody>
+        </table>
+    </t>
+    <t t-name="sonador_fleet.TripRows">
+        <table class="o_pp_table">
+            <thead><tr><th>Trip</th><th t-if="!hideVehicle">Vehicle</th><th>Driver</th><th>Purpose / route</th><th>Status</th><th>Left</th><th>Back</th><th class="text-end">km</th><th>Per diem</th><th/></tr></thead>
+            <tbody>
+                <tr t-foreach="rows" t-as="t" t-key="t.id">
+                    <td class="small" t-esc="t.name"/>
+                    <td t-if="!hideVehicle"><b t-esc="t.plate"/></td>
+                    <td class="small" t-esc="t.driver"/>
+                    <td><t t-esc="t.purpose"/><span t-if="t.job" class="o_fl_st ms-1" t-esc="t.job"/><div class="small text-muted"><t t-esc="t.origin"/><t t-if="t.destination"> → <t t-esc="t.destination"/></t><t t-if="t.cargo"> · <t t-esc="t.cargo"/></t></div></td>
+                    <td><span t-att-class="'o_fl_st ' + t.state" t-esc="tState(t.state)"/></td>
+                    <td class="small"><t t-esc="t.out_label"/><div class="text-muted" t-if="t.odo_out"><t t-esc="money(t.odo_out)"/> km</div></td>
+                    <td class="small"><t t-esc="t.back_label"/><div class="text-muted" t-if="t.odo_in"><t t-esc="money(t.odo_in)"/> km</div></td>
+                    <td class="text-end"><b t-esc="t.km ? money(t.km) : ''"/></td>
+                    <td class="small"><t t-if="t.perdiem_state !== 'none'"><t t-esc="pState(t.perdiem_state)"/>: <b t-esc="money(t.perdiem)"/> (<t t-esc="t.days"/> d)
+                        <div t-if="t.voucher"><a href="#" t-on-click.prevent="() => this.openVoucher(t.voucher)" t-esc="t.voucher.name or 'draft payment'"/></div></t></td>
+                    <td class="text-nowrap">
+                        <button t-if="t.state === 'out'" class="btn btn-primary btn-sm" t-on-click="() => this.backTrip(t)">Back in</button>
+                        <button t-if="t.state === 'out'" class="btn btn-light border btn-sm ms-1" t-on-click="() => this.showGate(t)"><i class="fa fa-print"/> Gate pass</button>
+                        <button t-if="(t.state === 'back' or t.state === 'out') and t.perdiem_state === 'none'" class="btn btn-light border btn-sm ms-1" t-on-click="() => this.perdiemTrip(t)">Ask per diem</button>
+                        <t t-if="t.perdiem_state === 'requested' and ctx.is_manager"><button class="btn btn-primary btn-sm ms-1" t-on-click="() => this.decidePerdiem(t, true)">Approve per diem</button>
+                            <button class="btn btn-light border btn-sm ms-1" t-on-click="() => this.decidePerdiem(t, false)">Send back</button></t>
+                        <button t-if="ctx.is_officer and t.state !== 'cancel'" class="btn btn-link btn-sm p-0 ms-2" t-on-click="() => this.editTrip(t)"><i class="fa fa-pencil"/></button>
+                        <button t-if="t.state === 'planned' or (t.state === 'out' and ctx.is_officer)" class="btn btn-link btn-sm p-0 ms-2 text-danger" t-on-click="() => this.cancelTrip(t)"><i class="fa fa-ban"/></button>
+                    </td>
+                </tr>
+                <tr t-if="!rows.length"><td colspan="10" class="o_pp_empty">No trips.</td></tr>
+            </tbody>
+        </table>
+    </t>
+
+    <!-- ============================================================ forms -->
+    <t t-name="sonador_fleet.FuelForm">
+        <t t-set="E" t-value="state.fedit"/>
+        <div class="o_pp_card o_pp_panel mb-3 o_fl_noprint">
+            <div class="o_pp_card_head"><i class="fa fa-tint"/><t t-esc="E.mode === 'request' ? 'Ask for fuel' : 'Log a fill'"/>
+                <button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.state.fedit = null"><i class="fa fa-times"/></button></div>
+            <div class="o_pp_formgrid">
+                <label>Vehicle<select class="form-select" t-att-disabled="E.id" t-on-change="(ev) => this.setFu('vehicle_id', ev.target.value)">
+                    <option t-foreach="ctx.vehicles" t-as="v" t-key="v.id" t-att-value="v.id" t-att-selected="v.id == E.vehicle_id" t-esc="v.name"/></select></label>
+                <label>Driver<select class="form-select" t-on-change="(ev) => this.setFu('driver_id', ev.target.value)"><option value="">—</option>
+                    <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == E.driver_id" t-esc="p.name"/></select></label>
+                <t t-if="E.mode === 'request'">
+                    <label>Litres needed<input type="number" class="form-control" t-att-value="E.liters_req" t-on-change="(ev) => this.setFu('liters_req', ev.target.value)"/></label>
+                    <label>Litres in the tank now<input type="number" class="form-control" t-att-value="E.level_now" t-on-change="(ev) => this.setFu('level_now', ev.target.value)"/>
+                        <small class="text-muted">Tank <t t-esc="vehicleInfo(E.vehicle_id).tank or '?'"/> L</small></label>
+                    <label>Odometer now<input type="number" class="form-control" t-att-value="E.odometer" t-on-change="(ev) => this.setFu('odometer', ev.target.value)"/></label>
+                    <label class="wide">For<input class="form-control" t-att-value="E.reason" placeholder="e.g. delivery to Adama tomorrow" t-on-change="(ev) => this.setFu('reason', ev.target.value)"/></label>
+                </t>
+                <t t-else="">
+                    <label>Filled at<input type="datetime-local" class="form-control" t-att-value="E.date" t-on-change="(ev) => this.setFu('date', ev.target.value)"/></label>
+                    <label>Odometer at the pump<input type="number" class="form-control" t-att-value="E.odometer" t-on-change="(ev) => this.setFu('odometer', ev.target.value)"/>
+                        <small class="text-muted">last <t t-esc="money(vehicleInfo(E.vehicle_id).odometer)"/> km</small></label>
+                    <label>Litres<input type="number" step="0.01" class="form-control" t-att-value="E.liters" t-on-change="(ev) => this.setFu('liters', ev.target.value)"/></label>
+                    <label>Price per litre<input type="number" step="0.01" class="form-control" t-att-value="E.price" t-on-change="(ev) => this.setFu('price', ev.target.value)"/></label>
+                    <label>Amount paid<input type="number" step="0.01" class="form-control" t-att-value="E.amount" t-on-change="(ev) => this.setFu('amount', ev.target.value)"/></label>
+                    <label class="d-flex flex-row align-items-center gap-2 pt-4"><input type="checkbox" t-att-checked="E.full" t-on-change="(ev) => this.setFu('full', ev.target.checked)"/> Filled to full</label>
+                    <label>Paid by<select class="form-select" t-on-change="(ev) => this.setFu('pay', ev.target.value)">
+                        <option t-foreach="ctx.pay_methods" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id === E.pay" t-esc="p.name"/></select></label>
+                    <label>Receipt / telebirr transaction no.<input class="form-control text-uppercase" t-att-value="E.receipt" t-on-change="(ev) => this.setFu('receipt', ev.target.value)"/></label>
+                    <label>Station<input class="form-control" t-att-value="E.station" t-on-change="(ev) => this.setFu('station', ev.target.value)"/></label>
+                    <label t-if="ctx.is_officer">GPS sensor saw (litres)<input type="number" class="form-control" t-att-value="E.gps_liters" t-on-change="(ev) => this.setFu('gps_liters', ev.target.value)"/></label>
+                </t>
+            </div>
+            <t t-if="E.flags" t-call="sonador_fleet.Flags"><t t-set="f" t-value="E"/></t>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveFuel"><t t-esc="E.mode === 'request' ? 'Send request' : 'Save fill'"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.state.fedit = null">Cancel</button>
+                <span class="small text-muted ms-auto">Every fill is checked: odometer, tank size, km per litre, duplicate and telebirr receipts, price<t t-if="ctx.is_officer">, GPS</t>.</span></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_fleet.TripForm">
+        <t t-set="E" t-value="state.tedit"/>
+        <div class="o_pp_card o_pp_panel mb-3 o_fl_noprint">
+            <div class="o_pp_card_head"><i class="fa fa-road"/>
+                <t t-esc="E.action === 'out' ? 'Trip out (gate)' : E.action === 'back' ? 'Back in: ' + E.name : E.action === 'perdiem' ? 'Per diem for ' + E.name : 'Trip ' + E.name"/>
+                <button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.state.tedit = null"><i class="fa fa-times"/></button></div>
+            <div class="o_pp_formgrid">
+                <t t-if="E.action === 'out' or E.action === 'save'">
+                    <label>Vehicle<select class="form-select" t-att-disabled="E.id" t-on-change="(ev) => this.setT('vehicle_id', ev.target.value)">
+                        <option t-foreach="ctx.vehicles" t-as="v" t-key="v.id" t-att-value="v.id" t-att-selected="v.id == E.vehicle_id" t-esc="v.name"/></select></label>
+                    <label>Driver<select class="form-select" t-on-change="(ev) => this.setT('driver_id', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == E.driver_id" t-esc="p.name"/></select></label>
+                    <label class="wide">Purpose<input class="form-control" t-att-value="E.purpose" placeholder="Delivery, collection, staff transport…" t-on-change="(ev) => this.setT('purpose', ev.target.value)"/></label>
+                    <label t-if="ctx.jobs.length">For job<select class="form-select" t-on-change="(ev) => this.setT('job_id', ev.target.value)"><option value="">— none —</option>
+                        <option t-foreach="ctx.jobs" t-as="j" t-key="j.id" t-att-value="j.id" t-att-selected="j.id == E.job_id" t-esc="j.name"/></select></label>
+                    <label>From<input class="form-control" t-att-value="E.origin" t-on-change="(ev) => this.setT('origin', ev.target.value)"/></label>
+                    <label>To<input class="form-control" t-att-value="E.destination" t-on-change="(ev) => this.setT('destination', ev.target.value)"/></label>
+                    <label class="wide">Load / passengers<input class="form-control" t-att-value="E.cargo" placeholder="Delivery note no., goods, who is on board" t-on-change="(ev) => this.setT('cargo', ev.target.value)"/></label>
+                    <label>Left at<input type="datetime-local" class="form-control" t-att-value="E.out_at" t-on-change="(ev) => this.setT('out_at', ev.target.value)"/></label>
+                    <label>Odometer out<input type="number" class="form-control" t-att-value="E.odo_out" t-on-change="(ev) => this.setT('odo_out', ev.target.value)"/></label>
+                    <label>Checked at the gate by<input class="form-control" t-att-value="E.gate_by" t-on-change="(ev) => this.setT('gate_by', ev.target.value)"/></label>
+                    <t t-if="E.action === 'save' and E.state === 'back'">
+                        <label>Back at<input type="datetime-local" class="form-control" t-att-value="E.back_at" t-on-change="(ev) => this.setT('back_at', ev.target.value)"/></label>
+                        <label>Odometer in<input type="number" class="form-control" t-att-value="E.odo_in" t-on-change="(ev) => this.setT('odo_in', ev.target.value)"/></label>
+                    </t>
+                </t>
+                <t t-if="E.action === 'back'">
+                    <div class="wide small">Left <t t-esc="E.out_label"/> at <t t-esc="money(E.odo_out)"/> km · <t t-esc="E.purpose"/></div>
+                    <label>Back at<input type="datetime-local" class="form-control" t-att-value="E.back_at" t-on-change="(ev) => this.setT('back_at', ev.target.value)"/></label>
+                    <label>Odometer in<input type="number" class="form-control" t-att-value="E.odo_in" t-on-change="(ev) => this.setT('odo_in', ev.target.value)"/>
+                        <small t-if="E.odo_in" class="text-muted"><t t-esc="money(E.odo_in - E.odo_out)"/> km</small></label>
+                    <label>Checked at the gate by<input class="form-control" t-att-value="E.gate_by" t-on-change="(ev) => this.setT('gate_by', ev.target.value)"/></label>
+                </t>
+                <t t-if="E.action === 'perdiem'">
+                    <div class="wide small"><t t-esc="E.purpose"/> → <t t-esc="E.destination"/> · <t t-esc="E.out_label"/> – <t t-esc="E.back_label or 'still out'"/></div>
+                    <label>Days<input type="number" step="0.5" class="form-control" t-att-value="E.days" t-on-change="(ev) => this.setT('days', ev.target.value)"/>
+                        <small class="text-muted"><t t-esc="money(ctx.perdiem_rate)"/> <t t-esc="ctx.currency"/> a day = <b t-esc="money(E.days * ctx.perdiem_rate)"/></small></label>
+                    <label class="wide">Note<input class="form-control" t-att-value="E.note" t-on-change="(ev) => this.setT('note', ev.target.value)"/></label>
+                </t>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveTrip">
+                <t t-esc="E.action === 'out' ? 'Leave (gate out)' : E.action === 'back' ? 'Back in' : E.action === 'perdiem' ? 'Ask per diem' : 'Save'"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.state.tedit = null">Cancel</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_fleet.ServiceForm">
+        <t t-set="E" t-value="state.sedit"/>
+        <div class="o_pp_card o_pp_panel mb-3 o_fl_noprint">
+            <div class="o_pp_card_head"><i class="fa fa-wrench"/><t t-esc="E.id ? E.name : 'Work order'"/>
+                <button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.state.sedit = null"><i class="fa fa-times"/></button></div>
+            <div class="o_pp_formgrid">
+                <label>Vehicle<select class="form-select" t-att-disabled="E.id" t-on-change="(ev) => this.setS('vehicle_id', ev.target.value)">
+                    <option t-foreach="ctx.vehicles" t-as="v" t-key="v.id" t-att-value="v.id" t-att-selected="v.id == E.vehicle_id" t-esc="v.name"/></select></label>
+                <label>What<select class="form-select" t-on-change="(ev) => this.setS('kind', ev.target.value)">
+                    <option t-foreach="ctx.service_kinds" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="k.id === E.kind" t-esc="k.name"/></select></label>
+                <label>Status<select class="form-select" t-on-change="(ev) => this.setS('state', ev.target.value)">
+                    <option value="planned" t-att-selected="E.state === 'planned'">Planned</option><option value="open" t-att-selected="E.state === 'open'">In the workshop</option>
+                    <option value="done" t-att-selected="E.state === 'done'">Done</option></select></label>
+                <label>Date<input type="date" class="form-control" t-att-value="E.date" t-on-change="(ev) => this.setS('date', ev.target.value)"/></label>
+                <label>Odometer<input type="number" class="form-control" t-att-value="E.odometer" t-on-change="(ev) => this.setS('odometer', ev.target.value)"/></label>
+                <label class="position-relative">Garage / supplier<input class="form-control" t-att-value="E.partner" t-on-input="(ev) => this.findPartner('sedit', ev.target.value)"/>
+                    <div t-if="state.hits.length" class="o_pj_hits"><div t-foreach="state.hits" t-as="c" t-key="c.id" t-on-click="() => this.pickPartner('sedit', c)" t-esc="c.name"/></div></label>
+                <label>Cost<input type="number" class="form-control" t-att-value="E.amount" t-on-change="(ev) => this.setS('amount', ev.target.value)"/></label>
+                <label class="wide">Work done / parts<textarea class="form-control" rows="2" t-att-value="E.description" t-on-change="(ev) => this.setS('description', ev.target.value)"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveService">Save</button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.state.sedit = null">Cancel</button>
+                <span class="small text-muted ms-auto">Pay the garage in Accounting with this vehicle on the line; it is not counted twice.</span></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_fleet.Gate">
+        <t t-set="G" t-value="state.gate"/>
+        <div class="o_pp_card o_fl_gate mb-3">
+            <div class="d-flex align-items-start"><div class="me-auto"><div class="o_pp_kicker" t-esc="ctx.company"/><h3 class="m-0">Gate pass <t t-esc="G.name"/></h3></div>
+                <div class="o_fl_noprint"><button class="btn btn-primary btn-sm" t-on-click="printGate"><i class="fa fa-print me-1"/>Print</button>
+                    <button class="btn btn-link btn-sm" t-on-click="() => this.state.gate = null"><i class="fa fa-times"/></button></div></div>
+            <table class="o_fl_gatet"><tbody>
+                <tr><th>Vehicle</th><td><b t-esc="G.plate"/> · <t t-esc="G.vehicle"/></td><th>Driver</th><td t-esc="G.driver"/></tr>
+                <tr><th>Purpose</th><td t-esc="G.purpose"/><th>Route</th><td><t t-esc="G.origin"/> → <t t-esc="G.destination"/></td></tr>
+                <tr><th>Load / passengers</th><td colspan="3" t-esc="G.cargo"/></tr>
+                <tr><th>Out</th><td><t t-esc="G.out_label"/> · <t t-esc="money(G.odo_out)"/> km</td><th>In</th><td><t t-esc="G.back_label"/><t t-if="G.odo_in"> · <t t-esc="money(G.odo_in)"/> km</t></td></tr>
+            </tbody></table>
+            <div class="o_fl_sign"><div>Driver</div><div>Gate guard</div><div>Approved by</div></div>
+        </div>
+    </t>
+
+    <!-- ============================================================ dashboard -->
+    <t t-name="sonador_fleet.Dashboard">
+        <t t-set="D" t-value="state.dash"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-primary btn-sm" t-on-click="() => this.newFuel('fill')"><i class="fa fa-tint me-1"/>Log a fill</button>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.newTrip()"><i class="fa fa-road me-1"/>Trip out</button>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.newService()"><i class="fa fa-wrench me-1"/>Work order</button>
+        </div>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi o_pj_click" t-on-click="() => this.go('vehicles')"><span>Vehicles</span><b t-esc="D.vehicles"/>
+                <small><t t-foreach="D.by_state" t-as="s" t-key="s.id"><t t-if="s.n"><t t-esc="s.n"/> <t t-esc="s.name.toLowerCase()"/> · </t></t></small></div>
+            <div class="o_pp_kpi"><span>Fuel this month</span><b t-esc="money(D.fuel_month.amount)"/><small><t t-esc="num(D.fuel_month.liters)"/> L in <t t-esc="D.fuel_month.fills"/> fills</small></div>
+            <div class="o_pp_kpi o_pj_click" t-on-click="() => this.go('fuel', {ff: {state: 'request', risk: '', vehicle_id: ''}})"><span>Fuel requests waiting</span>
+                <b t-att-class="D.requests ? 'o_pp_badtxt' : ''" t-esc="D.requests"/></div>
+            <div class="o_pp_kpi o_pj_click" t-on-click="() => this.go('fuel', {ff: {state: 'filled', risk: 'flagged', vehicle_id: ''}})"><span>Questionable fills (60 days)</span>
+                <b t-att-class="D.flagged.length ? 'o_pp_badtxt' : 'o_pp_good'" t-esc="D.flagged.length"/></div>
+            <div class="o_pp_kpi o_pj_click" t-on-click="() => this.go('trips', {tf: {state: 'out', perdiem: '', vehicle_id: ''}})"><span>On the road now</span><b t-esc="D.on_road.length"/>
+                <small t-if="D.perdiem_waiting"><t t-esc="D.perdiem_waiting"/> per diem to approve</small></div>
+            <div class="o_pp_kpi"><span>Cost this month</span><b t-esc="money(D.cost_month.total)"/><small t-if="D.cost_month.per_km"><t t-esc="num(D.cost_month.per_km, 2)"/> <t t-esc="ctx.currency"/> per km</small></div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-id-card-o"/>Documents and licences</div>
+                <div t-foreach="D.docs" t-as="d" t-key="d.id" class="o_pp_li o_pj_click" t-on-click="() => this.openVehicle(d.vehicle_id, 'docs')">
+                    <span t-att-class="'o_fl_dot ' + d.status"/><b t-esc="d.kind"/><span class="small" t-esc="d.vehicle"/>
+                    <span t-att-class="'ms-auto small ' + (d.status === 'expired' ? 'o_pp_badtxt' : '')"><t t-esc="d.days &lt; 0 ? 'expired ' + (-d.days) + ' days ago' : 'in ' + d.days + ' days'"/> · <t t-esc="d.end_ec"/></span></div>
+                <div t-foreach="D.licences" t-as="l" t-key="l_index" class="o_pp_li"><span t-att-class="'o_fl_dot ' + l.status"/><b>Driving licence</b><span class="small" t-esc="l.name"/>
+                    <span class="ms-auto small" t-esc="l.end_ec"/></div>
+                <div t-if="!D.docs.length and !D.licences.length" class="o_pp_empty">Nothing expiring.</div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-wrench"/>Maintenance due<span class="ms-auto small text-muted"><t t-esc="D.workshop"/> in the workshop</span></div>
+                <div t-foreach="D.due" t-as="s" t-key="s.id" class="o_pp_li"><span t-att-class="'o_fl_dot ' + (s.status === 'overdue' ? 'expired' : 'soon')"/><b t-esc="s.name"/><span class="small" t-esc="s.vehicle"/>
+                    <span class="ms-auto small"><t t-if="s.km_left !== ''"><t t-esc="money(s.km_left)"/> km left</t><t t-if="s.next_ec"> · <t t-esc="s.next_ec"/></t></span>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.newService(s.vehicle_id, s)">Book</button></div>
+                <div t-if="!D.due.length" class="o_pp_empty">Nothing due.</div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-tachometer"/>Fuel economy, last 90 days (km per litre)</div>
+                <div t-foreach="D.economy" t-as="e" t-key="e.id" class="o_pp_li o_pj_click" t-on-click="() => this.openVehicle(e.id, 'fuel')">
+                    <span t-att-class="'o_fl_dot ' + (e.status === 'bad' ? 'expired' : e.status === 'ok' ? 'ok' : 'none')"/><span t-esc="e.name"/>
+                    <span class="ms-auto"><b t-esc="e.kml === null ? '–' : num(e.kml, 2)"/><span class="small text-muted"> / <t t-esc="e.target or '?'"/> expected · <t t-esc="num(e.liters, 0)"/> L</span></span></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-exclamation-triangle"/>Questionable fills</div>
+                <div t-foreach="D.flagged" t-as="f" t-key="f.id" class="o_pp_li d-block">
+                    <div class="d-flex"><span t-att-class="'o_fl_risk me-2 ' + f.risk" t-esc="riskLabel(f.risk)"/><b t-esc="f.plate"/><span class="small ms-2" t-esc="f.date_label"/><span class="ms-auto small"><t t-esc="num(f.liters)"/> L · <t t-esc="money(f.amount)"/></span></div>
+                    <div t-foreach="f.flags" t-as="x" t-key="x_index" t-att-class="'small o_fl_ftxt ' + x.level" t-esc="x.msg"/></div>
+                <div t-if="!D.flagged.length" class="o_pp_empty">None.</div></div>
+        </div>
+        <div class="o_pp_card mt-3" t-if="D.cost_rows.length"><div class="o_pp_card_head"><i class="fa fa-money"/>Costs this month</div>
+            <table class="o_pp_table"><thead><tr><th>Vehicle</th><th class="text-end">Fuel</th><th class="text-end">Maintenance</th><th class="text-end">Other</th><th class="text-end">Total</th><th class="text-end">km</th><th class="text-end">per km</th></tr></thead>
+                <tbody><tr t-foreach="D.cost_rows" t-as="r" t-key="r.id"><td t-esc="r.name"/><td class="text-end" t-esc="money(r.fuel)"/><td class="text-end" t-esc="money(r.maintenance)"/>
+                    <td class="text-end" t-esc="money(r.documents + r.perdiem + r.other)"/><td class="text-end"><b t-esc="money(r.total)"/></td><td class="text-end" t-esc="money(r.km)"/>
+                    <td class="text-end" t-esc="r.per_km === null ? '–' : num(r.per_km, 2)"/></tr></tbody></table></div>
+    </t>
+
+    <!-- ============================================================ driver -->
+    <t t-name="sonador_fleet.My">
+        <t t-set="M" t-value="state.my"/>
+        <div t-if="M.no_person" class="o_pp_card p-4">Your login is not linked to a person in People. HR links it on your profile in People (Login card).</div>
+        <t t-else="">
+            <div t-if="M.licence_days !== null and M.licence_days &lt;= 30" class="o_pp_warn mb-3"><i class="fa fa-id-card-o me-1"/>Your driving licence expires <t t-esc="M.licence_ec"/>.</div>
+            <div t-if="!M.vehicles.length" class="o_pp_card p-4">No vehicle is assigned to you.</div>
+            <div class="o_fl_myv">
+                <div t-foreach="M.vehicles" t-as="v" t-key="v.id" class="o_pp_card p-3">
+                    <div class="small text-muted" t-esc="v.make + ' ' + v.model"/><h3 class="m-0" t-esc="v.plate"/>
+                    <div class="small mb-2"><t t-esc="money(v.odometer)"/> km · tank <t t-esc="v.tank or '?'"/> L</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-primary" t-on-click="() => this.newFuel('request', v.id)"><i class="fa fa-tint me-1"/>Ask for fuel</button>
+                        <button class="btn btn-light border" t-on-click="() => this.newFuel('fill', v.id)"><i class="fa fa-check me-1"/>I filled</button>
+                        <button class="btn btn-light border" t-on-click="() => this.newTrip(v.id)"><i class="fa fa-road me-1"/>Trip out</button>
+                    </div>
+                </div>
+            </div>
+            <div class="o_pp_card mt-3"><div class="o_pp_card_head"><i class="fa fa-road"/>My trips</div>
+                <t t-call="sonador_fleet.TripRows"><t t-set="rows" t-value="M.trips"/><t t-set="hideVehicle" t-value="false"/></t></div>
+            <div class="o_pp_card mt-3"><div class="o_pp_card_head"><i class="fa fa-tint"/>Fuel</div>
+                <t t-call="sonador_fleet.FuelRows"><t t-set="rows" t-value="M.fuel"/><t t-set="hideVehicle" t-value="false"/></t></div>
+        </t>
+    </t>
+
+    <!-- ============================================================ vehicles -->
+    <t t-name="sonador_fleet.Vehicles">
+        <div class="o_pp_toolbar">
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setFilter('vf', 'state', ev.target.value)"><option value="">All states</option>
+                <option t-foreach="ctx.states" t-as="s" t-key="s.id" t-att-value="s.id" t-att-selected="s.id === state.vf.state" t-esc="s.name"/></select>
+            <input class="form-control form-control-sm o_pp_search" placeholder="Plate, make or driver" t-att-value="state.vf.search" t-on-change="(ev) => this.setFilter('vf', 'search', ev.target.value)"/>
+            <label class="small d-flex align-items-center gap-1 m-0"><input type="checkbox" t-att-checked="state.vf.archived" t-on-change="(ev) => this.setFilter('vf', 'archived', ev.target.checked)"/> Archived</label>
+            <button class="btn btn-primary btn-sm ms-auto" t-on-click="newVehicle"><i class="fa fa-plus me-1"/>Vehicle</button>
+        </div>
+        <div class="o_pp_card o_pj_wrap"><table class="o_pp_table">
+            <thead><tr><th>Plate</th><th>Vehicle</th><th>Driver</th><th>Status</th><th class="text-end">Odometer</th><th>Bolo</th><th>Third party</th><th>Comprehensive</th><th>GPS</th></tr></thead>
+            <tbody><tr t-foreach="state.vlist.rows" t-as="v" t-key="v.id" class="o_pj_click" t-on-click="() => this.openVehicle(v.id)">
+                <td><b class="o_fl_plate" t-esc="v.plate"/></td><td><t t-esc="v.make"/> <t t-esc="v.model"/><div class="small text-muted"><t t-esc="sel(ctx.kinds, v.kind)"/> · <t t-esc="sel(ctx.ownership, v.ownership)"/> · <t t-esc="sel(ctx.fuels, v.fuel)"/></div></td>
+                <td class="small" t-esc="v.driver"/><td><span t-att-class="'o_fl_st ' + v.state" t-esc="sel(ctx.states, v.state)"/></td>
+                <td class="text-end"><t t-esc="money(v.odometer)"/><div class="small text-muted" t-esc="v.odometer_ec"/></td>
+                <td t-foreach="['bolo', 'third_party', 'comprehensive']" t-as="k" t-key="k" class="small"><t t-if="v.docs[k]"><span t-att-class="'o_fl_dot ' + v.docs[k].status"/><t t-esc="v.docs[k].end_ec"/></t>
+                    <span t-else="" class="text-muted">—</span></td>
+                <td><i t-if="v.gps" class="fa fa-map-marker text-success" title="GPS tracker"/><i t-if="v.sensor" class="fa fa-tint text-success ms-1" title="Fuel sensor"/></td>
+            </tr><tr t-if="!state.vlist.rows.length"><td colspan="9" class="o_pp_empty">No vehicles.</td></tr></tbody></table></div>
+    </t>
+
+    <t t-name="sonador_fleet.Vehicle">
+        <t t-if="state.vedit" t-call="sonador_fleet.VehicleEdit"/>
+        <t t-elif="state.veh">
+            <t t-set="V" t-value="state.veh"/>
+            <button class="btn btn-link btn-sm px-0 mb-2" t-on-click="() => this.go('vehicles')"><i class="fa fa-arrow-left me-1"/>Vehicles</button>
+            <div class="o_pj_head">
+                <div class="me-auto"><div class="small text-muted"><t t-esc="sel(ctx.kinds, V.kind)"/> · <t t-esc="sel(ctx.ownership, V.ownership)"/> · <span t-att-class="'o_fl_st ' + V.state" t-esc="sel(ctx.states, V.state)"/><t t-if="!V.active"> · archived</t></div>
+                    <h2><span class="o_fl_plate" t-esc="V.plate"/> <t t-esc="V.make"/> <t t-esc="V.model"/> <small class="text-muted" t-esc="V.year"/></h2>
+                    <div class="small"><t t-esc="money(V.odometer)"/> km<t t-if="V.driver"> · driver <t t-esc="V.driver"/></t> · <t t-esc="sel(ctx.fuels, V.fuel)"/>, tank <t t-esc="V.tank or '?'"/> L, expected <t t-esc="V.target_kml or '?'"/> km/L</div></div>
+                <t t-if="V.can_edit"><button class="btn btn-light border btn-sm" t-on-click="editVehicle"><i class="fa fa-pencil me-1"/>Edit</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.archiveVehicle(!V.active)" t-esc="V.active ? 'Archive' : 'Restore'"/></t>
+            </div>
+            <div class="o_pp_tabs">
+                <button t-foreach="[['overview', 'Overview'], ['docs', 'Documents'], ['fuel', 'Fuel'], ['trips', 'Trips'], ['service', 'Maintenance']]" t-as="k" t-key="k[0]"
+                        t-att-class="state.tab === k[0] ? 'active' : ''" t-on-click="() => this.state.tab = k[0]" t-esc="k[1]"/>
+            </div>
+            <t t-if="state.tab === 'overview'">
+                <div class="o_pp_kpis">
+                    <div class="o_pp_kpi"><span>Cost, last 12 months</span><b t-esc="money(V.cost.total)"/><small t-if="V.cost.per_km"><t t-esc="num(V.cost.per_km, 2)"/> <t t-esc="ctx.currency"/> per km · <t t-esc="money(V.cost.km)"/> km</small></div>
+                    <div class="o_pp_kpi"><span>Fuel</span><b t-esc="money(V.cost.fuel)"/><small><t t-esc="num(V.cost.liters, 0)"/> L</small></div>
+                    <div class="o_pp_kpi"><span>Maintenance</span><b t-esc="money(V.cost.maintenance)"/></div>
+                    <div class="o_pp_kpi"><span>Documents, per diem, other</span><b t-esc="money(V.cost.documents + V.cost.perdiem + V.cost.other)"/></div>
+                    <div class="o_pp_kpi"><span>km per litre (90 days)</span><b t-att-class="V.economy.status === 'bad' ? 'o_pp_badtxt' : ''" t-esc="V.economy.kml ? num(V.economy.kml, 2) : '–'"/><small>expected <t t-esc="V.target_kml or '?'"/></small></div>
+                </div>
+                <div class="o_pp_grid">
+                    <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-bar-chart"/>Cost by month</div><div class="p-3"><SbChart type="'bar'" labels="monthChart.labels" series="monthChart.series" stacked="true" height="220"/></div></div>
+                    <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-info-circle"/>Details</div>
+                        <div class="o_pp_fields">
+                            <div t-if="V.chassis"><span>Chassis</span><b t-esc="V.chassis"/></div><div t-if="V.engine"><span>Engine</span><b t-esc="V.engine"/></div>
+                            <div t-if="V.colour"><span>Colour</span><b t-esc="V.colour"/></div><div t-if="V.capacity"><span>Capacity</span><b t-esc="V.capacity"/></div>
+                            <div t-if="V.value"><span>Purchase value</span><b t-esc="money(V.value)"/></div><div t-if="V.charge_rate_km"><span>Charge-out per km</span><b t-esc="V.charge_rate_km"/></div>
+                            <div t-if="V.gps_imei"><span>GPS IMEI</span><b t-esc="V.gps_imei"/></div>
+                        </div>
+                        <div class="o_pp_card_head mt-2"><i class="fa fa-tachometer"/>Odometer readings</div>
+                        <div t-foreach="V.readings" t-as="r" t-key="r_index" class="o_pp_li small"><span t-esc="r.date_ec"/><span class="text-muted" t-esc="r.source"/><b class="ms-auto"><t t-esc="money(r.value)"/> km</b></div></div>
+                </div>
+            </t>
+            <t t-if="state.tab === 'docs'">
+                <div class="o_pp_toolbar"><span class="small text-muted">Bolo, insurance and permits. Adding a new one of a kind replaces the old one.</span>
+                    <button t-if="V.can_edit" class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.editDoc()"><i class="fa fa-plus me-1"/>Document</button></div>
+                <div t-if="state.docEdit" class="o_pp_card o_pp_panel mb-3"><t t-set="E" t-value="state.docEdit"/><div class="o_pp_formgrid">
+                    <label>Kind<select class="form-select" t-on-change="(ev) => E.kind = ev.target.value"><option t-foreach="ctx.doc_kinds" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="k.id === E.kind" t-esc="k.name"/></select></label>
+                    <label>Number<input class="form-control" t-att-value="E.number" t-on-change="(ev) => E.number = ev.target.value"/></label>
+                    <label class="position-relative">Insurer / issuer<input class="form-control" t-att-value="E.partner" t-on-input="(ev) => this.findPartner('docEdit', ev.target.value)"/>
+                        <div t-if="state.hits.length" class="o_pj_hits"><div t-foreach="state.hits" t-as="c" t-key="c.id" t-on-click="() => this.pickPartner('docEdit', c)" t-esc="c.name"/></div></label>
+                    <label>From<input type="date" class="form-control" t-att-value="E.date_start" t-on-change="(ev) => E.date_start = ev.target.value"/></label>
+                    <label>Expires<input type="date" class="form-control" t-att-value="E.date_end" t-on-change="(ev) => E.date_end = ev.target.value"/></label>
+                    <label>Cost<input type="number" class="form-control" t-att-value="E.amount" t-on-change="(ev) => E.amount = ev.target.value"/></label>
+                    <label class="wide">Note<input class="form-control" t-att-value="E.note" t-on-change="(ev) => E.note = ev.target.value"/></label></div>
+                    <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveDoc">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.docEdit = null">Cancel</button></div></div>
+                <div class="o_pp_card"><table class="o_pp_table"><thead><tr><th>Document</th><th>Number</th><th>Issuer</th><th>From</th><th>Expires</th><th class="text-end">Cost</th><th>Status</th><th/></tr></thead>
+                    <tbody><tr t-foreach="V.doc_list" t-as="d" t-key="d.id" t-att-class="d.status === 'history' ? 'text-muted' : ''">
+                        <td><b t-esc="d.kind_name"/></td><td class="small" t-esc="d.number"/><td class="small" t-esc="d.partner"/><td class="small" t-esc="d.start_ec"/><td class="small" t-esc="d.end_ec"/>
+                        <td class="text-end" t-esc="money(d.amount)"/><td><span t-att-class="'o_fl_dot ' + d.status"/><t t-esc="dState(d.status)"/></td>
+                        <td class="text-nowrap"><t t-if="V.can_edit"><button class="btn btn-link btn-sm p-0" t-on-click="() => this.editDoc(d)"><i class="fa fa-pencil"/></button>
+                            <button class="btn btn-link btn-sm p-0 ms-2 text-danger" t-on-click="() => this.removeDoc(d)"><i class="fa fa-trash-o"/></button></t></td></tr>
+                        <tr t-if="!V.doc_list.length"><td colspan="8" class="o_pp_empty">No documents yet.</td></tr></tbody></table></div>
+            </t>
+            <t t-if="state.tab === 'fuel'">
+                <div class="o_pp_toolbar"><button class="btn btn-primary btn-sm" t-on-click="() => this.newFuel('fill', V.id)"><i class="fa fa-tint me-1"/>Log a fill</button>
+                    <input t-if="ctx.is_manager" class="form-control form-control-sm ms-auto" style="max-width:18rem" placeholder="Reason when refusing" t-att-value="state.rejectNote" t-on-change="(ev) => this.state.rejectNote = ev.target.value"/></div>
+                <div class="o_pp_card o_pj_wrap"><t t-call="sonador_fleet.FuelRows"><t t-set="rows" t-value="V.fills"/><t t-set="hideVehicle" t-value="true"/></t></div>
+            </t>
+            <t t-if="state.tab === 'trips'">
+                <div class="o_pp_toolbar"><button class="btn btn-primary btn-sm" t-on-click="() => this.newTrip(V.id)"><i class="fa fa-road me-1"/>Trip out</button></div>
+                <div class="o_pp_card o_pj_wrap"><t t-call="sonador_fleet.TripRows"><t t-set="rows" t-value="V.trips"/><t t-set="hideVehicle" t-value="true"/></t></div>
+            </t>
+            <t t-if="state.tab === 'service'">
+                <div class="o_pp_toolbar"><span class="small text-muted">Schedules say when; work orders record what was done.</span>
+                    <button t-if="V.can_edit" class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.editSched()"><i class="fa fa-plus me-1"/>Schedule</button>
+                    <button t-if="V.can_edit" class="btn btn-primary btn-sm" t-on-click="() => this.newService(V.id)"><i class="fa fa-plus me-1"/>Work order</button></div>
+                <div t-if="state.schedEdit" class="o_pp_card o_pp_panel mb-3"><t t-set="E" t-value="state.schedEdit"/><div class="o_pp_formgrid">
+                    <label class="wide">Job<input class="form-control" t-att-value="E.name" t-on-change="(ev) => E.name = ev.target.value"/></label>
+                    <label>Every km<input type="number" class="form-control" t-att-value="E.every_km" t-on-change="(ev) => E.every_km = ev.target.value"/></label>
+                    <label>Every months<input type="number" class="form-control" t-att-value="E.every_months" t-on-change="(ev) => E.every_months = ev.target.value"/></label>
+                    <label>Last done at km<input type="number" class="form-control" t-att-value="E.last_km" t-on-change="(ev) => E.last_km = ev.target.value"/></label>
+                    <label>Last done on<input type="date" class="form-control" t-att-value="E.last_date" t-on-change="(ev) => E.last_date = ev.target.value"/></label></div>
+                    <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveSched">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.schedEdit = null">Cancel</button>
+                        <button t-if="E.id" class="btn btn-link btn-sm text-danger ms-auto" t-on-click="() => this.removeSched(E)">Stop this schedule</button></div></div>
+                <div class="o_pp_card mb-3"><div class="o_pp_card_head"><i class="fa fa-calendar"/>Schedules</div>
+                    <div t-foreach="V.schedules" t-as="s" t-key="s.id" class="o_pp_li"><span t-att-class="'o_fl_dot ' + (s.status === 'overdue' ? 'expired' : s.status === 'soon' ? 'soon' : s.status === 'ok' ? 'ok' : 'none')"/>
+                        <b t-esc="s.name"/><span class="small text-muted">every <t t-if="s.every_km"><t t-esc="money(s.every_km)"/> km</t><t t-if="s.every_km and s.every_months"> or </t><t t-if="s.every_months"><t t-esc="s.every_months"/> months</t></span>
+                        <span class="ms-auto small">next <t t-if="s.next_km"><t t-esc="money(s.next_km)"/> km</t><t t-if="s.next_ec"> / <t t-esc="s.next_ec"/></t></span>
+                        <button t-if="V.can_edit" class="btn btn-light border btn-sm" t-on-click="() => this.newService(V.id, s)">Done / book</button>
+                        <button t-if="V.can_edit" class="btn btn-link btn-sm p-0" t-on-click="() => this.editSched(s)"><i class="fa fa-pencil"/></button></div>
+                    <div t-if="!V.schedules.length" class="o_pp_empty">No schedules. Add oil changes, services, tyres.</div></div>
+                <div class="o_pp_card"><t t-call="sonador_fleet.ServiceRows"><t t-set="rows" t-value="V.services"/><t t-set="hideVehicle" t-value="true"/></t></div>
+            </t>
+        </t>
+    </t>
+
+    <t t-name="sonador_fleet.ServiceRows">
+        <table class="o_pp_table"><thead><tr><th>No.</th><th t-if="!hideVehicle">Vehicle</th><th>What</th><th>Date</th><th>Garage</th><th>Work</th><th class="text-end">km</th><th class="text-end">Cost</th><th>Status</th><th/></tr></thead>
+            <tbody><tr t-foreach="rows" t-as="s" t-key="s.id"><td class="small" t-esc="s.name"/><td t-if="!hideVehicle" class="small" t-esc="s.vehicle"/><td t-esc="s.kind_name"/><td class="small" t-esc="s.date_ec"/>
+                <td class="small" t-esc="s.partner"/><td class="small" t-esc="s.description"/><td class="text-end" t-esc="s.odometer ? money(s.odometer) : ''"/><td class="text-end" t-esc="money(s.amount)"/>
+                <td><span t-att-class="'o_fl_st ' + s.state" t-esc="s.state === 'open' ? 'In the workshop' : s.state === 'done' ? 'Done' : 'Planned'"/></td>
+                <td><button t-if="ctx.is_officer" class="btn btn-link btn-sm p-0" t-on-click="() => this.editService(s)"><i class="fa fa-pencil"/></button></td></tr>
+                <tr t-if="!rows.length"><td colspan="10" class="o_pp_empty">No work orders.</td></tr></tbody></table>
+    </t>
+
+    <t t-name="sonador_fleet.VehicleEdit">
+        <t t-set="E" t-value="state.vedit"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-car"/><t t-esc="state.vid ? 'Edit vehicle' : 'New vehicle'"/></div>
+            <div class="o_pp_formgrid">
+                <label>Plate<input class="form-control" t-att-value="E.plate" placeholder="3-AA-B34542" t-on-change="(ev) => this.setV('plate', ev.target.value)"/></label>
+                <label>Make<input class="form-control" t-att-value="E.make" placeholder="Toyota" t-on-change="(ev) => this.setV('make', ev.target.value)"/></label>
+                <label>Model<input class="form-control" t-att-value="E.model" placeholder="Hilux" t-on-change="(ev) => this.setV('model', ev.target.value)"/></label>
+                <label>Year<input type="number" class="form-control" t-att-value="E.year" t-on-change="(ev) => this.setV('year', ev.target.value)"/></label>
+                <label>Type<select class="form-select" t-on-change="(ev) => this.setV('kind', ev.target.value)"><option t-foreach="ctx.kinds" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="k.id === E.kind" t-esc="k.name"/></select></label>
+                <label>Ownership<select class="form-select" t-on-change="(ev) => this.setV('ownership', ev.target.value)"><option t-foreach="ctx.ownership" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="k.id === E.ownership" t-esc="k.name"/></select></label>
+                <label>Status<select class="form-select" t-on-change="(ev) => this.setV('state', ev.target.value)"><option t-foreach="ctx.states" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="k.id === E.state" t-esc="k.name"/></select></label>
+                <label>Fuel<select class="form-select" t-on-change="(ev) => this.setV('fuel', ev.target.value)"><option t-foreach="ctx.fuels" t-as="k" t-key="k.id" t-att-value="k.id" t-att-selected="k.id === E.fuel" t-esc="k.name"/></select></label>
+                <label>Tank (litres)<input type="number" class="form-control" t-att-value="E.tank" t-on-change="(ev) => this.setV('tank', ev.target.value)"/></label>
+                <label>Expected km per litre<input type="number" step="0.1" class="form-control" t-att-value="E.target_kml" t-on-change="(ev) => this.setV('target_kml', ev.target.value)"/>
+                    <small class="text-muted">trucks 2–5, pickups 7–12, small cars 12–20</small></label>
+                <label>Odometer (km)<input type="number" class="form-control" t-att-value="E.odometer" t-on-change="(ev) => this.setV('odometer', ev.target.value)"/></label>
+                <label>Driver<select class="form-select" t-on-change="(ev) => this.setV('driver_id', ev.target.value)"><option value="">—</option>
+                    <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == E.driver_id" t-esc="p.name"/></select></label>
+                <label>Chassis no.<input class="form-control" t-att-value="E.chassis" t-on-change="(ev) => this.setV('chassis', ev.target.value)"/></label>
+                <label>Engine no.<input class="form-control" t-att-value="E.engine" t-on-change="(ev) => this.setV('engine', ev.target.value)"/></label>
+                <label>Colour<input class="form-control" t-att-value="E.colour" t-on-change="(ev) => this.setV('colour', ev.target.value)"/></label>
+                <label>Load capacity<input class="form-control" t-att-value="E.capacity" t-on-change="(ev) => this.setV('capacity', ev.target.value)"/></label>
+                <label>Acquired on<input type="date" class="form-control" t-att-value="E.acquired" t-on-change="(ev) => this.setV('acquired', ev.target.value)"/></label>
+                <label>Purchase value<input type="number" class="form-control" t-att-value="E.value" t-on-change="(ev) => this.setV('value', ev.target.value)"/></label>
+                <label>Charge-out rate per km<input type="number" class="form-control" t-att-value="E.charge_rate_km" t-on-change="(ev) => this.setV('charge_rate_km', ev.target.value)"/></label>
+                <label>GPS tracker IMEI<input class="form-control" t-att-value="E.gps_imei" t-on-change="(ev) => this.setV('gps_imei', ev.target.value)"/></label>
+                <label class="d-flex flex-row align-items-center gap-2 pt-4"><input type="checkbox" t-att-checked="E.fuel_sensor" t-on-change="(ev) => this.setV('fuel_sensor', ev.target.checked)"/> GPS fuel sensor fitted</label>
+                <div class="wide small">Other drivers allowed: <t t-foreach="ctx.people" t-as="p" t-key="p.id"><span t-att-class="'o_pj_tag ' + (E.user_ids.includes(p.id) ? 'on' : '')" t-on-click="() => this.toggleUser(p.id)" t-esc="p.name"/></t></div>
+                <label class="wide">Notes<textarea class="form-control" rows="2" t-att-value="E.note" t-on-change="(ev) => this.setV('note', ev.target.value)"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveVehicle">Save</button><button class="btn btn-light border btn-sm" t-on-click="cancelVehicle">Cancel</button></div>
+        </div>
+    </t>
+
+    <!-- ============================================================ fuel / trips / maintenance pages -->
+    <t t-name="sonador_fleet.Fuel">
+        <t t-set="R" t-value="state.fuel"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group btn-group-sm">
+                <button t-foreach="[['', 'All'], ['request', 'Requests'], ['approved', 'Approved'], ['filled', 'Fills'], ['rejected', 'Refused']]" t-as="k" t-key="k[0]"
+                        t-att-class="'btn border ' + (state.ff.state === k[0] ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setFilter('ff', 'state', k[0])" t-esc="k[1]"/></div>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setFilter('ff', 'vehicle_id', ev.target.value)"><option value="">All vehicles</option>
+                <option t-foreach="ctx.vehicles" t-as="v" t-key="v.id" t-att-value="v.id" t-att-selected="v.id == state.ff.vehicle_id" t-esc="v.plate"/></select>
+            <label class="small d-flex align-items-center gap-1 m-0"><input type="checkbox" t-att-checked="state.ff.risk === 'flagged'" t-on-change="(ev) => this.setFilter('ff', 'risk', ev.target.checked ? 'flagged' : '')"/> Questionable only</label>
+            <input t-if="ctx.is_manager" class="form-control form-control-sm" style="max-width:16rem" placeholder="Reason when refusing" t-att-value="state.rejectNote" t-on-change="(ev) => this.state.rejectNote = ev.target.value"/>
+            <button class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.newFuel('request')">Request</button>
+            <button class="btn btn-primary btn-sm" t-on-click="() => this.newFuel('fill')"><i class="fa fa-tint me-1"/>Log a fill</button>
+        </div>
+        <div class="small mb-2"><b t-esc="num(R.totals.liters)"/> L · <b t-esc="money(R.totals.amount)"/> <t t-esc="ctx.currency"/> in these fills · <span t-att-class="R.totals.flagged ? 'o_pp_badtxt' : ''"><t t-esc="R.totals.flagged"/> questionable</span></div>
+        <div class="o_pp_card o_pj_wrap"><t t-call="sonador_fleet.FuelRows"><t t-set="rows" t-value="R.rows"/><t t-set="hideVehicle" t-value="false"/></t></div>
+    </t>
+
+    <t t-name="sonador_fleet.Trips">
+        <div class="o_pp_toolbar">
+            <div class="btn-group btn-group-sm">
+                <button t-foreach="[['', 'All'], ['out', 'On the road'], ['back', 'Back'], ['cancel', 'Cancelled']]" t-as="k" t-key="k[0]"
+                        t-att-class="'btn border ' + (state.tf.state === k[0] ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setFilter('tf', 'state', k[0])" t-esc="k[1]"/></div>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setFilter('tf', 'perdiem', ev.target.value)"><option value="">Any per diem</option>
+                <option value="requested" t-att-selected="state.tf.perdiem === 'requested'">Per diem to approve</option><option value="approved" t-att-selected="state.tf.perdiem === 'approved'">Per diem approved</option></select>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setFilter('tf', 'vehicle_id', ev.target.value)"><option value="">All vehicles</option>
+                <option t-foreach="ctx.vehicles" t-as="v" t-key="v.id" t-att-value="v.id" t-att-selected="v.id == state.tf.vehicle_id" t-esc="v.plate"/></select>
+            <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.newTrip()"><i class="fa fa-road me-1"/>Trip out</button>
+        </div>
+        <div class="o_pp_card o_pj_wrap"><t t-call="sonador_fleet.TripRows"><t t-set="rows" t-value="state.trips.rows"/><t t-set="hideVehicle" t-value="false"/></t></div>
+    </t>
+
+    <t t-name="sonador_fleet.Maintenance">
+        <div class="o_pp_toolbar"><span class="small text-muted">Schedules by urgency; set them on each vehicle.</span>
+            <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.newService()"><i class="fa fa-plus me-1"/>Work order</button></div>
+        <div class="o_pp_card mb-3"><div class="o_pp_card_head"><i class="fa fa-calendar"/>Schedules</div>
+            <div t-foreach="state.maint.schedules" t-as="s" t-key="s.id" class="o_pp_li"><span t-att-class="'o_fl_dot ' + (s.status === 'overdue' ? 'expired' : s.status === 'soon' ? 'soon' : s.status === 'ok' ? 'ok' : 'none')"/>
+                <b class="o_pj_click" t-on-click="() => this.openVehicle(s.vehicle_id, 'service')" t-esc="s.vehicle"/><span t-esc="s.name"/>
+                <span class="ms-auto small"><t t-if="s.km_left !== ''"><t t-esc="money(s.km_left)"/> km left</t><t t-if="s.next_ec"> · <t t-esc="s.next_ec"/></t><t t-if="s.status === 'unknown'">never recorded</t></span>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.newService(s.vehicle_id, s)">Done / book</button></div>
+            <div t-if="!state.maint.schedules.length" class="o_pp_empty">No schedules yet: open a vehicle, Maintenance tab.</div></div>
+        <div class="o_pp_card o_pj_wrap"><t t-call="sonador_fleet.ServiceRows"><t t-set="rows" t-value="state.maint.orders"/><t t-set="hideVehicle" t-value="false"/></t></div>
+    </t>
+
+    <t t-name="sonador_fleet.Costs">
+        <t t-set="C" t-value="state.costs"/>
+        <div class="o_pp_toolbar">
+            <input type="date" class="form-control form-control-sm w-auto" t-att-value="state.cf.from" t-on-change="(ev) => this.setCost('from', ev.target.value)"/> –
+            <input type="date" class="form-control form-control-sm w-auto" t-att-value="state.cf.to" t-on-change="(ev) => this.setCost('to', ev.target.value)"/>
+            <span class="small text-muted" t-esc="C.label"/>
+            <button class="btn btn-light border btn-sm ms-auto" t-on-click="exportCosts"><i class="fa fa-download me-1"/>CSV</button>
+        </div>
+        <div class="o_pp_card o_pj_wrap"><table class="o_pp_table">
+            <thead><tr><th>Vehicle</th><th class="text-end">Fuel</th><th class="text-end">Litres</th><th class="text-end">Maintenance</th><th class="text-end">Documents</th><th class="text-end">Per diem</th>
+                <th class="text-end">Other (books)</th><th class="text-end">Total</th><th class="text-end">km</th><th class="text-end">Per km</th></tr></thead>
+            <tbody><tr t-foreach="C.rows" t-as="r" t-key="r.id" class="o_pj_click" t-on-click="() => this.openVehicle(r.id)"><td><b t-esc="r.plate"/> <span class="small text-muted" t-esc="r.name"/></td>
+                <td class="text-end" t-esc="money(r.fuel)"/><td class="text-end" t-esc="num(r.liters, 0)"/><td class="text-end" t-esc="money(r.maintenance)"/><td class="text-end" t-esc="money(r.documents)"/>
+                <td class="text-end" t-esc="money(r.perdiem)"/><td class="text-end" t-esc="money(r.other)"/><td class="text-end"><b t-esc="money(r.total)"/></td><td class="text-end" t-esc="money(r.km)"/>
+                <td class="text-end" t-esc="r.per_km === null ? '–' : num(r.per_km, 2)"/></tr>
+                <tr class="fw-bold"><td>Total</td><td class="text-end" t-esc="money(C.totals.fuel)"/><td class="text-end" t-esc="num(C.totals.liters, 0)"/><td class="text-end" t-esc="money(C.totals.maintenance)"/>
+                    <td class="text-end" t-esc="money(C.totals.documents)"/><td class="text-end" t-esc="money(C.totals.perdiem)"/><td class="text-end" t-esc="money(C.totals.other)"/>
+                    <td class="text-end" t-esc="money(C.totals.total)"/><td class="text-end" t-esc="money(C.totals.km)"/><td class="text-end" t-esc="C.totals.per_km === null ? '–' : num(C.totals.per_km, 2)"/></tr></tbody></table></div>
+        <div class="small text-muted mt-2">Other (books): costs posted in Accounting with the vehicle on the line that are not already a fill, work order, document or per diem here.</div>
+    </t>
+
+    <t t-name="sonador_fleet.Settings">
+        <t t-set="S" t-value="state.set"/>
+        <div class="o_pp_grid">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-cog"/>Fleet settings</div>
+                <div class="o_pp_fields">
+                    <label><span>Driver per diem per day</span><input type="number" class="form-control form-control-sm w-auto" t-att-value="S.perdiem_rate" t-on-change="(ev) => this.setSet('perdiem_rate', ev.target.value)"/></label>
+                    <label><span>Per diem expense account</span><select class="form-select form-select-sm" style="max-width:20rem" t-on-change="(ev) => this.setSet('perdiem_account', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="S.accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == S.perdiem_account" t-esc="a.name"/></select></label>
+                    <label><span>Fuel expense account</span><select class="form-select form-select-sm" style="max-width:20rem" t-on-change="(ev) => this.setSet('fuel_account', ev.target.value)"><option value="">—</option>
+                        <option t-foreach="S.accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == S.fuel_account" t-esc="a.name"/></select></label>
+                    <label><span>Diesel price per litre</span><input type="number" step="0.01" class="form-control form-control-sm w-auto" t-att-value="S.diesel" t-on-change="(ev) => this.setSet('diesel', ev.target.value)"/></label>
+                    <label><span>Benzine price per litre</span><input type="number" step="0.01" class="form-control form-control-sm w-auto" t-att-value="S.benzine" t-on-change="(ev) => this.setSet('benzine', ev.target.value)"/></label>
+                    <label><span>Fuel economy tolerance %</span><input type="number" class="form-control form-control-sm w-auto" t-att-value="S.tolerance" t-on-change="(ev) => this.setSet('tolerance', ev.target.value)"/></label>
+                    <label><span>Warn before documents expire (days)</span><input type="number" class="form-control form-control-sm w-auto" t-att-value="S.warn_days" t-on-change="(ev) => this.setSet('warn_days', ev.target.value)"/></label>
+                </div>
+                <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveSettings">Save</button></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-id-card-o"/>Drivers' licences</div>
+                <table class="o_pp_table"><thead><tr><th>Driver</th><th>Licence no.</th><th>Grade</th><th>Expires</th><th/></tr></thead>
+                    <tbody><tr t-foreach="S.drivers" t-as="d" t-key="d.id"><td t-esc="d.name"/>
+                        <td><input class="form-control form-control-sm" t-att-value="d.licence" t-on-change="(ev) => d.licence = ev.target.value"/></td>
+                        <td><input class="form-control form-control-sm" t-att-value="d.grade" t-on-change="(ev) => d.grade = ev.target.value"/></td>
+                        <td><input type="date" class="form-control form-control-sm" t-att-value="d.expiry" t-on-change="(ev) => d.expiry = ev.target.value"/></td>
+                        <td><button class="btn btn-light border btn-sm" t-on-click="() => this.saveDriver(d)">Save</button></td></tr>
+                        <tr t-if="!S.drivers.length"><td colspan="5" class="o_pp_empty">Assign drivers to vehicles first.</td></tr></tbody></table></div>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,27 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_stock_voucher_auditor,sb.stock.voucher auditor,model_sb_stock_voucher,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_stock_voucher_clerk,sb.stock.voucher clerk,model_sb_stock_voucher,sonador_books.group_sb_clerk,1,1,1,1
+access_sb_stock_voucher_line_auditor,sb.stock.voucher.line auditor,model_sb_stock_voucher_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_stock_voucher_line_clerk,sb.stock.voucher.line clerk,model_sb_stock_voucher_line,sonador_books.group_sb_clerk,1,1,1,1
+access_sb_stock_revaluation_auditor,sb.stock.revaluation auditor,model_sb_stock_revaluation,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_stock_revaluation_accountant,sb.stock.revaluation accountant,model_sb_stock_revaluation,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_adjust_reason_auditor,sb.adjust.reason auditor,model_sb_adjust_reason,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_adjust_reason_manager,sb.adjust.reason manager,model_sb_adjust_reason,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_stock_voucher_store,sb.stock.voucher store,model_sb_stock_voucher,group_sb_store_user,1,1,1,1
+access_sb_stock_voucher_line_store,sb.stock.voucher.line store,model_sb_stock_voucher_line,group_sb_store_user,1,1,1,1
+access_sb_adjust_reason_store,sb.adjust.reason store,model_sb_adjust_reason,group_sb_store_user,1,0,0,0
+access_sb_stock_revaluation_store,sb.stock.revaluation store,model_sb_stock_revaluation,group_sb_store_user,1,0,0,0
+access_sb_gate_pass_store,sb.gate.pass store,model_sb_gate_pass,group_sb_store_user,1,1,1,1
+access_sb_gate_pass_line_store,sb.gate.pass.line store,model_sb_gate_pass_line,group_sb_store_user,1,1,1,1
+access_sb_gate_pass_auditor,sb.gate.pass auditor,model_sb_gate_pass,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_gate_pass_line_auditor,sb.gate.pass.line auditor,model_sb_gate_pass_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_gate_pass_clerk,sb.gate.pass clerk,model_sb_gate_pass,sonador_books.group_sb_clerk,1,1,1,1
+access_sb_gate_pass_line_clerk,sb.gate.pass.line clerk,model_sb_gate_pass_line,sonador_books.group_sb_clerk,1,1,1,1
+access_account_account_store,account.account store,account.model_account_account,group_sb_store_user,1,0,0,0
+access_account_journal_store,account.journal store,account.model_account_journal,group_sb_store_user,1,0,0,0
+access_account_move_store,account.move store,account.model_account_move,group_sb_store_user,1,0,0,0
+access_account_analytic_store,account.analytic.account store,analytic.model_account_analytic_account,group_sb_store_user,1,0,0,0
+access_sb_report_view_store,sb.report.view store,sonador_books.model_sb_report_view,group_sb_store_user,1,1,1,1
+access_sb_report_pack_store,sb.report.pack store,sonador_books.model_sb_report_pack,group_sb_store_user,1,0,0,0
+access_sb_report_pack_line_store,sb.report.pack.line store,sonador_books.model_sb_report_pack_line,group_sb_store_user,1,0,0,0
+access_sb_stock_item_lock_system,sb.stock.item.lock system,model_sb_stock_item_lock,base.group_system,1,1,1,1

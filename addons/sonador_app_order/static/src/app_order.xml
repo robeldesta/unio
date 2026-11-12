@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="muk_web_appsbar.AppsBar" t-inherit-mode="extension">
+        <xpath expr="//ul[hasclass('mk_apps_sidebar_menu')]" position="attributes">
+            <attribute name="t-ref">appOrder</attribute>
+            <attribute name="title">Hold and drag an app to change your order</attribute>
+        </xpath>
+    </t>
+</templates>

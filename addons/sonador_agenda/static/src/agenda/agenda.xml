@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_agenda.Row">
+        <div t-attf-class="o_ag_row {{ i.importance }} {{ i.overdue ? 'overdue' : '' }}">
+            <div class="o_ag_date" t-on-click="() => this.open(i)">
+                <t t-set="dl" t-value="dayLabel(i)"/>
+                <b t-esc="dl.day"/><span><t t-esc="dl.mon"/> · <t t-esc="dl.dow"/></span>
+            </div>
+            <div class="o_ag_main" t-on-click="() => this.open(i)">
+                <div class="o_ag_name" t-esc="i.title"/>
+                <div class="o_ag_meta">
+                    <span class="o_ag_area" t-esc="areaName(i.area)"/>
+                    <t t-if="i.sub"> · <t t-esc="i.sub"/></t>
+                    <t t-if="i.ec"> · <t t-esc="i.ec"/></t>
+                </div>
+            </div>
+            <div class="o_ag_amt" t-if="i.amount"><t t-esc="money(i.amount)"/></div>
+            <div class="o_ag_acts">
+                <button t-if="i.manual or i.todo_id" class="btn btn-sm btn-light" t-on-click="() => this.done(i)"
+                        t-att-title="i.todo_id ? 'Done' : 'Filed and paid'"><i class="fa fa-check"/></button>
+                <button t-if="!i.todo_id" class="btn btn-sm btn-light" title="Give to someone" t-on-click="() => this.toggleGive(i)">
+                    <i class="fa fa-user-plus"/></button>
+                <button t-if="!i.todo_id" class="btn btn-sm btn-light" title="Later" t-on-click="() => this.toggleMenu(i)">
+                    <i class="fa fa-clock-o"/></button>
+            </div>
+            <div t-if="state.menu === i.key" class="o_ag_pop">
+                <span>Hide until</span>
+                <button class="btn btn-sm btn-light" t-on-click="() => this.later(i, 1)">Tomorrow</button>
+                <button class="btn btn-sm btn-light" t-on-click="() => this.later(i, 3)">In 3 days</button>
+                <button class="btn btn-sm btn-light" t-on-click="() => this.later(i, 7)">Next week</button>
+            </div>
+            <div t-if="state.give === i.key" class="o_ag_pop">
+                <span>Give to</span>
+                <select class="form-select form-select-sm" t-on-change="(ev) => this.giveTo(i, ev)">
+                    <option value="">Choose a person</option>
+                    <option t-foreach="state.d.users" t-as="u" t-key="u.id" t-att-value="u.id" t-esc="u.name"/>
+                </select>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_agenda.App">
+        <div class="o_ag o_action h-100 overflow-auto">
+            <div class="o_ag_top">
+                <div class="o_ag_inner d-flex flex-wrap align-items-center gap-2">
+                    <div class="me-auto">
+                        <div class="o_ag_kicker" t-if="state.d">Today · <t t-esc="todayLabel"/><t t-if="state.d.today_ec"> · <t t-esc="state.d.today_ec"/></t></div>
+                        <h1 class="o_ag_title">Agenda</h1>
+                    </div>
+                    <div class="btn-group">
+                        <button t-attf-class="btn btn-sm {{ state.view === 'list' ? 'btn-primary' : 'btn-light' }}" t-on-click="() => { state.view = 'list'; state.day = null; }">
+                            <i class="fa fa-list me-1"/>List</button>
+                        <button t-attf-class="btn btn-sm {{ state.view === 'month' ? 'btn-primary' : 'btn-light' }}" t-on-click="() => state.view = 'month'">
+                            <i class="fa fa-calendar me-1"/>Month</button>
+                    </div>
+                    <button class="btn btn-sm btn-light" t-on-click="openTodos"><i class="fa fa-check-square-o me-1"/>To-dos</button>
+                </div>
+            </div>
+            <div class="o_ag_inner o_ag_body" t-if="state.d">
+                <t t-set="d" t-value="state.d"/>
+                <div class="o_ag_chips">
+                    <button t-attf-class="o_ag_chip {{ state.area === 'all' ? 'on' : '' }}" t-on-click="() => this.setArea('all')">
+                        All <small t-esc="d.items.length"/></button>
+                    <button t-attf-class="o_ag_chip {{ state.area === 'mine' ? 'on' : '' }}" t-on-click="() => this.setArea('mine')">Mine</button>
+                    <button t-foreach="d.areas" t-as="a" t-key="a.code" t-attf-class="o_ag_chip {{ state.area === a.code ? 'on' : '' }}"
+                            t-on-click="() => this.setArea(a.code)"><t t-esc="a.name"/> <small t-esc="a.count"/></button>
+                </div>
+                <form class="o_ag_add" t-on-submit="addTodo">
+                    <i class="fa fa-plus"/>
+                    <input class="o_ag_add_name" placeholder="Add a to-do" t-model="state.todo.name" aria-label="To-do"/>
+                    <input type="date" class="o_ag_add_date" t-model="state.todo.date" aria-label="By"/>
+                    <select class="o_ag_add_who" t-model="state.todo.user_id" aria-label="Who">
+                        <option t-foreach="d.users" t-as="u" t-key="u.id" t-att-value="u.id"
+                                t-esc="u.id === d.uid ? 'Me' : u.name"/>
+                    </select>
+                    <button class="btn btn-sm btn-primary" type="submit" t-att-disabled="!state.todo.name.trim()">Add</button>
+                </form>
+
+                <div t-if="state.view === 'month'" class="o_ag_month">
+                    <div class="o_ag_month_head">
+                        <button class="btn btn-sm btn-light" t-on-click="() => this.shiftMonth(-1)"><i class="fa fa-chevron-left"/></button>
+                        <b t-esc="monthName"/>
+                        <button class="btn btn-sm btn-light" t-on-click="() => this.shiftMonth(1)"><i class="fa fa-chevron-right"/></button>
+                    </div>
+                    <div class="o_ag_grid">
+                        <div class="o_ag_dow" t-foreach="['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" t-as="w" t-key="w" t-esc="w"/>
+                        <t t-foreach="weeks" t-as="week" t-key="week_index">
+                            <div t-foreach="week" t-as="c" t-key="c.key" t-on-click="() => this.pickDay(c)"
+                                 t-attf-class="o_ag_cell {{ c.out ? 'out' : '' }} {{ c.today ? 'today' : '' }} {{ state.day === c.key ? 'picked' : '' }}">
+                                <span class="o_ag_n" t-esc="c.n"/>
+                                <div t-foreach="c.items.slice(0, 3)" t-as="i" t-key="i.key" t-attf-class="o_ag_dot {{ i.importance }}" t-esc="i.title"/>
+                                <div t-if="c.items.length > 3" class="o_ag_more">+<t t-esc="c.items.length - 3"/> more</div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <div t-if="state.view === 'list' or state.day">
+                    <div t-if="!groups.length" class="o_ag_empty"><i class="fa fa-check-circle me-1"/>Nothing due<t t-if="state.day"> that day</t>.</div>
+                    <div t-foreach="groups" t-as="g" t-key="g.key" class="o_ag_group">
+                        <div t-attf-class="o_ag_group_head {{ g.key }}"><t t-esc="g.name"/> <small t-esc="g.items.length"/></div>
+                        <div class="o_ag_card">
+                            <t t-foreach="g.items" t-as="i" t-key="i.key"><t t-call="sonador_agenda.Row"/></t>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

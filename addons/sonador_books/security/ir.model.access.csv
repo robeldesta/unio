@@ -1,0 +1,60 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_voucher_user,sb.voucher user,model_sb_voucher,account.group_account_invoice,1,1,1,1
+access_sb_voucher_line_user,sb.voucher.line user,model_sb_voucher_line,account.group_account_invoice,1,1,1,1
+access_sb_voucher_apply_user,sb.voucher.apply user,model_sb_voucher_apply,account.group_account_invoice,1,1,1,1
+access_sb_ifrs_line_user,sb.ifrs.line user,model_sb_ifrs_line,account.group_account_invoice,1,0,0,0
+access_sb_ifrs_line_manager,sb.ifrs.line manager,model_sb_ifrs_line,account.group_account_manager,1,1,1,1
+access_sb_period_wizard,sb.period.wizard,model_sb_period_wizard,account.group_account_invoice,1,1,1,1
+access_sb_period_wizard_line,sb.period.wizard.line,model_sb_period_wizard_line,account.group_account_invoice,1,1,1,1
+access_sb_voucher_purpose_user,sb.voucher.purpose user,model_sb_voucher_purpose,account.group_account_invoice,1,0,0,0
+access_sb_voucher_purpose_manager,sb.voucher.purpose manager,model_sb_voucher_purpose,account.group_account_manager,1,1,1,1
+access_sb_voucher_cash_user,sb.voucher.cash user,model_sb_voucher_cash,account.group_account_invoice,1,1,1,1
+access_sb_cheque_wizard_user,sb.cheque.wizard user,model_sb_cheque_wizard,account.group_account_invoice,1,1,1,1
+access_sb_report_view_user,sb.report.view user,model_sb_report_view,account.group_account_invoice,1,1,1,1
+access_sb_year_end_wizard,sb.year.end.wizard,model_sb_year_end_wizard,account.group_account_manager,1,1,1,1
+access_sb_batch_payment,sb.batch.payment,model_sb_batch_payment,account.group_account_invoice,1,1,1,1
+access_sb_batch_payment_line,sb.batch.payment.line,model_sb_batch_payment_line,account.group_account_invoice,1,1,1,1
+access_sb_finance_charge,sb.finance.charge,model_sb_finance_charge,account.group_account_invoice,1,1,1,1
+access_sb_finance_charge_line,sb.finance.charge.line,model_sb_finance_charge_line,account.group_account_invoice,1,1,1,1
+access_sb_bank_rec,sb.bank.rec,model_sb_bank_rec,account.group_account_invoice,1,1,1,1
+access_sb_bank_rec_line,sb.bank.rec.line,model_sb_bank_rec_line,account.group_account_invoice,1,1,1,1
+access_sb_bank_rec_stmt,sb.bank.rec.stmt,model_sb_bank_rec_stmt,account.group_account_invoice,1,1,1,1
+access_sb_bank_rec_auditor,sb.bank.rec auditor,model_sb_bank_rec,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_bank_rec_line_auditor,sb.bank.rec.line auditor,model_sb_bank_rec_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_bank_rec_stmt_auditor,sb.bank.rec.stmt auditor,model_sb_bank_rec_stmt,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_ifrs_line_auditor,sb.ifrs.line auditor,model_sb_ifrs_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_period_wizard_auditor,sb.period.wizard auditor,model_sb_period_wizard,sonador_books.group_sb_auditor,1,1,1,1
+access_sb_period_wizard_line_auditor,sb.period.wizard.line auditor,model_sb_period_wizard_line,sonador_books.group_sb_auditor,1,1,1,1
+access_sb_report_view_auditor,sb.report.view auditor,model_sb_report_view,sonador_books.group_sb_auditor,1,1,1,1
+access_sb_voucher_auditor,sb.voucher auditor,model_sb_voucher,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_voucher_apply_auditor,sb.voucher.apply auditor,model_sb_voucher_apply,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_voucher_cash_auditor,sb.voucher.cash auditor,model_sb_voucher_cash,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_voucher_line_auditor,sb.voucher.line auditor,model_sb_voucher_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_voucher_purpose_auditor,sb.voucher.purpose auditor,model_sb_voucher_purpose,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_report_pack_auditor,sb.report.pack auditor,model_sb_report_pack,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_report_pack_accountant,sb.report.pack accountant,model_sb_report_pack,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_report_pack_line_auditor,sb.report.pack.line auditor,model_sb_report_pack_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_report_pack_line_accountant,sb.report.pack.line accountant,model_sb_report_pack_line,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_bank_deposit,sb.bank.deposit,model_sb_bank_deposit,sonador_books.group_sb_clerk,1,1,1,1
+access_sb_bank_deposit_line,sb.bank.deposit.line,model_sb_bank_deposit_line,sonador_books.group_sb_clerk,1,1,1,1
+access_sb_employee_auditor,sb.employee auditor,model_sb_employee,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_employee_accountant,sb.employee accountant,model_sb_employee,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_payroll_run_auditor,sb.payroll.run auditor,model_sb_payroll_run,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_payroll_run_accountant,sb.payroll.run accountant,model_sb_payroll_run,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_payroll_line_auditor,sb.payroll.line auditor,model_sb_payroll_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_payroll_line_accountant,sb.payroll.line accountant,model_sb_payroll_line,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_payroll_bracket_auditor,sb.payroll.bracket auditor,model_sb_payroll_bracket,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_payroll_bracket_accountant,sb.payroll.bracket accountant,model_sb_payroll_bracket,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_doc_series_auditor,sb.doc.series auditor,model_sb_doc_series,group_sb_auditor,1,0,0,0
+access_sb_doc_series_manager,sb.doc.series manager,model_sb_doc_series,group_sb_accountant,1,1,1,0
+access_sb_doc_series_user,sb.doc.series user,model_sb_doc_series,base.group_user,1,0,0,0
+access_sb_doc_series_counter_user,sb.doc.series.counter user,model_sb_doc_series_counter,base.group_user,1,0,0,0
+access_sb_doc_series_counter_mgr,sb.doc.series.counter manager,model_sb_doc_series_counter,group_sb_manager,1,1,0,0
+access_sb_doc_series_spoil_user,sb.doc.series.spoil user,model_sb_doc_series_spoil,base.group_user,1,0,0,0
+access_sb_doc_series_spoil_acc,sb.doc.series.spoil accountant,model_sb_doc_series_spoil,group_sb_accountant,1,0,1,0
+access_sb_employee_hr,sb.employee hr,model_sb_employee,group_sb_hr,1,1,1,0
+access_sb_lock_log_user,sb.lock.log user,model_sb_lock_log,sonador_books.group_sb_auditor,1,0,0,0
+access_sb_match_old_acc,sb.match.old accountant,model_sb_match_old,group_sb_accountant,1,1,1,1
+access_sb_match_old_line_acc,sb.match.old.line accountant,model_sb_match_old_line,group_sb_accountant,1,1,1,1
+access_sb_match_old_aud,sb.match.old auditor,model_sb_match_old,group_sb_auditor,1,0,0,0
+access_sb_match_old_line_aud,sb.match.old.line auditor,model_sb_match_old_line,group_sb_auditor,1,0,0,0

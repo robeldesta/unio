@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_delivery_batch_form_fleet" model="ir.ui.view">
+        <field name="name">sb.delivery.batch.form.fleet</field>
+        <field name="model">sb.delivery.batch</field>
+        <field name="inherit_id" ref="sonador_sales.sb_delivery_batch_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vehicle']" position="before">
+                <field name="vehicle_id" readonly="state == 'done'" invisible="delivery_method in ('pickup', 'rented')" required="sb_strict and delivery_method == 'company'"
+                       options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_delivery_batch_list_fleet" model="ir.ui.view">
+        <field name="name">sb.delivery.batch.list.fleet</field>
+        <field name="model">sb.delivery.batch</field>
+        <field name="inherit_id" ref="sonador_sales.sb_delivery_batch_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vehicle']" position="before">
+                <field name="vehicle_id" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='vehicle']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_delivery_order_form_fleet" model="ir.ui.view">
+        <field name="name">sb.delivery.order.form.fleet</field>
+        <field name="model">sb.delivery.order</field>
+        <field name="inherit_id" ref="sonador_sales.sb_delivery_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='dispatch_ref']" position="before">
+                <field name="vehicle_id" options="{'no_create': True}"/>
+                <field name="driver_name" invisible="not vehicle_id"/>
+            </xpath>
+            <xpath expr="//field[@name='batch_ids']/list/field[@name='vehicle']" position="before">
+                <field name="vehicle_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

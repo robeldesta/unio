@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Unio</title><link rel="icon" href="assets/unio_b.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=15"></head><body>
+<header class="nav"><div class="wrap"><a class="brand" href="./"><svg width="34" height="34" aria-hidden="true" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"><defs><mask id="k250" maskUnits="userSpaceOnUse" x="0" y="0" width="50" height="50"><circle cx="19" cy="25" r="14" fill="#fff"/></mask></defs><circle cx="19" cy="25" r="14" fill="#2D6BFF"/><circle cx="31" cy="25" r="14" fill="#1FD1B5"/><g mask="url(#k250)"><circle cx="31" cy="25" r="14" fill="#1B3FB8"/></g></svg> unio</a></div></header>
+<main class="wrap"><div class="signup"><h2>Sign in</h2><p style="margin-top:8px">Enter your company's web address.</p>
+<form id="go" class="signin"><label>Web address<span class="addr"><input name="sub" required><span class="domain"></span></span></label><button class="btn btn-primary" type="submit">Continue</button></form></div></main>
+<script>
+(function(){var L=/localhost$/.test(location.hostname),D=L?'unio.localhost:8569':'unio.et';document.querySelector('.domain').textContent='.'+D;
+document.getElementById('go').addEventListener('submit',function(e){e.preventDefault();var s=this.elements.sub.value.toLowerCase().replace(/[^a-z0-9]/g,'');if(s)location.href=(L?'http://':'https://')+s+'.'+D+'/web/login';});})();
+</script></body></html>

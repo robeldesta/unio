@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- the appraisal form Eco Green used in Odoo 18: staff and managerial weights, each adding to 100 -->
+    <record id="template_standard" model="sb.perf.template">
+        <field name="name">Standard appraisal (staff and managers)</field>
+    </record>
+    <record id="crit_knowhow" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">1</field>
+        <field name="name">Job knowledge and know-how</field><field name="weight">25</field><field name="applies">all</field></record>
+    <record id="crit_attendance" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">2</field>
+        <field name="name">Attendance and punctuality</field><field name="weight">5</field><field name="applies">all</field></record>
+    <record id="crit_safety" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">3</field>
+        <field name="name">Safety and confidentiality</field><field name="weight">5</field><field name="applies">all</field></record>
+    <record id="crit_quantity" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">4</field>
+        <field name="name">Productivity (quantity of work)</field><field name="weight">25</field><field name="applies">staff</field></record>
+    <record id="crit_quality" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">5</field>
+        <field name="name">Quality of work</field><field name="weight">30</field><field name="applies">staff</field></record>
+    <record id="crit_interpersonal" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">6</field>
+        <field name="name">Cooperation and interpersonal relations</field><field name="weight">10</field><field name="applies">staff</field></record>
+    <record id="crit_prodqual" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">7</field>
+        <field name="name">Productivity and quality (team results)</field><field name="weight">25</field><field name="applies">manager</field></record>
+    <record id="crit_attitude" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">8</field>
+        <field name="name">Cooperation and attitude</field><field name="weight">5</field><field name="applies">manager</field></record>
+    <record id="crit_initiative" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">9</field>
+        <field name="name">Initiative and creativity</field><field name="weight">5</field><field name="applies">manager</field></record>
+    <record id="crit_supervision" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">10</field>
+        <field name="name">Supervisory capability</field><field name="weight">5</field><field name="applies">manager</field></record>
+    <record id="crit_communication" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">11</field>
+        <field name="name">Communication</field><field name="weight">5</field><field name="applies">manager</field></record>
+    <record id="crit_planning" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">12</field>
+        <field name="name">Planning and organising</field><field name="weight">5</field><field name="applies">manager</field></record>
+    <record id="crit_adaptability" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">13</field>
+        <field name="name">Adaptability</field><field name="weight">5</field><field name="applies">manager</field></record>
+    <record id="crit_cost" model="sb.perf.criterion"><field name="template_id" ref="template_standard"/><field name="sequence">14</field>
+        <field name="name">Cost effectiveness</field><field name="weight">10</field><field name="applies">manager</field></record>
+</odoo>

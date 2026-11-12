@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_budget_user,sb_budget,model_sb_budget,base.group_user,1,0,0,0
+access_sb_budget_acc,sb_budget accountant,model_sb_budget,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_budget_line_user,sb_budget_line,model_sb_budget_line,base.group_user,1,0,0,0
+access_sb_budget_line_acc,sb_budget_line accountant,model_sb_budget_line,sonador_books.group_sb_accountant,1,1,1,1

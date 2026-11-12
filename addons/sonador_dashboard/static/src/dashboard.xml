@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="sonador_dashboard.App">
+<div class="o_sb_dash o_action">
+  <div class="o_sb_page" t-if="state.d">
+    <t t-set="d" t-value="state.d"/>
+
+    <!-- hero: who, when, the briefing; ask beside it -->
+    <section class="o_sb_hero">
+      <div class="o_sb_hero_main">
+        <div class="o_sb_hero_who">
+          <img class="o_sb_hero_av" t-att-src="d.avatar" alt=""/>
+          <div>
+            <div class="o_sb_eyebrow">
+              <t t-if="d.today_ec"><t t-esc="d.today_ec"/> · </t><t t-esc="d.today_label"/>
+            </div>
+            <div class="o_sb_role" t-if="d.role" t-esc="d.role"/>
+          </div>
+        </div>
+        <h1 t-esc="greeting"/>
+        <div class="o_sb_brief">
+          <p t-foreach="d.brief.paragraphs" t-as="p" t-key="p_index" t-out="briefHtml(p)"/>
+        </div>
+        <div class="o_sb_hero_foot">
+          <span class="o_sb_src">
+            <i class="fa fa-magic me-1" t-if="d.brief.source === 'ai' or state.rewriting"/>
+            <t t-if="state.rewriting">Unio AI is writing your briefing…</t>
+            <t t-elif="d.brief.source === 'ai'">Written by Unio AI from your records</t>
+            <t t-else="">From your records</t>
+          </span>
+          <button t-if="d.ai and !state.rewriting" class="o_sb_link_light" t-on-click="rewrite"><i class="fa fa-refresh me-1"/>Rewrite</button>
+          <span class="o_sb_src o_sb_push" t-if="builtAt">Figures as of <t t-esc="builtAt"/></span>
+          <button class="o_sb_link_light" t-on-click="refresh" t-att-disabled="state.refreshing">
+            <i t-attf-class="fa fa-repeat me-1 {{ state.refreshing ? 'fa-spin' : '' }}"/>Refresh</button>
+        </div>
+      </div>
+
+      <div class="o_sb_ask">
+        <div class="o_sb_ask_head"><i class="fa fa-comments-o"/> Ask about your area</div>
+        <t t-if="d.ai">
+          <div class="o_sb_ask_box">
+            <input placeholder="Who owes us the most?" t-model="state.q" t-on-keydown="onAskKey" t-att-disabled="state.asking"/>
+            <button t-on-click="() => this.ask()" t-att-disabled="state.asking" title="Ask"><i t-attf-class="fa {{ state.asking ? 'fa-circle-o-notch fa-spin' : 'fa-arrow-up' }}"/></button>
+          </div>
+          <div class="o_sb_chips" t-if="!state.answer and !state.asking">
+            <button t-foreach="d.questions" t-as="c" t-key="c_index" class="o_sb_chip" t-on-click="() => this.ask(c)" t-esc="c"/>
+          </div>
+          <div t-if="state.asking" class="o_sb_answer o_sb_thinking">Looking in your records…</div>
+          <div t-if="state.answer" class="o_sb_answer" t-att-class="{'o_err': state.answer.error}" t-on-click="onAnswerClick">
+            <div class="o_sb_q" t-esc="state.answer.q"/>
+            <div class="o_sb_answer_body" t-out="state.answer.html"/>
+            <div class="o_sb_answer_foot">
+              <a href="#" t-on-click.prevent="openChat">Continue in Unio AI <i class="fa fa-arrow-right"/></a>
+              <a href="#" t-on-click.prevent="newQuestion">New question</a>
+            </div>
+          </div>
+        </t>
+        <div t-else="" class="o_sb_answer">Unio AI is not switched on for this company.</div>
+      </div>
+    </section>
+
+    <!-- the numbers, as a strip -->
+    <section class="o_sb_kpis">
+      <button t-foreach="d.tiles" t-as="t" t-key="t.key" class="o_sb_kpi" t-on-click="() => this.openTile(t)">
+        <span class="o_sb_kpi_icon"><i t-attf-class="fa {{ t.icon or 'fa-circle-o' }}"/></span>
+        <span class="o_sb_kpi_label" t-esc="t.label"/>
+        <span class="o_sb_kpi_value"><t t-esc="t.value"/><small t-if="t.unit" t-esc="t.unit"/></span>
+        <span class="o_sb_kpi_sub" t-att-class="t.trend ? 'o_' + t.trend : ''">
+          <i t-if="t.trend === 'up'" class="fa fa-caret-up me-1"/><i t-if="t.trend === 'down'" class="fa fa-caret-down me-1"/>
+          <t t-esc="t.sub"/>
+        </span>
+      </button>
+    </section>
+
+    <div class="o_sb_grid">
+      <!-- needs you -->
+      <section class="o_sb_card o_sb_needs">
+        <header>
+          <h2>Needs you</h2>
+          <span class="o_sb_badge" t-if="needCount" t-esc="needCount"/>
+          <span class="o_sb_meta">Decide here or open the record</span>
+        </header>
+        <div t-if="!d.needs.approvals.length and !d.needs.queues.length" class="o_sb_empty">
+          <i class="fa fa-check-circle"/> Nothing waits for you right now.
+        </div>
+        <div t-foreach="d.needs.approvals" t-as="a" t-key="a.key" class="o_sb_item" t-att-class="{'o_done': state.done[a.key]}">
+          <img t-if="a.avatar" class="o_sb_item_av" t-att-src="a.avatar" alt=""/>
+          <span t-else="" class="o_sb_item_icon"><i t-attf-class="fa {{ a.icon or 'fa-inbox' }}"/></span>
+          <div class="o_sb_item_body">
+            <div class="o_sb_item_top">
+              <span class="o_sb_app" t-esc="a.app"/>
+              <span t-att-class="'o_sb_age ' + (a.days > 30 ? 'o_bad' : a.days > 7 ? 'o_warn' : '')">
+                <t t-if="a.days"><t t-esc="a.days"/> day<t t-if="a.days !== 1">s</t></t><t t-else="">today</t>
+              </span>
+            </div>
+            <a href="#" class="o_sb_item_title" t-on-click.prevent="() => this.openDoc(a)" t-esc="a.title"/>
+            <div class="o_sb_item_sub" t-if="a.details and a.details.length" t-esc="a.details[0]"/>
+            <div t-if="state.refusing === a.key" class="o_sb_refuse">
+              <input placeholder="Why it goes back (they will see this)" t-model="state.note"/>
+              <button class="o_sb_btn" t-on-click="() => this.decide(a, false)" t-att-disabled="!state.note.trim()">Send back</button>
+              <button class="o_sb_btn o_ghost" t-on-click="() => this.cancelRefuse()">Cancel</button>
+            </div>
+          </div>
+          <div class="o_sb_item_side">
+            <div class="o_sb_amount" t-if="a.amount"><t t-esc="money(a.amount)"/> <small t-esc="a.currency or ''"/></div>
+            <div class="o_sb_actions">
+              <t t-if="state.done[a.key]"><span class="o_sb_donetag"><i class="fa fa-check"/> <t t-esc="state.done[a.key]"/></span></t>
+              <t t-else="">
+                <button class="o_sb_btn o_primary" t-on-click="() => this.decide(a, true)" t-att-disabled="state.busy === a.key">
+                  <i t-attf-class="fa {{ d.sign ? 'fa-pencil' : 'fa-check' }}"/> <t t-esc="d.sign ? 'Sign and approve' : 'Approve'"/></button>
+                <button class="o_sb_btn" t-on-click="() => this.decide(a, false)" t-if="state.refusing !== a.key"><i class="fa fa-reply"/> Send back</button>
+              </t>
+            </div>
+          </div>
+        </div>
+        <a href="#" t-if="d.needs.approvals_total > d.needs.approvals.length" class="o_sb_more" t-on-click.prevent="openMe">
+          <t t-esc="d.needs.approvals_total - d.needs.approvals.length"/> more waiting in Me <i class="fa fa-arrow-right"/>
+        </a>
+
+        <t t-if="d.needs.queues.length">
+          <h3 class="o_sb_sub">Work in your department</h3>
+          <button t-foreach="d.needs.queues" t-as="q" t-key="q.key" class="o_sb_queue" t-on-click="() => this.openList(q.model, q.domain, q.title)">
+            <span class="o_sb_queue_count" t-att-class="q.tone === 'bad' ? 'o_bad' : 'o_warn'" t-esc="q.count"/>
+            <span class="o_sb_queue_body">
+              <span class="o_sb_queue_title"><t t-esc="q.title"/> <span class="o_sb_app" t-esc="q.app"/></span>
+              <span class="o_sb_queue_rows"><t t-foreach="q.rows" t-as="r" t-key="r.id"><t t-if="r_index"> · </t><t t-esc="r.label"/></t></span>
+            </span>
+            <i class="fa fa-angle-right o_sb_chev"/>
+          </button>
+        </t>
+      </section>
+
+      <div class="o_sb_col">
+        <!-- what's off -->
+        <section class="o_sb_card" t-if="d.signals.length">
+          <header>
+            <h2>What's off</h2>
+            <span class="o_sb_meta">Found by the system</span>
+          </header>
+          <div t-foreach="d.signals" t-as="s" t-key="s.key" t-attf-class="o_sb_sig o_{{ s.level }} {{ state.open[s.key] ? 'o_open' : '' }}">
+            <span class="o_sb_sig_icon"><i t-attf-class="fa {{ s.icon or 'fa-exclamation' }}"/></span>
+            <div class="o_sb_sig_body">
+              <div class="o_sb_sig_top">
+                <span class="o_sb_sig_title" t-esc="s.title"/>
+                <span class="o_sb_level" t-esc="levelLabel(s.level)"/>
+              </div>
+              <div class="o_sb_sig_fig" t-esc="s.figure"/>
+              <div class="o_sb_why" t-if="state.open[s.key]">
+                <p><b>Why.</b> <t t-esc="s.why"/></p>
+                <p t-if="s.todo"><b>What to do.</b> <t t-esc="s.todo"/></p>
+              </div>
+              <div class="o_sb_sig_acts">
+                <button t-on-click="() => this.toggle(s.key)"><t t-if="state.open[s.key]">Hide</t><t t-else="">Why and what to do</t></button>
+                <button t-if="s.action or s.me" t-on-click="() => this.openSignal(s)">Show the records <i class="fa fa-arrow-right"/></button>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="o_sb_card o_sb_ok" t-else="">
+          <i class="fa fa-check-circle"/> Nothing looks wrong in your area today.
+        </section>
+
+        <!-- chart -->
+        <section class="o_sb_card" t-foreach="d.charts" t-as="c" t-key="c.key">
+          <header>
+            <h2 t-esc="c.title"/>
+            <span class="o_sb_meta"><t t-esc="c.unit"/><t t-if="c.partial_last"> · last bar: this month so far</t></span>
+          </header>
+          <svg class="o_sb_chart" viewBox="0 0 360 190" role="img" t-att-aria-label="c.title">
+            <t t-foreach="[0.25, 0.5, 0.75, 1]" t-as="g" t-key="g_index">
+              <line x1="0" x2="360" t-att-y1="164 - 140 * g" t-att-y2="164 - 140 * g" class="o_grid"/>
+            </t>
+            <line x1="0" x2="360" y1="164" y2="164" class="o_axis"/>
+            <t t-foreach="bars(c)" t-as="b" t-key="b_index">
+              <rect t-att-x="b.x" t-att-y="b.y" t-att-width="b.w" t-att-height="b.h" rx="5" t-att-class="b.partial ? 'o_bar o_partial' : (b.top ? 'o_bar o_top' : 'o_bar')"/>
+              <text t-att-x="b.cx" t-att-y="b.y - 6" text-anchor="middle" class="o_val" t-esc="b.value"/>
+              <text t-att-x="b.cx" y="182" text-anchor="middle" class="o_lab" t-esc="b.label"/>
+            </t>
+          </svg>
+        </section>
+        <div class="o_sb_hidden"><i class="fa fa-eye-slash me-1"/><t t-esc="d.hidden"/></div>
+      </div>
+    </div>
+  </div>
+  <div t-else="" class="o_sb_loading"><i class="fa fa-circle-o-notch fa-spin"/></div>
+</div>
+</t>
+</templates>

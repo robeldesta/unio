@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Filing deadlines as the law has them in October 2026. The accounting manager can change any of them
+     (Agenda > Configuration > Deadlines); an update of the module does not overwrite their changes. -->
+<odoo noupdate="1">
+    <!-- Ethiopia: Ethiopian months (Pagume with Nehase) -->
+    <record id="et_wht" model="agenda.rule"><field name="name">Withholding tax</field><field name="country_code">ET</field>
+        <field name="sequence">1</field><field name="due">days</field><field name="value">10</field>
+        <field name="note">Declare and pay what was withheld from suppliers last month</field></record>
+    <record id="et_paye" model="agenda.rule"><field name="name">Employment income tax</field><field name="country_code">ET</field>
+        <field name="sequence">2</field><field name="area">payroll</field><field name="due">days</field><field name="value">30</field>
+        <field name="note">Declare and pay the tax withheld from salaries</field></record>
+    <record id="et_pension" model="agenda.rule"><field name="name">Pension contribution</field><field name="country_code">ET</field>
+        <field name="sequence">3</field><field name="area">payroll</field><field name="due">days</field><field name="value">30</field>
+        <field name="note">Employee 7% and employer 11%</field></record>
+    <record id="et_vat" model="agenda.rule"><field name="name">VAT return</field><field name="country_code">ET</field>
+        <field name="sequence">4</field><field name="due">day</field><field name="value">0</field>
+        <field name="note">File and pay by the last day of the month</field></record>
+    <record id="et_profit" model="agenda.rule"><field name="name">Profit tax return</field><field name="country_code">ET</field>
+        <field name="sequence">9</field><field name="every">year</field><field name="due">fy</field><field name="value">4</field>
+        <field name="note">Annual return with the audited accounts</field></record>
+    <!-- Uganda -->
+    <record id="ug_paye" model="agenda.rule"><field name="name">PAYE</field><field name="country_code">UG</field>
+        <field name="sequence">1</field><field name="area">payroll</field><field name="due">day</field><field name="value">15</field>
+        <field name="note">File and pay on the URA portal</field></record>
+    <record id="ug_nssf" model="agenda.rule"><field name="name">NSSF</field><field name="country_code">UG</field>
+        <field name="sequence">2</field><field name="area">payroll</field><field name="due">day</field><field name="value">15</field>
+        <field name="note">Employee 5% and employer 10%</field></record>
+    <record id="ug_wht" model="agenda.rule"><field name="name">Withholding tax</field><field name="country_code">UG</field>
+        <field name="sequence">3</field><field name="due">day</field><field name="value">15</field>
+        <field name="note">Pay what was withheld from suppliers last month</field></record>
+    <record id="ug_vat" model="agenda.rule"><field name="name">VAT return</field><field name="country_code">UG</field>
+        <field name="sequence">4</field><field name="due">day</field><field name="value">15</field>
+        <field name="note">File and pay on the URA portal</field></record>
+    <record id="ug_income" model="agenda.rule"><field name="name">Income tax return</field><field name="country_code">UG</field>
+        <field name="sequence">9</field><field name="every">year</field><field name="due">fy</field><field name="value">6</field>
+        <field name="note">Final return, six months after the year ends</field></record>
+    <!-- Kenya -->
+    <record id="ke_paye" model="agenda.rule"><field name="name">PAYE, NSSF, SHIF and housing levy</field><field name="country_code">KE</field>
+        <field name="sequence">1</field><field name="area">payroll</field><field name="due">day</field><field name="value">9</field>
+        <field name="note">File and pay on iTax</field></record>
+    <record id="ke_vat" model="agenda.rule"><field name="name">VAT return</field><field name="country_code">KE</field>
+        <field name="sequence">2</field><field name="due">day</field><field name="value">20</field>
+        <field name="note">File on iTax. Withholding tax is due within 5 working days of each payment, so it is not a monthly date</field></record>
+    <record id="ke_income" model="agenda.rule"><field name="name">Income tax return</field><field name="country_code">KE</field>
+        <field name="sequence">9</field><field name="every">year</field><field name="due">fy</field><field name="value">6</field></record>
+</odoo>

@@ -1,0 +1,15 @@
+.o_sb_hist {
+    .o_sb_hist_fy { color: $sb-navy; }
+    .o_sb_hist_side { display: flex; flex-wrap: wrap; gap: 2rem; padding: 1rem 0; border-top: 1px solid $sb-line; }
+    .o_sb_hist_facts { flex: 0 0 17rem;
+        dl { display: grid; grid-template-columns: auto auto; gap: .3rem 1rem; margin: .5rem 0; font-size: .87rem; }
+        dt { color: $sb-muted; font-weight: 400; }
+        dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; } }
+    .o_sb_hist_kind { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: $sb-steel; font-weight: 700; }
+    .o_sb_hist_table { flex: 1 1 24rem; max-width: 36rem; border-collapse: collapse; font-size: .86rem;
+        th { background: $sb-navy; color: #fff; padding: .4rem .6rem; font-weight: 600; }
+        td { padding: .3rem .6rem; border-bottom: 1px solid $sb-line; }
+        tr.current td { background: rgba($sb-teal, .1); font-weight: 600; }
+        tfoot td { font-weight: 700; border-top: 2px solid $sb-navy; }
+        .num { text-align: right; font-variant-numeric: tabular-nums; } }
+}

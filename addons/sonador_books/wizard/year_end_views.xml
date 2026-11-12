@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_year_end_wizard_form" model="ir.ui.view">
+        <field name="name">sb.year.end.wizard.form</field>
+        <field name="model">sb.year.end.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Year-End Closing">
+                <header>
+                    <button name="action_close_year" type="object" string="Close the year" class="btn-primary" invisible="status == 'closed'"
+                            confirm="Close this fiscal year? Its income and expenses are moved to retained earnings and its periods are locked." confirm-label="Close the year"/>
+                    <button name="action_open_review" type="object" string="Open the accounting review"/>
+                    <button name="action_reopen_year" type="object" string="Reopen the year" invisible="status != 'closed'"
+                            confirm="Reopen this year? The closing entry is reversed and the periods are unlocked." confirm-label="Reopen the year" groups="account.group_account_manager"/>
+                    <field name="status" widget="statusbar" statusbar_visible="open,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1>Year-End Closing</h1></div>
+                    <p class="text-muted">Closes a fiscal year the way Peachtree does: the year's income and expenses are moved to retained
+                        earnings with one closing entry, every period of the year is locked and the next fiscal year is opened.
+                        Income statements leave the closing entry out, so the closed year still reads correctly. You can reopen
+                        the year later unless you lock it permanently.</p>
+                    <group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="year" readonly="status == 'closed'"/>
+                            <field name="period_label"/>
+                            <field name="retained_account_id" options="{'no_create': True}" readonly="status == 'closed'"/>
+                        </group>
+                        <group>
+                            <field name="profit"/>
+                            <field name="closing_voucher_id" invisible="not closing_voucher_id"/>
+                            <field name="hard_lock" invisible="status == 'closed'"/>
+                            <field name="reopen_reason" invisible="status != 'closed'" groups="account.group_account_manager"
+                                   placeholder="Why the year is reopened (required)"/>
+                        </group>
+                    </group>
+                    <separator string="Before you close: checklist"/>
+                    <field name="checklist" nolabel="1" readonly="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_year_end" model="ir.actions.act_window">
+        <field name="name">Year-End Closing</field>
+        <field name="res_model">sb.year.end.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

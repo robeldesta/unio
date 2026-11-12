@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_ctl_finding_company" model="ir.rule">
+        <field name="name">Controller findings: own companies</field>
+        <field name="model_id" ref="model_ctl_finding"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_ctl_run_company" model="ir.rule">
+        <field name="name">Controller runs: own companies</field>
+        <field name="model_id" ref="model_ctl_run"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

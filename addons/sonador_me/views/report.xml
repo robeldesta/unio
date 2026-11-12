@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Approval footer for any printout: t-call with doc set to the record. Lists the confirmations given on it,
+         each with the drawn signature, the text and version, the time and the start of its seal. -->
+    <template id="confirmation_footer">
+        <t t-set="sb_confs" t-value="doc.env['sb.confirmation'].last_for(doc._name, doc.id)"/>
+        <div t-if="sb_confs" style="margin-top: 18px; font-size: 10px; page-break-inside: avoid">
+            <div style="font-weight: bold; border-bottom: 1px solid #999; margin-bottom: 4px">Approvals confirmed and signed electronically</div>
+            <table style="width: 100%">
+                <tr t-foreach="sb_confs" t-as="c">
+                    <td style="width: 150px; vertical-align: middle"><img t-if="c.signature" t-att-src="image_data_uri(c.signature)" style="max-height: 40px; max-width: 140px"/></td>
+                    <td style="vertical-align: middle">
+                        <b t-esc="c.user_name"/> · <span t-esc="c.action"/><br/>
+                        <span t-esc="c.text_title"/> (version <span t-esc="c.text_version"/>) · <span t-field="c.date"/> · seal <span t-esc="(c.seal or '')[:16]"/>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </template>
+</odoo>

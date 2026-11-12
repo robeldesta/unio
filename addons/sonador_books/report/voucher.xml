@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Payment / receipt / journal / transfer / purchase vouchers, printed from the voucher (Print button) -->
+    <record id="action_report_voucher" model="ir.actions.report">
+        <field name="name">Voucher</field>
+        <field name="model">sb.voucher</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_books.report_voucher</field>
+        <field name="print_report_name">'%s %s' % ({'payment': 'Payment voucher', 'receipt': 'Receipt voucher', 'journal': 'Journal voucher', 'transfer': 'Transfer', 'bill': 'Bill', 'cash_purchase': 'Cash purchase'}.get(object.voucher_type, 'Voucher'), object.name)</field>
+    </record>
+    <template id="report_voucher">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="v">
+                <t t-call="web.external_layout">
+                    <t t-set="d" t-value="v._sb_print_data(internal=bool(internal))"/>
+                    <t t-set="th" t-value="'color:#fff; background:#1F2D36'"/>
+                    <div class="page" style="font-size: 12px; position: relative">
+                        <div t-if="d['internal']" style="position:absolute; top:78%; left:0; right:0; text-align:center; -webkit-transform:rotate(-20deg); transform:rotate(-20deg); font-size:40px; font-weight:bold; color:rgba(192,57,43,0.07); z-index:0">INTERNAL COPY — NOT A TAX INVOICE</div>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom: 2px solid #1F2D36; padding-bottom: 6px; margin-bottom: 12px">
+                            <div>
+                                <h3 style="margin:0; color:#1F2D36; text-transform:uppercase" t-esc="d['title']"/>
+                                <div t-if="d['not_tax_invoice'] and not d['internal']" style="color:#C0392B; font-weight:bold">NOT A TAX INVOICE</div>
+                                <div t-if="d['internal']" style="color:#C0392B; font-weight:bold; font-size:14px">INTERNAL COPY — NOT A TAX INVOICE</div>
+                            </div>
+                            <div style="text-align:right">
+                                <div style="font-size:16px; font-weight:bold">No. <span t-esc="d['number']"/></div>
+                                <div>Date <span t-esc="d['date'] and d['date'].strftime('%d %b %Y')"/></div>
+                                <div t-if="d['date_ec']" t-esc="d['date_ec']"/>
+                                <div t-if="d['mark']" style="color:#C0392B; font-weight:bold" t-esc="d['mark']"/>
+                            </div>
+                        </div>
+                        <table style="width:100%; margin-bottom: 12px">
+                            <tr>
+                                <td style="width:60%; vertical-align:top">
+                                    <t t-if="d['party']">
+                                        <div style="color:#888; font-size:10px; text-transform:uppercase; letter-spacing:1px" t-esc="d['party_label']"/>
+                                        <div style="font-weight:bold; font-size:13px" t-esc="d['party']"/>
+                                        <div t-if="d['party_tin']">TIN <span t-esc="d['party_tin']"/></div>
+                                    </t>
+                                    <div t-if="d['reference']" style="margin-top:4px"><b>Reference:</b> <span t-esc="d['reference']"/></div>
+                                    <div t-if="d['memo']"><b>Description:</b> <span t-esc="d['memo']"/></div>
+                                </td>
+                                <td t-if="d['amount'] is not None" style="width:40%; vertical-align:top; text-align:right">
+                                    <div style="color:#888; font-size:10px; text-transform:uppercase; letter-spacing:1px">Amount</div>
+                                    <div style="font-size:18px; font-weight:bold; border:1px solid #1F2D36; display:inline-block; padding:4px 10px">
+                                        <span t-esc="d['currency']"/> <span t-esc="d['amount']"/></div>
+                                </td>
+                            </tr>
+                        </table>
+                        <div t-if="d['words']" style="margin-bottom:10px; padding:5px 8px; background:#F3F5F7"><b>Amount in words:</b> <span t-esc="d['words']"/></div>
+
+                        <t t-if="d['bank_rows']">
+                            <div style="font-weight:bold; margin-top:6px">Bank / cash</div>
+                            <table class="table table-sm" style="font-size: 11px">
+                                <thead><tr><th t-att-style="th">Account</th><th t-att-style="th">Method</th><th t-att-style="th">Cheque / ref. no.</th>
+                                    <th t-att-style="th">Cheque date</th><th t-att-style="th">Drawn on</th><th t-att-style="th" class="text-end">Bank charges</th>
+                                    <th t-att-style="th" class="text-end">Amount</th></tr></thead>
+                                <tbody><tr t-foreach="d['bank_rows']" t-as="r">
+                                    <td t-esc="r['account']"/><td t-esc="r['method']"/><td t-esc="r['ref']"/><td t-esc="r['cheque_date']"/>
+                                    <td t-esc="r['bank']"/><td class="text-end" t-esc="r['charges']"/><td class="text-end" t-esc="r['amount']"/>
+                                </tr></tbody>
+                            </table>
+                        </t>
+
+                        <t t-if="d['applied']">
+                            <div style="font-weight:bold; margin-top:6px">Invoices and items settled</div>
+                            <table class="table table-sm" style="font-size: 11px">
+                                <thead><tr><th t-att-style="th">Document</th><th t-att-style="th">Type</th><th t-att-style="th">Date</th><th t-att-style="th">Their ref.</th>
+                                    <th t-att-style="th" class="text-end">Original</th><th t-att-style="th" class="text-end">Discount</th>
+                                    <th t-att-style="th" class="text-end">Applied</th></tr></thead>
+                                <tbody><tr t-foreach="d['applied']" t-as="a">
+                                    <td t-esc="a['doc']"/><td t-esc="a['kind']"/><td t-esc="a['date']"/><td t-esc="a['ref']"/>
+                                    <td class="text-end" t-esc="a['original']"/><td class="text-end" t-esc="a['discount']"/><td class="text-end" t-esc="a['applied']"/>
+                                </tr></tbody>
+                            </table>
+                        </t>
+
+                        <t t-if="d['lines'] and d['line_kind'] == 'gl'">
+                            <div style="font-weight:bold; margin-top:6px">Other items</div>
+                            <table class="table table-sm" style="font-size: 11px">
+                                <thead><tr><th t-att-style="th">GL account</th><th t-att-style="th">Description</th><th t-att-style="th">Partner</th>
+                                    <th t-att-style="th">VAT</th><th t-att-style="th" class="text-end">Amount</th></tr></thead>
+                                <tbody><tr t-foreach="d['lines']" t-as="l">
+                                    <td t-esc="l['account']"/><td t-esc="l['desc']"/><td t-esc="l['partner']"/><td t-esc="l['tax']"/><td class="text-end" t-esc="l['amount']"/>
+                                </tr></tbody>
+                            </table>
+                        </t>
+                        <t t-if="d['lines'] and d['line_kind'] == 'item'">
+                            <table class="table table-sm" style="font-size: 11px">
+                                <thead><tr><th t-att-style="th">Description</th><th t-att-style="th">GL account</th><th t-att-style="th" class="text-end">Qty</th>
+                                    <th t-att-style="th" class="text-end">Unit price</th><th t-att-style="th">VAT</th><th t-att-style="th" class="text-end">Amount</th></tr></thead>
+                                <tbody><tr t-foreach="d['lines']" t-as="l">
+                                    <td t-esc="l['desc']"/><td t-esc="l['account']"/><td class="text-end" t-esc="l['qty']"/><td class="text-end" t-esc="l['price']"/>
+                                    <td t-esc="l['tax']"/><td class="text-end" t-esc="l['amount']"/>
+                                </tr></tbody>
+                            </table>
+                        </t>
+
+                        <table t-if="d['summary']" style="width:45%; margin-left:55%; margin-bottom:10px">
+                            <tr t-foreach="d['summary']" t-as="s" t-att-style="'font-size:14px; font-weight:bold; border-top:2px solid #1F2D36' if s[2] else ''">
+                                <td t-esc="s[0]"/><td class="text-end" t-esc="s[1]"/>
+                            </tr>
+                        </table>
+
+                        <t t-if="d['gl']">
+                            <div style="font-weight:bold; margin-top:6px">GL distribution</div>
+                            <table class="table table-sm" style="font-size: 11px">
+                                <thead><tr><th t-att-style="th">Account</th><th t-att-style="th">Description</th><th t-att-style="th">Partner</th>
+                                    <th t-att-style="th" class="text-end">Debit</th><th t-att-style="th" class="text-end">Credit</th></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="d['gl']" t-as="g">
+                                        <td t-esc="g['account']"/><td t-esc="g['desc']"/><td t-esc="g['partner']"/>
+                                        <td class="text-end" t-esc="g['debit']"/><td class="text-end" t-esc="g['credit']"/>
+                                    </tr>
+                                    <tr style="font-weight:bold; border-top:2px solid #1F2D36"><td colspan="3">Total</td>
+                                        <td class="text-end" t-esc="d['gl_total'][0]"/><td class="text-end" t-esc="d['gl_total'][1]"/></tr>
+                                </tbody>
+                            </table>
+                        </t>
+                        <div t-if="d['gl_note']" style="color:#888" t-esc="d['gl_note']"/>
+
+                        <table style="width:100%; margin-top: 40px; font-size: 11px">
+                            <tr>
+                                <td t-foreach="d['signatures']" t-as="s" style="padding-right: 14px; vertical-align: top" t-att-width="str(100 // len(d['signatures'])) + '%'">
+                                    <div style="border-top: 1px solid #333; padding-top: 4px"><b t-esc="s"/></div>
+                                    <div style="color:#666"><t t-if="s == 'Prepared by'"><span t-esc="d['prepared_by']"/> · </t>Name / signature / date</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- sales invoices, cash sales and credit notes, for the file: never the customer's tax invoice -->
+    <record id="action_report_voucher_internal" model="ir.actions.report">
+        <field name="name">Internal copy</field>
+        <field name="model">sb.voucher</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_books.report_voucher_internal</field>
+        <field name="print_report_name">'Internal copy %s' % object.name</field>
+    </record>
+    <template id="report_voucher_internal">
+        <t t-call="sonador_books.report_voucher">
+            <t t-set="internal" t-value="True"/>
+        </t>
+    </template>
+</odoo>

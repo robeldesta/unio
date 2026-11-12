@@ -1,0 +1,634 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="sonador_studio.Studio">
+    <div class="o_sbs" t-att-class="{'o_sbs_busy': state.busy}">
+        <t t-if="state.screen === 'home'"><t t-call="sonador_studio.Home"/></t>
+        <t t-elif="state.screen === 'editor' and state.spec"><t t-call="sonador_studio.Editor"/></t>
+    </div>
+</t>
+
+<!-- ============================================================ start page -->
+<t t-name="sonador_studio.Home">
+    <div class="o_sbs_home">
+        <div class="o_sbs_hero">
+            <div>
+                <h1>Studio</h1>
+                <p>Build an app for any process, or change the screens of the apps you have. No code, and every change can be undone.</p>
+            </div>
+        </div>
+
+        <div class="o_sbs_describe">
+            <label class="o_sbs_eyebrow">Describe a process, get an app</label>
+            <textarea rows="3" t-model="state.describe"
+                placeholder="e.g. Track our delivery trucks' fuel fill-ups with the truck, driver, date, litres, price per litre and the station, and remind the fleet manager when a truck has not been filled for 7 days."/>
+            <div class="o_sbs_row">
+                <button class="btn btn-primary" t-on-click="draftApp" t-att-disabled="state.busy or state.describe.length &lt; 8">
+                    <i class="fa fa-magic me-1"/>Draft my app
+                </button>
+                <span class="text-muted small" t-if="!state.home.ai">Works offline too; with the assistant switched on (a key in Settings) the drafts get much smarter.</span>
+            </div>
+        </div>
+
+        <t t-if="state.draft"><t t-call="sonador_studio.Draft"/></t>
+        <t t-if="state.newApp"><t t-call="sonador_studio.NewApp"/></t>
+
+        <h2>Your apps</h2>
+        <div class="o_sbs_cards">
+            <div class="o_sbs_card o_sbs_card_new" t-on-click="() => this.startNewApp()">
+                <div class="o_sbs_plus"><i class="fa fa-plus"/></div>
+                <div class="o_sbs_card_name">New app</div>
+                <div class="text-muted small">Start from a blank app</div>
+            </div>
+            <t t-foreach="state.home.apps" t-as="app" t-key="app.id">
+                <div class="o_sbs_card" t-on-click="() => this.openApp(app)">
+                    <div class="o_sbs_icon" t-out="markup(app.svg)"/>
+                    <div class="o_sbs_card_name" t-esc="app.name"/>
+                    <div class="text-muted small"><t t-esc="app.models.map((m) => m.label).join(', ')"/></div>
+                    <button class="btn btn-link btn-sm o_sbs_card_del" t-on-click.stop="() => this.deleteApp(app)">
+                        <t t-if="state.confirmDelete === app.id">Delete it and all its records?</t>
+                        <i t-else="" class="fa fa-trash-o"/>
+                    </button>
+                </div>
+            </t>
+        </div>
+
+        <h2>Start from a template</h2>
+        <div class="o_sbs_cards">
+            <t t-foreach="state.home.templates" t-as="t" t-key="t.key">
+                <div class="o_sbs_card" t-on-click="() => this.startNewApp(t.key)">
+                    <div class="o_sbs_icon" t-out="markup(state.home.icon_svgs[t.icon].replace('#2D6BFF', t.color))"/>
+                    <div class="o_sbs_card_name" t-esc="t.name"/>
+                    <div class="text-muted small" t-esc="t.description"/>
+                </div>
+            </t>
+        </div>
+
+        <h2>Change an app you have</h2>
+        <div class="o_sbs_chips">
+            <t t-foreach="state.home.extendable" t-as="x" t-key="x.model">
+                <button class="btn o_sbs_chip" t-att-class="{'o_sbs_chip_on': x.changed}" t-on-click="() => this.open(x.model)">
+                    <t t-esc="x.label"/><i t-if="x.changed" class="fa fa-circle ms-1 small"/>
+                </button>
+            </t>
+        </div>
+    </div>
+</t>
+
+<t t-name="sonador_studio.NewApp">
+    <div class="o_sbs_panel">
+        <div class="o_sbs_panel_head">
+            <h3><t t-if="state.newApp.template">New app from a template</t><t t-else="">New app</t></h3>
+            <button class="btn btn-link" t-on-click="() => this.state.newApp = null"><i class="fa fa-times"/></button>
+        </div>
+        <div class="o_sbs_newapp">
+            <div class="o_sbs_icon o_sbs_icon_big" t-out="markup(state.home.icon_svgs[state.newApp.icon].replace('#2D6BFF', state.newApp.color))"/>
+            <div class="o_sbs_newapp_form">
+                <label>Name of the app</label>
+                <input class="form-control" t-model="state.newApp.name" placeholder="e.g. Fuel log"/>
+                <t t-if="!state.newApp.template">
+                    <label>What does it keep? (one of them)</label>
+                    <input class="form-control" t-model="state.newApp.record" placeholder="e.g. Fill-up"/>
+                </t>
+                <label>Icon</label>
+                <div class="o_sbs_iconpick">
+                    <t t-foreach="state.home.icons" t-as="ic" t-key="ic">
+                        <span t-att-class="{'on': state.newApp.icon === ic}" t-on-click="() => this.state.newApp.icon = ic"
+                              t-out="markup(state.home.icon_svgs[ic].replace('#2D6BFF', state.newApp.color))"/>
+                    </t>
+                </div>
+                <label>Colour</label>
+                <div class="o_sbs_colors">
+                    <t t-foreach="COLORS" t-as="c" t-key="c">
+                        <span t-att-style="'background:' + c" t-att-class="{'on': state.newApp.color === c}" t-on-click="() => this.state.newApp.color = c"/>
+                    </t>
+                </div>
+                <button class="btn btn-primary mt-3" t-on-click="createApp" t-att-disabled="state.busy or !state.newApp.name">Create the app</button>
+            </div>
+        </div>
+    </div>
+</t>
+
+<t t-name="sonador_studio.Draft">
+    <div class="o_sbs_panel">
+        <div class="o_sbs_panel_head">
+            <h3>Your draft <span class="badge text-bg-light ms-2" t-if="state.draft.template">from the <t t-esc="state.draft.name"/> template</span></h3>
+            <button class="btn btn-link" t-on-click="() => this.state.draft = null"><i class="fa fa-times"/></button>
+        </div>
+        <div class="o_sbs_newapp">
+            <div class="o_sbs_icon o_sbs_icon_big" t-out="markup(state.home.icon_svgs[state.draft.icon].replace('#2D6BFF', state.draft.color))"/>
+            <div class="o_sbs_newapp_form">
+                <label>Name of the app</label>
+                <input class="form-control" t-model="state.draft.name"/>
+                <t t-foreach="state.draft.models" t-as="spec" t-key="spec_index">
+                    <div class="o_sbs_draftmodel">
+                        <div class="o_sbs_draftmodel_head"><input class="form-control form-control-sm" t-model="spec.label"/>
+                            <span class="text-muted small"><t t-esc="spec.fields.length"/> fields</span></div>
+                        <div class="o_sbs_chips">
+                            <t t-foreach="spec.fields" t-as="f" t-key="f.name">
+                                <span class="o_sbs_fchip"><i t-attf-class="fa {{ TYPE_ICON[f.type] }} me-1"/><t t-esc="f.label"/>
+                                    <i class="fa fa-times ms-1" t-if="f.name !== 'x_name'" t-on-click="() => spec.fields.splice(f_index, 1)"/></span>
+                            </t>
+                        </div>
+                        <div t-if="spec.automations and spec.automations.length" class="small mt-2">
+                            <i class="fa fa-bolt me-1"/><t t-esc="spec.automations.map((a) => a.name).join(' · ')"/>
+                        </div>
+                    </div>
+                </t>
+                <div class="o_sbs_row mt-3">
+                    <button class="btn btn-primary" t-on-click="createDraft" t-att-disabled="state.busy">Create this app</button>
+                    <span class="text-muted small">You can change everything afterwards.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+
+<!-- ============================================================ editor -->
+<t t-name="sonador_studio.Editor">
+    <div class="o_sbs_editor">
+        <div class="o_sbs_top">
+            <button class="btn btn-link" t-on-click="back"><i class="fa fa-arrow-left me-1"/>Studio</button>
+            <span class="o_sbs_crumb">
+                <t t-if="state.m.app"><t t-esc="state.m.app"/> › </t><b t-esc="state.m.label"/>
+                <span class="text-muted small ms-2" t-if="!own">(an app's screen: Studio adds to it, the app stays as it is)</span>
+            </span>
+            <div class="o_sbs_models" t-if="own and appModels.length">
+                <t t-foreach="appModels" t-as="am" t-key="am.model">
+                    <button class="btn btn-sm" t-att-class="am.model === state.m.model ? 'btn-dark' : 'btn-light'" t-on-click="() => this.open(am.model)" t-esc="am.label"/>
+                </t>
+                <input class="form-control form-control-sm o_sbs_addmodel" placeholder="+ another kind of record" t-model="state.newModel" t-on-keydown="(ev) => ev.key === 'Enter' and this.addModel()"/>
+            </div>
+            <div class="o_sbs_actions">
+                <span class="o_sbs_unsaved" t-if="state.dirty.length"><t t-esc="state.dirty.length"/> unsaved change(s)</span>
+                <button class="btn btn-light" t-if="state.dirty.length" t-on-click="discard">Discard</button>
+                <button class="btn btn-primary" t-att-disabled="!state.dirty.length or state.busy" t-on-click="save"><i class="fa fa-check me-1"/>Save</button>
+                <button class="btn btn-light" t-att-disabled="state.dirty.length or state.m.versions.length &lt; 2" t-on-click="undo" title="Undo the last saved change"><i class="fa fa-undo"/></button>
+                <button class="btn btn-light" t-on-click="openRecords" t-att-disabled="state.dirty.length" title="Open the records"><i class="fa fa-external-link me-1"/>Open</button>
+                <button class="btn btn-light" t-if="own and state.m.app_id" t-on-click="exportApp" title="Download the app as a module"><i class="fa fa-download"/></button>
+            </div>
+        </div>
+        <div class="o_sbs_body">
+            <div class="o_sbs_side">
+                <div class="o_sbs_tabs">
+                    <button t-att-class="{'on': state.panel === 'add'}" t-on-click="() => this.state.panel = 'add'">Add</button>
+                    <button t-att-class="{'on': state.panel === 'field'}" t-on-click="() => this.state.panel = 'field'">Field</button>
+                    <button t-att-class="{'on': state.panel === 'screen'}" t-on-click="() => this.state.panel = 'screen'" t-if="own">Screens</button>
+                    <button t-att-class="{'on': state.panel === 'auto'}" t-on-click="() => this.state.panel = 'auto'"><i class="fa fa-bolt"/></button>
+                    <button t-att-class="{'on': state.panel === 'history'}" t-on-click="() => this.state.panel = 'history'"><i class="fa fa-history"/></button>
+                </div>
+                <t t-if="state.panel === 'add'"><t t-call="sonador_studio.Palette"/></t>
+                <t t-elif="state.panel === 'field'"><t t-call="sonador_studio.FieldProps"/></t>
+                <t t-elif="state.panel === 'screen'"><t t-call="sonador_studio.ScreenProps"/></t>
+                <t t-elif="state.panel === 'auto'"><t t-call="sonador_studio.Automations"/></t>
+                <t t-elif="state.panel === 'history'"><t t-call="sonador_studio.History"/></t>
+            </div>
+            <div class="o_sbs_canvas">
+                <div class="o_sbs_viewtabs" t-if="own">
+                    <t t-foreach="[['form', 'Form'], ['list', 'List'], ['kanban', 'Board']]" t-as="v" t-key="v[0]">
+                        <button t-att-class="{'on': state.view === v[0]}" t-on-click="() => this.state.view = v[0]" t-esc="v[1]"/>
+                    </t>
+                    <span class="text-muted small ms-auto"><t t-esc="state.m.count"/> record(s)</span>
+                </div>
+                <t t-if="!own"><t t-call="sonador_studio.ExtendCanvas"/></t>
+                <t t-elif="state.view === 'form'"><t t-call="sonador_studio.FormCanvas"/></t>
+                <t t-elif="state.view === 'list'"><t t-call="sonador_studio.ListCanvas"/></t>
+                <t t-else=""><t t-call="sonador_studio.KanbanCanvas"/></t>
+            </div>
+        </div>
+    </div>
+</t>
+
+<t t-name="sonador_studio.Palette">
+    <p class="o_sbs_hint">Drag a field onto the form, or click to add it at the end.</p>
+    <div class="o_sbs_palette">
+        <t t-foreach="state.m.types" t-as="ty" t-key="ty.key">
+            <div class="o_sbs_pal" draggable="true" t-on-dragstart="() => this.dragStart({type: ty.key})" t-on-click="() => this.addField(ty.key)">
+                <i t-attf-class="fa {{ TYPE_ICON[ty.key] }}"/><span t-esc="ty.label"/>
+            </div>
+        </t>
+    </div>
+</t>
+
+<t t-name="sonador_studio.FieldProps">
+    <t t-set="f" t-value="state.sel and field(state.sel)"/>
+    <p t-if="!f" class="o_sbs_hint">Click a field on the form to change it.</p>
+    <div t-else="" class="o_sbs_props">
+        <div class="o_sbs_proptype"><i t-attf-class="fa {{ TYPE_ICON[f.type] }} me-1"/><t t-esc="typeLabel(f.type)"/></div>
+        <label>Label</label>
+        <input class="form-control" t-att-value="f.label" t-on-input="onLabel"/>
+        <label>Help text <span class="text-muted">(shown on hover)</span></label>
+        <input class="form-control" t-att-value="f.help or ''" t-on-change="(ev) => this.setProp('help', ev.target.value)"/>
+        <div class="form-check mt-2" t-if="!['formula', 'checkbox', 'lines'].includes(f.type)">
+            <input class="form-check-input" type="checkbox" t-att-id="'req_' + f.name" t-att-checked="f.required" t-on-change="(ev) => this.setProp('required', ev.target.checked)"/>
+            <label class="form-check-label" t-att-for="'req_' + f.name">Must be filled in</label>
+        </div>
+        <t t-if="['link', 'tags'].includes(f.type)">
+            <label>Links to</label>
+            <select class="form-select" t-on-change="(ev) => this.setProp('relation', ev.target.value)" t-att-disabled="state.saved.has(f.name)">
+                <t t-foreach="state.m.linkable" t-as="l" t-key="l.model"><option t-att-value="l.model" t-att-selected="l.model === f.relation" t-esc="l.label"/></t>
+            </select>
+        </t>
+        <t t-if="['choice', 'stage'].includes(f.type)">
+            <label><t t-if="f.type === 'stage'">Stages, in order</t><t t-else="">Choices</t></label>
+            <div class="o_sbs_options">
+                <t t-foreach="f.options" t-as="o" t-key="o.value">
+                    <div class="o_sbs_option">
+                        <input class="form-control form-control-sm" t-att-value="o.label" t-on-change="(ev) => this.setOption(f, o, ev.target.value)"/>
+                        <button class="btn btn-sm btn-light" t-on-click="() => this.moveOption(f, o_index, -1)"><i class="fa fa-arrow-up"/></button>
+                        <button class="btn btn-sm btn-light" t-on-click="() => this.removeOption(f, o_index)" t-att-disabled="f.options.length &lt; 2"><i class="fa fa-times"/></button>
+                    </div>
+                </t>
+                <button class="btn btn-sm btn-link" t-on-click="() => this.addOption(f)">+ Add</button>
+            </div>
+            <div class="form-check" t-if="f.type === 'choice'">
+                <input class="form-check-input" type="checkbox" t-att-id="'rad_' + f.name" t-att-checked="f.widget === 'radio'" t-on-change="(ev) => this.setProp('widget', ev.target.checked ? 'radio' : null)"/>
+                <label class="form-check-label" t-att-for="'rad_' + f.name">Show all choices as buttons</label>
+            </div>
+        </t>
+        <t t-if="f.type === 'checkbox'">
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" t-att-id="'tog_' + f.name" t-att-checked="f.widget === 'toggle'" t-on-change="(ev) => this.setProp('widget', ev.target.checked ? 'toggle' : null)"/>
+                <label class="form-check-label" t-att-for="'tog_' + f.name">Show as a switch</label>
+            </div>
+        </t>
+        <t t-if="f.type === 'formula'">
+            <label>Formula</label>
+            <input class="form-control o_sbs_mono" t-att-value="f.formula" t-on-change="(ev) => this.setProp('formula', ev.target.value)" placeholder="e.g. x_qty * x_price"/>
+            <div class="o_sbs_formula_read" t-if="f.formula">= <t t-esc="formulaText(f.formula, state.spec.fields)"/></div>
+            <div class="o_sbs_hint">Click to insert, then type + − × ÷ between them:</div>
+            <div class="o_sbs_chips">
+                <t t-foreach="formulaChips(f)" t-as="c" t-key="c.code"><span class="o_sbs_fchip o_sbs_click" t-on-click="() => this.insertFormula(f, c.code)" t-esc="c.label"/></t>
+                <t t-foreach="['+', '-', '*', '/', '(', ')']" t-as="op" t-key="op"><span class="o_sbs_fchip o_sbs_click o_sbs_op" t-on-click="() => this.insertFormula(f, op)" t-esc="op"/></t>
+            </div>
+        </t>
+        <t t-if="f.type === 'lines'">
+            <label>Columns of the table</label>
+            <div class="o_sbs_options">
+                <t t-foreach="f.lines.fields" t-as="c" t-key="c_index">
+                    <div class="o_sbs_column">
+                        <div class="o_sbs_option">
+                            <i t-attf-class="fa {{ TYPE_ICON[c.type] }} text-muted"/>
+                            <input class="form-control form-control-sm" t-att-value="c.label" t-on-change="(ev) => this.setColumnLabel(f, c, ev.target.value)"/>
+                            <button class="btn btn-sm btn-light" t-if="c.name !== 'x_name'" t-on-click="() => this.removeColumn(f, c_index)"><i class="fa fa-times"/></button>
+                        </div>
+                        <t t-if="c.type === 'formula'">
+                            <input class="form-control form-control-sm o_sbs_mono" t-att-value="c.formula" placeholder="e.g. x_qty * x_price"
+                                   t-on-change="(ev) => { c.formula = ev.target.value; this.changed('changed ' + f.label); }"/>
+                            <div class="o_sbs_chips">
+                                <t t-foreach="numericOf(f.lines.fields).filter((x) => x !== c)" t-as="x" t-key="x.name">
+                                    <span class="o_sbs_fchip o_sbs_click" t-on-click="() => this.insertFormula(c, x.name)" t-esc="x.label"/>
+                                </t>
+                                <t t-foreach="['+', '-', '*', '/']" t-as="op" t-key="op"><span class="o_sbs_fchip o_sbs_click o_sbs_op" t-on-click="() => this.insertFormula(c, op)" t-esc="op"/></t>
+                            </div>
+                        </t>
+                        <t t-if="c.type === 'link'">
+                            <select class="form-select form-select-sm" t-on-change="(ev) => { c.relation = ev.target.value; this.changed('changed ' + f.label); }">
+                                <t t-foreach="state.m.linkable" t-as="l" t-key="l.model"><option t-att-value="l.model" t-att-selected="l.model === c.relation" t-esc="l.label"/></t>
+                            </select>
+                        </t>
+                    </div>
+                </t>
+                <div class="o_sbs_hint">Add a column:</div>
+                <div class="o_sbs_chips">
+                    <t t-foreach="['text', 'decimal', 'money', 'number', 'date', 'checkbox', 'link', 'formula']" t-as="ty" t-key="ty">
+                        <span class="o_sbs_fchip o_sbs_click" t-on-click="() => this.addColumn(f, ty)"><i t-attf-class="fa {{ TYPE_ICON[ty] }} me-1"/><t t-esc="typeLabel(ty)"/></span>
+                    </t>
+                </div>
+            </div>
+        </t>
+        <div class="o_sbs_techname">Technical name: <code t-esc="f.name"/></div>
+        <button class="btn btn-outline-danger btn-sm mt-3" t-if="f.name !== 'x_name'" t-on-click="() => this.removeField(f.name)">
+            <i class="fa fa-trash-o me-1"/>Remove this field
+        </button>
+        <div class="o_sbs_hint" t-if="state.saved.has(f.name) and f.name !== 'x_name'">Removing a saved field removes what was entered in it; Undo brings the field back.</div>
+    </div>
+</t>
+
+<t t-name="sonador_studio.ScreenProps">
+    <div class="o_sbs_props">
+        <label>Name of one record</label>
+        <input class="form-control" t-att-value="state.spec.label" t-on-change="(ev) => this.setSpec('label', ev.target.value)"/>
+        <label>Name in the menu</label>
+        <input class="form-control" t-att-value="state.spec.plural or ''" t-on-change="(ev) => this.setSpec('plural', ev.target.value)" t-att-placeholder="state.spec.label + 's'"/>
+        <label>Opens on</label>
+        <select class="form-select" t-on-change="(ev) => this.setSpec('default_view', ev.target.value)">
+            <option value="list" t-att-selected="!state.spec.default_view or state.spec.default_view === 'list'">The list</option>
+            <option value="kanban" t-att-selected="state.spec.default_view === 'kanban'">The board</option>
+            <option value="calendar" t-att-selected="state.spec.default_view === 'calendar'">The calendar</option>
+        </select>
+        <label>Stages shown at the top of the form</label>
+        <select class="form-select" t-on-change="(ev) => this.setForm('status', ev.target.value)">
+            <option value="">None</option>
+            <t t-foreach="fieldsOfType('stage', 'choice')" t-as="x" t-key="x.name"><option t-att-value="x.name" t-att-selected="state.spec.form.status === x.name" t-esc="x.label"/></t>
+        </select>
+        <label>Picture in the corner of the form</label>
+        <select class="form-select" t-on-change="(ev) => this.setForm('image', ev.target.value)">
+            <option value="">None</option>
+            <t t-foreach="fieldsOfType('image')" t-as="x" t-key="x.name"><option t-att-value="x.name" t-att-selected="state.spec.form.image === x.name" t-esc="x.label"/></t>
+        </select>
+        <label>Calendar by</label>
+        <select class="form-select" t-on-change="(ev) => this.setSpec('calendar', ev.target.value || null)">
+            <option value="">The first date</option>
+            <t t-foreach="fieldsOfType('date', 'datetime')" t-as="x" t-key="x.name"><option t-att-value="x.name" t-att-selected="state.spec.calendar === x.name" t-esc="x.label"/></t>
+        </select>
+        <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="sbs_chatter" t-att-checked="state.spec.chatter" t-on-change="(ev) => this.setSpec('chatter', ev.target.checked)" t-att-disabled="state.spec.chatter and state.saved.size"/>
+            <label class="form-check-label" for="sbs_chatter">Messages, history and activities on each record</label>
+        </div>
+    </div>
+</t>
+
+<!-- the form of a model made in Studio -->
+<t t-name="sonador_studio.FieldCard">
+    <t t-set="fd" t-value="field(fname)"/>
+    <div t-if="fd" class="o_sbs_field" t-att-class="{'sel': state.sel === fname, 'wide': ['lines', 'richtext'].includes(fd.type)}" draggable="true"
+         t-on-dragstart="() => this.dragStart({field: fname})" t-on-click.stop="() => this.select(fname)">
+        <span class="o_sbs_flabel"><t t-esc="fd.label"/><t t-if="fd.required"> *</t></span>
+        <span class="o_sbs_fvalue">
+            <t t-if="fd.type === 'lines'">
+                <table class="o_sbs_minitable"><tr><t t-foreach="fd.lines.fields" t-as="c" t-key="c.name"><th t-esc="c.label"/></t></tr>
+                    <tr><t t-foreach="fd.lines.fields" t-as="c" t-key="c.name"><td>…</td></t></tr></table>
+            </t>
+            <t t-elif="fd.type === 'formula'"><i class="fa fa-superscript me-1 text-muted"/><t t-esc="formulaText(fd.formula, state.spec.fields) or 'set the formula'"/></t>
+            <t t-else=""><i t-attf-class="fa {{ TYPE_ICON[fd.type] }} me-1 text-muted"/><t t-esc="sampleValue(fd)"/></t>
+        </span>
+    </div>
+</t>
+
+<t t-name="sonador_studio.Drop">
+    <div class="o_sbs_drop" t-att-class="{'over': state.over === dkey}" t-on-dragover="(ev) => this.over(dkey, ev)" t-on-dragleave="() => this.state.over = null"
+         t-on-drop="(ev) => this.drop(dtarget, ev)"/>
+</t>
+
+<t t-name="sonador_studio.FormCanvas">
+    <t t-set="form" t-value="state.spec.form"/>
+    <div class="o_sbs_form">
+        <div class="o_sbs_statusbar" t-if="form.status and field(form.status)" t-on-click="() => this.select(form.status)">
+            <t t-foreach="field(form.status).options" t-as="o" t-key="o.value"><span t-att-class="{'on': o_index === 0}" t-esc="o.label"/></t>
+        </div>
+        <div class="o_sbs_sheet">
+            <div class="o_sbs_avatar" t-if="form.image" t-on-click="() => this.select(form.image)"><i class="fa fa-picture-o"/></div>
+            <div class="o_sbs_title" t-on-click="() => this.select('x_name')">
+                <div class="text-muted small" t-esc="field('x_name').label"/>
+                <div class="o_sbs_title_value">e.g. <t t-esc="state.spec.label"/> 001</div>
+            </div>
+            <t t-foreach="form.sections" t-as="sec" t-key="sec_index">
+                <div class="o_sbs_section">
+                    <div class="o_sbs_section_head">
+                        <input class="o_sbs_inline" t-att-value="sec.label" placeholder="(section without a title)" t-on-change="(ev) => { sec.label = ev.target.value; this.changed('renamed a section'); }"/>
+                        <span class="o_sbs_section_tools">
+                            <t t-foreach="[1, 2, 3]" t-as="n" t-key="n">
+                                <button class="btn btn-sm" t-att-class="sec.columns.length === n ? 'btn-dark' : 'btn-light'" t-on-click="() => this.setColumns(sec_index, n)" t-esc="n + ' col'"/>
+                            </t>
+                            <button class="btn btn-sm btn-light" t-on-click="() => this.removeSection(sec_index)" title="Remove the section (its fields move)"><i class="fa fa-times"/></button>
+                        </span>
+                    </div>
+                    <div class="o_sbs_columns">
+                        <t t-foreach="sec.columns" t-as="col" t-key="col_index">
+                            <div class="o_sbs_col">
+                                <t t-foreach="col" t-as="fname" t-key="fname">
+                                    <t t-set="dkey" t-value="'s' + sec_index + '_' + col_index + '_' + fname_index"/>
+                                    <t t-set="dtarget" t-value="{section: sec_index, column: col_index, index: fname_index}"/>
+                                    <t t-call="sonador_studio.Drop"/>
+                                    <t t-call="sonador_studio.FieldCard"/>
+                                </t>
+                                <t t-set="dkey" t-value="'s' + sec_index + '_' + col_index + '_end'"/>
+                                <t t-set="dtarget" t-value="{section: sec_index, column: col_index, index: col.length}"/>
+                                <div class="o_sbs_drop o_sbs_drop_end" t-att-class="{'over': state.over === dkey}" t-on-dragover="(ev) => this.over(dkey, ev)"
+                                     t-on-dragleave="() => this.state.over = null" t-on-drop="(ev) => this.drop(dtarget, ev)">drop here</div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </t>
+            <button class="btn btn-sm btn-light mt-2" t-on-click="addSection">+ Section</button>
+            <div class="o_sbs_tabsbox">
+                <t t-foreach="form.tabs" t-as="tab" t-key="tab_index">
+                    <div class="o_sbs_tabcard">
+                        <div class="o_sbs_section_head">
+                            <input class="o_sbs_inline o_sbs_tabname" t-att-value="tab.label" t-on-change="(ev) => { tab.label = ev.target.value; this.changed('renamed a tab'); }"/>
+                            <button class="btn btn-sm btn-light" t-on-click="() => this.removeTab(tab_index)"><i class="fa fa-times"/></button>
+                        </div>
+                        <t t-foreach="tab.fields" t-as="fname" t-key="fname">
+                            <t t-set="dkey" t-value="'t' + tab_index + '_' + fname_index"/>
+                            <t t-set="dtarget" t-value="{tab: tab_index, index: fname_index}"/>
+                            <t t-call="sonador_studio.Drop"/>
+                            <t t-call="sonador_studio.FieldCard"/>
+                        </t>
+                        <t t-set="dkey" t-value="'t' + tab_index + '_end'"/>
+                        <t t-set="dtarget" t-value="{tab: tab_index, index: tab.fields.length}"/>
+                        <div class="o_sbs_drop o_sbs_drop_end" t-att-class="{'over': state.over === dkey}" t-on-dragover="(ev) => this.over(dkey, ev)"
+                             t-on-dragleave="() => this.state.over = null" t-on-drop="(ev) => this.drop(dtarget, ev)">drop here</div>
+                    </div>
+                </t>
+                <button class="btn btn-sm btn-light" t-on-click="addTab">+ Tab</button>
+            </div>
+        </div>
+        <div class="o_sbs_chatter" t-if="state.spec.chatter"><i class="fa fa-comments-o me-1"/>Messages, history and activities</div>
+    </div>
+</t>
+
+<t t-name="sonador_studio.ListCanvas">
+    <div class="o_sbs_props o_sbs_wide">
+        <p class="o_sbs_hint">Tick the columns of the list; arrows set their order.</p>
+        <div class="o_sbs_listcols">
+            <t t-foreach="state.spec.list" t-as="n" t-key="n">
+                <div class="o_sbs_option" t-if="field(n)">
+                    <input type="checkbox" class="form-check-input" checked="checked" t-on-change="() => this.toggleList(n)"/>
+                    <span class="flex-grow-1" t-esc="field(n).label"/>
+                    <button class="btn btn-sm btn-light" t-on-click="() => this.moveList(n_index, -1)"><i class="fa fa-arrow-up"/></button>
+                    <button class="btn btn-sm btn-light" t-on-click="() => this.moveList(n_index, 1)"><i class="fa fa-arrow-down"/></button>
+                </div>
+            </t>
+            <t t-foreach="listable().filter((f) => !state.spec.list.includes(f.name))" t-as="f" t-key="f.name">
+                <div class="o_sbs_option text-muted"><input type="checkbox" class="form-check-input" t-on-change="() => this.toggleList(f.name)"/><span t-esc="f.label"/></div>
+            </t>
+        </div>
+        <table class="o_sbs_preview_table">
+            <tr><t t-foreach="state.spec.list" t-as="n" t-key="n"><th t-if="field(n)" t-esc="field(n).label"/></t></tr>
+            <t t-foreach="[1, 2, 3]" t-as="r" t-key="r"><tr><t t-foreach="state.spec.list" t-as="n" t-key="n"><td t-if="field(n)" t-esc="sampleValue(field(n))"/></t></tr></t>
+        </table>
+    </div>
+</t>
+
+<t t-name="sonador_studio.KanbanCanvas">
+    <div class="o_sbs_props o_sbs_wide">
+        <p class="o_sbs_hint">The board shows a card per record<t t-if="state.spec.form.status">, in columns by <t t-esc="field(state.spec.form.status).label"/></t>. Tick what each card shows.</p>
+        <div class="o_sbs_listcols">
+            <t t-foreach="state.spec.fields.filter((f) => f.name !== 'x_name' and !['lines', 'richtext', 'file'].includes(f.type) and f.name !== state.spec.form.status)" t-as="f" t-key="f.name">
+                <div class="o_sbs_option"><input type="checkbox" class="form-check-input" t-att-checked="kanbanFields().includes(f.name)" t-on-change="() => this.toggleKanban(f.name)"/><span t-esc="f.label"/></div>
+            </t>
+        </div>
+        <div class="o_sbs_board">
+            <t t-foreach="boardColumns()" t-as="col" t-key="col.value">
+                <div class="o_sbs_boardcol"><div class="o_sbs_boardhead" t-esc="col.label"/>
+                    <div class="o_sbs_kcard"><b>e.g. <t t-esc="state.spec.label"/> 001</b>
+                        <t t-foreach="kanbanFields().filter((n) => field(n))" t-as="n" t-key="n"><div class="small"><span class="text-muted"><t t-esc="field(n).label"/>: </span><t t-esc="sampleValue(field(n))"/></div></t>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </div>
+</t>
+
+<!-- an app's own screen: the form as it is, with the new fields where they were dropped -->
+<t t-name="sonador_studio.ExtendCanvas">
+    <div class="o_sbs_form">
+        <p class="o_sbs_hint">Drag a new field between the fields of the form. Click the eye to hide a field, the label to rename it.</p>
+        <div class="o_sbs_sheet">
+            <t t-foreach="state.m.outline" t-as="sec" t-key="sec_index">
+                <div class="o_sbs_section">
+                    <div class="o_sbs_section_head"><b t-esc="sec.label"/></div>
+                    <t t-foreach="sec.fields.filter((x) => !x.studio)" t-as="ef" t-key="ef.name">
+                        <div class="o_sbs_existing" t-att-class="{'hidden': isHidden(ef.name)}">
+                            <input class="o_sbs_inline" t-att-value="(state.spec.relabel or {})[ef.name] or ef.label" t-on-change="(ev) => this.relabel(ef.name, ev.target.value === ef.label ? '' : ev.target.value)"/>
+                            <button class="btn btn-sm btn-link" t-on-click="() => this.toggleHide(ef.name)" t-att-title="isHidden(ef.name) ? 'Show it again' : 'Hide it'">
+                                <i t-att-class="isHidden(ef.name) ? 'fa fa-eye-slash' : 'fa fa-eye'"/>
+                            </button>
+                        </div>
+                        <t t-foreach="placedAfter(ef.name)" t-as="pf" t-key="pf.name">
+                            <t t-set="fname" t-value="pf.name"/>
+                            <t t-call="sonador_studio.FieldCard"/>
+                        </t>
+                        <t t-set="dkey" t-value="'a_' + ef.name"/>
+                        <t t-set="dtarget" t-value="{after: ef.name}"/>
+                        <t t-call="sonador_studio.Drop"/>
+                    </t>
+                </div>
+            </t>
+            <div class="o_sbs_section" t-if="unplacedExtra.length">
+                <div class="o_sbs_section_head"><b>More details</b> <span class="text-muted small">(new fields not dropped anywhere)</span></div>
+                <t t-foreach="unplacedExtra" t-as="pf" t-key="pf.name"><t t-set="fname" t-value="pf.name"/><t t-call="sonador_studio.FieldCard"/></t>
+            </div>
+        </div>
+        <div class="o_sbs_props o_sbs_wide mt-3" t-if="state.spec.fields.length">
+            <label>Also show in the list</label>
+            <div class="o_sbs_chips">
+                <t t-foreach="listable()" t-as="f" t-key="f.name">
+                    <span class="o_sbs_fchip o_sbs_click" t-att-class="{'on': state.spec.list.includes(f.name)}" t-on-click="() => this.toggleList(f.name)" t-esc="f.label"/>
+                </t>
+            </div>
+        </div>
+    </div>
+</t>
+
+<!-- ============================================================ automations -->
+<t t-name="sonador_studio.Automations">
+    <div class="o_sbs_props">
+        <t t-if="!state.auto">
+            <p class="o_sbs_hint">Let the system do the routine: remind people, fill in fields, post notes and send emails when something happens.</p>
+            <t t-foreach="state.m.automations" t-as="a" t-key="a.id">
+                <div class="o_sbs_auto">
+                    <div><b t-esc="a.name"/><span class="badge text-bg-light ms-1" t-if="!a.active">off</span></div>
+                    <div class="small text-muted" t-if="a.studio" t-esc="describeAutomation(a.spec)"/>
+                    <div class="small text-muted" t-else="">Made in Settings</div>
+                    <div>
+                        <button class="btn btn-sm btn-link" t-if="a.studio" t-on-click="() => this.editAutomation(a)">Change</button>
+                        <button class="btn btn-sm btn-link text-danger" t-on-click="() => this.removeAutomation(a)">Remove</button>
+                    </div>
+                </div>
+            </t>
+            <button class="btn btn-primary btn-sm mt-2" t-on-click="newAutomation" t-att-disabled="state.dirty.length"><i class="fa fa-bolt me-1"/>New automation</button>
+            <div class="o_sbs_hint" t-if="state.dirty.length">Save your changes first.</div>
+        </t>
+        <t t-else="">
+            <t t-set="au" t-value="state.auto.spec"/>
+            <label>Name</label>
+            <input class="form-control" t-model="au.name" placeholder="e.g. Tell the host"/>
+            <label>When</label>
+            <select class="form-select" t-model="au.trigger">
+                <option value="create">a record is created</option>
+                <option value="change">a field changes</option>
+                <option value="stage">a field becomes a value</option>
+                <option value="date">a date comes near or passes</option>
+            </select>
+            <t t-if="au.trigger !== 'create'">
+                <select class="form-select mt-1" t-model="au.field">
+                    <option value="">choose the field</option>
+                    <t t-foreach="allFields().filter((f) => au.trigger === 'date' ? ['date', 'datetime'].includes(f.type) : au.trigger === 'stage' ? ['stage', 'choice', 'selection'].includes(f.type) : true)" t-as="x" t-key="x.name">
+                        <option t-att-value="x.name" t-esc="x.label"/>
+                    </t>
+                </select>
+            </t>
+            <t t-if="au.trigger === 'stage' and autoField(au.field)">
+                <select class="form-select mt-1" t-model="au.value">
+                    <option value="">becomes…</option>
+                    <t t-foreach="autoField(au.field).options || []" t-as="o" t-key="o.value"><option t-att-value="o.value" t-esc="o.label"/></t>
+                </select>
+            </t>
+            <div class="o_sbs_row mt-1" t-if="au.trigger === 'date'">
+                <input type="number" class="form-control" style="width:80px" t-model.number="au.days"/>
+                <span>days</span>
+                <select class="form-select" t-model="au.when"><option value="before">before</option><option value="after">after</option></select>
+            </div>
+            <label>Then</label>
+            <t t-foreach="au.actions" t-as="st" t-key="st_index">
+                <div class="o_sbs_step">
+                    <div class="o_sbs_step_head"><b t-esc="stepLabel(st.do)"/>
+                        <button class="btn btn-sm btn-link" t-on-click="() => au.actions.splice(st_index, 1)"><i class="fa fa-times"/></button></div>
+                    <t t-if="st.do === 'set'">
+                        <select class="form-select form-select-sm" t-model="st.field">
+                            <option value="">field</option>
+                            <t t-foreach="state.spec.fields.filter((f) => !['lines', 'formula', 'tags', 'file', 'image'].includes(f.type))" t-as="x" t-key="x.name"><option t-att-value="x.name" t-esc="x.label"/></t>
+                        </select>
+                        <t t-set="sf" t-value="field(st.field)"/>
+                        <select t-if="sf and ['choice', 'stage'].includes(sf.type)" class="form-select form-select-sm mt-1" t-model="st.value">
+                            <t t-foreach="sf.options" t-as="o" t-key="o.value"><option t-att-value="o.value" t-esc="o.label"/></t>
+                        </select>
+                        <select t-elif="sf and ['date', 'datetime'].includes(sf.type)" class="form-select form-select-sm mt-1" t-model="st.value"><option value="today">to today / now</option></select>
+                        <select t-elif="sf and sf.type === 'checkbox'" class="form-select form-select-sm mt-1" t-model="st.value"><option value="1">ticked</option><option value="">not ticked</option></select>
+                        <input t-elif="sf" class="form-control form-control-sm mt-1" t-model="st.value" placeholder="value"/>
+                    </t>
+                    <t t-if="st.do === 'activity'">
+                        <select class="form-select form-select-sm" t-model="st.user_field">
+                            <option value="">me</option>
+                            <t t-foreach="userFields()" t-as="x" t-key="x.name"><option t-att-value="x.name" t-esc="x.label"/></t>
+                        </select>
+                        <input class="form-control form-control-sm mt-1" t-model="st.summary" placeholder="What to do, e.g. Call {x_name}"/>
+                        <div class="o_sbs_row mt-1"><span>due in</span><input type="number" class="form-control form-control-sm" style="width:70px" t-model.number="st.days"/><span>days</span></div>
+                    </t>
+                    <t t-if="st.do === 'note'">
+                        <textarea class="form-control form-control-sm" rows="2" t-model="st.body" placeholder="e.g. Arrived at {x_arrival}"/>
+                    </t>
+                    <t t-if="st.do === 'email'">
+                        <select class="form-select form-select-sm" t-model="st.to_field">
+                            <t t-foreach="contactFields()" t-as="x" t-key="x.name"><option t-att-value="x.name" t-esc="x.label"/></t>
+                        </select>
+                        <input class="form-control form-control-sm mt-1" t-model="st.subject" placeholder="Subject"/>
+                        <textarea class="form-control form-control-sm mt-1" rows="3" t-model="st.body" placeholder="Dear {x_customer}, …"/>
+                    </t>
+                </div>
+            </t>
+            <div class="o_sbs_chips mt-1">
+                <span class="o_sbs_fchip o_sbs_click" t-on-click="() => this.addStep('activity')"><i class="fa fa-bell-o me-1"/>Remind someone</span>
+                <span class="o_sbs_fchip o_sbs_click" t-on-click="() => this.addStep('set')"><i class="fa fa-pencil me-1"/>Set a field</span>
+                <span class="o_sbs_fchip o_sbs_click" t-on-click="() => this.addStep('note')"><i class="fa fa-sticky-note-o me-1"/>Post a note</span>
+                <span class="o_sbs_fchip o_sbs_click" t-on-click="() => this.addStep('email')" t-if="contactFields().length"><i class="fa fa-envelope-o me-1"/>Send an email</span>
+            </div>
+            <div class="o_sbs_hint">In texts, {x_field} puts in the record's value, e.g. {x_name}.</div>
+            <div class="o_sbs_row mt-2">
+                <button class="btn btn-primary btn-sm" t-on-click="saveAutomation" t-att-disabled="!au.actions.length">Save automation</button>
+                <button class="btn btn-light btn-sm" t-on-click="() => this.state.auto = null">Cancel</button>
+            </div>
+        </t>
+    </div>
+</t>
+
+<t t-name="sonador_studio.History">
+    <div class="o_sbs_props">
+        <p class="o_sbs_hint">Every saved change. Go back to any of them: fields removed since come back, fields added since go.</p>
+        <t t-foreach="state.m.versions" t-as="v" t-key="v.id">
+            <div class="o_sbs_version" t-att-class="{'current': v_index === 0}">
+                <div><b t-esc="v.summary"/></div>
+                <div class="small text-muted"><t t-esc="v.user"/> · <t t-esc="v.date.slice(0, 16)"/></div>
+                <span t-if="v_index === 0" class="badge text-bg-success">now</span>
+                <button t-else="" class="btn btn-sm" t-att-class="state.confirmRevert === v.id ? 'btn-danger' : 'btn-light'" t-on-click="() => this.revert(v)" t-att-disabled="state.dirty.length">
+                    <t t-if="state.confirmRevert === v.id">Click again to go back</t><t t-else="">Go back to this</t>
+                </button>
+            </div>
+        </t>
+    </div>
+</t>
+
+</templates>

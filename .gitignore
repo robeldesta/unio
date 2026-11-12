@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+._*
+node_modules/
+.next/
+.env
+CREDENTIALS*
+*.dump
+*.log
+backups/
+queue/
+cloud/config/odoo.conf*

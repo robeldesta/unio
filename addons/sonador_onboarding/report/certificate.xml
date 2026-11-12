@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="report_certificate" model="ir.actions.report">
+        <field name="name">Certificate of Service</field>
+        <field name="model">hr.employee</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_onboarding.certificate</field>
+        <field name="print_report_name">'Certificate of service - %s' % object.name</field>
+    </record>
+    <template id="certificate">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="e">
+                <t t-call="web.external_layout">
+                    <t t-set="hist" t-value="e.version_ids.sorted('date_version')"/>
+                    <div class="page" style="font-size: 12pt; line-height: 1.7;">
+                        <h3 style="text-align: center; margin: 1.5em 0 1em;">Certificate of Service</h3>
+                        <p style="text-align: right;">Date: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d %B %Y')"/></p>
+                        <p>To whom it may concern,</p>
+                        <p>This is to certify that <b t-esc="e.name"/><t t-if="e.sb_code"> (employee ID <span t-esc="e.sb_code"/>)</t>
+                            was employed by <b t-esc="e.company_id.name"/>
+                            from <b t-esc="(hist[:1].contract_date_start or hist[:1].date_version).strftime('%d %B %Y') if hist else ''"/>
+                            <t t-if="e.departure_date"> to <b t-esc="e.departure_date.strftime('%d %B %Y')"/></t><t t-else=""> to date</t>.</p>
+                        <p>During this period the employee performed the following work:</p>
+                        <table style="width: 100%; border-collapse: collapse; margin: .5em 0 1em;">
+                            <tr style="border-bottom: 1px solid #999;"><th style="text-align: left;">From</th><th style="text-align: left;">Position</th><th style="text-align: left;">Department</th></tr>
+                            <tr t-foreach="hist" t-as="v"><td t-esc="v.date_version.strftime('%d %b %Y')"/><td t-esc="v.job_title or v.job_id.name or ''"/><td t-esc="v.department_id.name or ''"/></tr>
+                        </table>
+                        <p>This certificate is issued free of charge at the request of the employee, in accordance with Article 12(8) of the
+                            Labour Proclamation No. 1156/2019.</p>
+                        <div style="margin-top: 4em;">
+                            <p>______________________________<br/>For <span t-esc="e.company_id.name"/><br/>Human Resources</p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

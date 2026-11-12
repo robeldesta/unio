@@ -1,0 +1,19 @@
+.o_ob {
+    .o_ob_cards { grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); }
+    .o_ob_card { background: #fff; border: 1px solid $sb-line; border-radius: 14px; padding: 1rem; cursor: pointer;
+        &:hover { border-color: $sb-steel; box-shadow: 0 6px 18px rgba(36, 55, 66, .08); } }
+    .o_ob_kind { font-size: .7rem; font-weight: 700; border-radius: 999px; padding: .12rem .55rem;
+        &.onboarding { background: rgba($sb-teal, .14); color: $sb-teal; } &.offboarding { background: rgba($sb-coral, .12); color: $sb-coral; } }
+    .o_ob_bar { height: .5rem; background: $sb-line; border-radius: 999px; overflow: hidden; margin: .6rem 0 .35rem;
+        div { height: 100%; background: $sb-teal; border-radius: 999px; } &.big { height: .7rem; } }
+    .o_ob_grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1rem;
+        @media (max-width: 900px) { grid-template-columns: 1fr; } }
+    .o_ob_task { display: flex; gap: .7rem; padding: .65rem 1rem; border-bottom: 1px solid $sb-line; align-items: flex-start;
+        &.done b { text-decoration: line-through; color: $sb-muted; } &.late:not(.done) { background: rgba($sb-coral, .05); } }
+    .o_ob_check { border: 0; background: none; font-size: 1.25rem; color: $sb-teal; padding: 0; line-height: 1; &:disabled { color: $sb-muted; } }
+    .o_ob_ref { font-size: .68rem; font-weight: 700; color: $sb-navy; background: rgba($sb-steel, .14); border-radius: 6px; padding: .05rem .4rem; margin-left: .4rem; }
+    .o_ob_pol { padding: .5rem 1rem; border-bottom: 1px solid $sb-line; }
+    .o_ob_off { display: inline-block; min-width: 2.6rem; font-weight: 700; color: $sb-steel; font-variant-numeric: tabular-nums; }
+    .o_ob_body { padding: .8rem 1rem; font-size: .9rem; }
+    .o_pp_formgrid.one { grid-template-columns: 1fr; }
+}

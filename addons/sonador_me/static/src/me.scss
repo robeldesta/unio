@@ -1,0 +1,127 @@
+.o_me { height: 100%; overflow: auto; background: #F5F7FA; color: #1B2240; padding: 22px 24px 40px;
+    h2 { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: #4A5168; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; }
+}
+.o_me_hello { display: flex; align-items: center; gap: 18px; background: #fff; border: 1px solid #E6E9F0; border-radius: 16px; padding: 18px 22px; margin-bottom: 16px; flex-wrap: wrap;
+    > img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+    h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+}
+.o_me_hello_text { flex: 1; min-width: 220px; }
+.o_me_sub { color: #6B7286; }
+.o_me_clock { text-align: right; }
+.o_me_clock_state { font-weight: 700; display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.o_me_dot { width: 10px; height: 10px; border-radius: 50%; background: #C3C8D4; &.in { background: #1F9A5A; box-shadow: 0 0 0 4px rgba(31, 154, 90, .15); } }
+.o_me_grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.o_me_wide { grid-column: 1 / -1; }
+.o_me_card { background: #fff; border: 1px solid #E6E9F0; border-radius: 16px; padding: 16px 18px; }
+.o_me_head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.o_me_count { background: #E8475B; color: #fff; border-radius: 10px; padding: 0 8px; font-size: .78rem; letter-spacing: 0; }
+.o_me_empty { color: #6B7286; margin: 0; .fa { color: #1F9A5A; } }
+.o_me_inbox { border-color: #CBD6F5; }
+.o_me_item { border: 1px solid #EEF0F5; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+.o_me_item_main { display: flex; gap: 12px; align-items: flex-start; }
+.o_me_av { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; }
+.o_me_av_icon { display: flex; align-items: center; justify-content: center; background: #EEF2FB; color: #2D6BFF; }
+.o_me_item_body { flex: 1; min-width: 0; cursor: pointer; }
+.o_me_app { display: inline-block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #2D6BFF; background: #EEF2FB; border-radius: 6px; padding: 1px 6px; margin-right: 4px; }
+.o_me_detail { color: #6B7286; font-size: .88rem; }
+.o_me_amount { font-weight: 700; white-space: nowrap; }
+.o_me_actions, .o_me_refuse { display: flex; gap: 6px; margin-top: 10px; padding-left: 52px; align-items: center; }
+.o_me_refuse input { max-width: 340px; }
+.o_me_todo { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid #F0F2F6; > .fa { color: #2D6BFF; width: 18px; } }
+.o_me_stats { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 10px;
+    div { display: flex; flex-direction: column; } b { font-size: 1.35rem; } span { font-size: .78rem; color: #6B7286; } }
+.o_me_row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid #F0F2F6; font-size: .92rem; }
+.o_me_link { color: inherit; &:hover { color: #2D6BFF; } }
+.o_me_pill { font-size: .75rem; border-radius: 10px; padding: 1px 8px; background: #EEF0F5; color: #4A5168; }
+.o_me_submitted { background: #FFF4DE; color: #8A5A00; }
+.o_me_approved { background: #E3F5EA; color: #1F7A4D; }
+.o_me_refused, .o_me_cancelled { background: #FDECEE; color: #B42318; }
+.o_me_form { display: grid; gap: 8px; background: #F8FAFD; border-radius: 10px; padding: 10px; margin-bottom: 10px; label { font-size: .8rem; color: #4A5168; } }
+.o_me_two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.o_me_week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 12px; }
+.o_me_day { text-align: center; border-radius: 10px; padding: 6px 2px; background: #F5F7FA; font-size: .75rem; color: #6B7286;
+    b { display: block; color: #1B2240; font-size: .82rem; }
+    &.present { background: #E3F5EA; } &.late { background: #FFF4DE; } &.absent { background: #FDECEE; }
+    &.today { box-shadow: inset 0 0 0 2px #2D6BFF; } }
+.o_me_goal { margin-bottom: 10px; font-size: .92rem; }
+.o_me_bar { height: 8px; background: #EEF0F5; border-radius: 4px; overflow: hidden; margin-top: 4px; i { display: block; height: 100%; background: #2D6BFF; } }
+.o_me_badge { position: absolute; top: 2px; right: 0; font-size: .62rem; }
+@media (max-width: 700px) { .o_me { padding: 12px; } .o_me_clock { text-align: left; } .o_me_actions, .o_me_refuse { padding-left: 0; flex-wrap: wrap; } }
+.o_me_todo { flex-wrap: wrap; }
+.o_me_policy { flex-basis: 100%; background: #F8FAFD; border-radius: 10px; padding: 10px 14px; font-size: .9rem; max-height: 320px; overflow: auto; }
+.o_me_tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.o_me_tab { border: 1px solid #E6E9F0; background: #fff; color: #4A5168; border-radius: 8px; padding: 4px 10px; font-size: .85rem;
+    &.active { background: #2D6BFF; border-color: #2D6BFF; color: #fff; } &:focus-visible { outline: 2px solid #2D6BFF; outline-offset: 2px; } }
+.o_me_chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.o_me_chip { border: 1px solid #E6E9F0; background: #F8FAFD; border-radius: 14px; padding: 2px 10px; font-size: .8rem; color: #4A5168;
+    b { margin-left: 2px; } &.active { background: #EEF2FB; border-color: #2D6BFF; color: #2D6BFF; } }
+.o_me_age { font-size: .72rem; color: #6B7286; margin-left: 6px; white-space: nowrap; &.late { color: #B42318; font-weight: 700; } }
+.o_me_click { cursor: pointer; &:hover { background: #F8FAFD; } }
+.o_me_h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: #6B7286; margin: 14px 0 4px; }
+.o_me_notice { padding: 8px 10px; border-radius: 10px; cursor: pointer; border-bottom: 1px solid #F0F2F6; &.unread { background: #F3F7FF; } }
+.o_me_pre { white-space: pre-line; }
+.o_me_confirm { margin-top: 10px; margin-left: 52px; border: 1px solid #CBD6F5; background: #F8FAFD; border-radius: 12px; padding: 12px 14px; }
+.o_me_confirm_dialog { margin: 0; border: 0; background: none; padding: 0; }
+.o_me_confirm_title { margin-bottom: 6px; }
+.o_me_confirm_text { white-space: pre-line; font-size: .9rem; max-height: 340px; overflow: auto; background: #fff; border: 1px solid #E6E9F0; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+.o_me_confirm_tick { display: flex; gap: 8px; align-items: center; font-weight: 600; margin-bottom: 8px; cursor: pointer; input { width: 18px; height: 18px; } }
+.o_me_confirm_field { margin-bottom: 8px; label { font-size: .85rem; } input { max-width: 320px; } }
+.o_me_confirm .o_me_actions { padding-left: 0; }
+@media (max-width: 700px) { .o_me_confirm { margin-left: 0; } }
+.o_me_sign { margin-bottom: 10px; .o_web_sign_signature_group .card-header { display: none; } canvas { touch-action: none; } }
+.o_me_sign_label { font-size: .85rem; font-weight: 600; display: block; }
+.o_me_confirm_reuse { display: flex; gap: 6px; align-items: center; font-size: .85rem; margin: 4px 0; }
+
+// pages: one bar under the greeting; each big card on its own page
+.o_me_pages { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 16px; border-bottom: 1px solid #E6E9F0; padding-bottom: 8px; }
+.o_me_page { border: 0; background: transparent; color: #4A5168; padding: 6px 12px; border-radius: 8px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+    &:hover { background: #F2F4F8; }
+    &.active { background: #1F3A5F; color: #fff; .o_me_count { background: #fff; color: #1F3A5F; } } }
+.o_me_waiting { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+
+// ---------------------------------------------------------------- phones (review 3 Nov 2026: approvals first)
+@media (max-width: 575.98px) {
+    .o_me { padding: 8px 10px; }
+    // greeting: one compact line, not a third of the screen
+    .o_me_hello { padding: 10px 12px; gap: 10px; margin-bottom: 10px; border-radius: 12px;
+        img { width: 40px; height: 40px; }
+        h1 { font-size: 1.1rem; margin: 0; }
+        .o_me_sub { display: none; } }
+    .o_me_hello_text { min-width: 0; flex: 1; }
+    // clock: its own row under the greeting, the button a full-width thumb target
+    .o_me_clock { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; text-align: left;
+        .btn { flex-basis: 100%; min-height: 44px; margin-top: 4px !important; } }
+    // page bar: one line that scrolls sideways, never two rows
+    .o_me_pages { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        margin-bottom: 10px; &::-webkit-scrollbar { display: none; } }
+    .o_me_page { white-space: nowrap; flex: 0 0 auto; padding: 8px 12px; min-height: 40px; }
+    // approvals: title on its own line, tabs full width below
+    .o_me_inbox .o_me_head { flex-direction: column; align-items: stretch; gap: 8px; }
+    .o_me_tabs { flex-wrap: nowrap; overflow-x: auto; }
+    .o_me_tab { flex: 1 0 auto; min-height: 40px; }
+    .o_me_chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; &::-webkit-scrollbar { display: none; } }
+    .o_me_chip { flex: 0 0 auto; }
+    // a card: the amount goes under the title, not beside it, so the title keeps the full width
+    .o_me_item { padding: 10px; }
+    .o_me_item_main { flex-wrap: wrap; gap: 8px; }
+    .o_me_av { width: 32px; height: 32px; }
+    .o_me_item_body { flex: 1 1 calc(100% - 44px); }
+    .o_me_amount { order: 3; flex-basis: 100%; padding-left: 40px; font-size: 1.05rem; }
+    // the decision buttons: big enough for a thumb, side by side
+    .o_me_actions { gap: 8px; padding-left: 0;
+        .btn { min-height: 44px; flex: 1 1 auto; justify-content: center; display: inline-flex; align-items: center; white-space: nowrap; }
+        .o_me_open { display: none; } }  // tapping the card opens it
+    // every field and button in Me: big enough for a thumb, 16px text so the phone does not zoom in
+    .o_me .form-control, .o_me .form-select { min-height: 44px; font-size: 16px; }
+    .o_me .btn-sm { min-height: 40px; }
+    .o_me_refuse { gap: 8px; .form-control { flex-basis: 100%; min-height: 44px; } .btn { min-height: 44px; } }
+    .o_me_confirm { padding: 10px; .o_sign_input, canvas { max-width: 100%; } }
+    // the text reads with the page: no box scrolling inside the scrolling page
+    .o_me_confirm_text { max-height: none; overflow: visible; }
+    // signing with a finger: a taller pad, a tick and fields big enough to hit
+    .o_me_confirm {
+        .o_me_confirm_tick input { width: 22px; height: 22px; }
+        .form-control { min-height: 44px; font-size: 16px; }  // 16px: the phone does not zoom in on focus
+        .o_me_actions .btn-link { flex: 0 0 auto; } }
+}

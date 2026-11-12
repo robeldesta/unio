@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- production clerks post FPRRs (and builds, which make an FPRR) from the Inventory app -->
+    <record id="sonador_inventory.group_sb_store_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('mrp.group_mrp_user'))]"/>
+    </record>
+    <menuitem id="menu_store_fprr" name="Finished Product Receipts (FPRR)" parent="sonador_inventory.menu_store_receive"
+              action="action_sb_fprr" sequence="5"/>
+</odoo>

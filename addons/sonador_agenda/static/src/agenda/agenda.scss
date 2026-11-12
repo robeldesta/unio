@@ -1,0 +1,59 @@
+.o_ag {
+    background: $sb-band;
+    color: $sb-ink;
+    .o_ag_inner { max-width: 60rem; margin: 0 auto; padding: 0 1rem; }
+    .o_ag_top { background: #fff; border-bottom: 1px solid $sb-line; padding: .9rem 0 .7rem; position: sticky; top: 0; z-index: 5; }
+    .o_ag_kicker { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: $sb-muted; font-weight: 600; }
+    .o_ag_title { font-size: 1.6rem; font-weight: 700; color: $sb-navy; margin: 0; }
+    .o_ag_body { padding-top: 1rem; padding-bottom: 3rem; }
+    .o_ag_chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .8rem; }
+    .o_ag_chip { border: 1px solid $sb-line; background: #fff; color: $sb-ink; border-radius: 999px; padding: .25rem .8rem; font-size: .85rem;
+        small { color: $sb-muted; margin-left: .2rem; font-variant-numeric: tabular-nums; }
+        &.on { background: $sb-navy; border-color: $sb-navy; color: #fff; small { color: rgba(#fff, .75); } } }
+    .o_ag_add { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; background: #fff; border: 1px solid $sb-line; border-radius: 12px;
+        padding: .5rem .8rem; margin-bottom: 1rem;
+        > .fa { color: $sb-muted; }
+        input, select { border: 0; background: transparent; outline: none; color: $sb-ink; font-size: .92rem; }
+        .o_ag_add_name { flex: 1 1 12rem; min-width: 0; }
+        .o_ag_add_date, .o_ag_add_who { flex: none; color: $sb-muted; max-width: 11rem; } }
+    .o_ag_group { margin-bottom: 1rem; }
+    .o_ag_group_head { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: $sb-muted; margin: 0 0 .35rem .2rem;
+        small { font-weight: 600; } &.overdue { color: $sb-coral; } }
+    .o_ag_card { background: #fff; border: 1px solid $sb-line; border-radius: 12px; overflow: visible; }
+    .o_ag_row { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; padding: .65rem .9rem .65rem 1rem;
+        border-bottom: 1px solid $sb-line; border-left: 4px solid transparent;
+        &:last-child { border-bottom: 0; }
+        &.high { border-left-color: $sb-coral; } &.medium { border-left-color: $sb-amber; } &.low { border-left-color: $sb-line; }
+        &:hover { background: rgba($sb-steel, .05); } }
+    .o_ag_date { flex: none; width: 3.4rem; text-align: center; cursor: pointer; line-height: 1.1;
+        b { display: block; font-size: 1.3rem; color: $sb-navy; font-variant-numeric: tabular-nums; }
+        span { font-size: .68rem; color: $sb-muted; text-transform: uppercase; letter-spacing: .03em; } }
+    .o_ag_row.overdue .o_ag_date b { color: $sb-coral; }
+    .o_ag_main { flex: 1 1 12rem; min-width: 0; cursor: pointer; }
+    .o_ag_name { font-weight: 650; color: $sb-navy; overflow-wrap: anywhere; }
+    .o_ag_meta { font-size: .8rem; color: $sb-muted; overflow-wrap: anywhere; }
+    .o_ag_area { font-weight: 600; text-transform: uppercase; font-size: .68rem; letter-spacing: .04em; }
+    .o_ag_amt { flex: none; font-weight: 700; color: $sb-navy; font-variant-numeric: tabular-nums; }
+    .o_ag_acts { flex: none; display: flex; gap: .25rem; .btn { width: 2rem; } }
+    .o_ag_pop { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .3rem 0 0 4.2rem;
+        > span { font-size: .8rem; color: $sb-muted; } select { max-width: 16rem; } }
+    .o_ag_empty { background: #fff; border: 1px solid $sb-line; border-radius: 12px; padding: 1rem; color: $sb-muted; .fa { color: $sb-good; } }
+    .o_ag_month { background: #fff; border: 1px solid $sb-line; border-radius: 12px; padding: .6rem; margin-bottom: 1rem; }
+    .o_ag_month_head { display: flex; align-items: center; justify-content: space-between; padding: 0 .2rem .5rem; b { color: $sb-navy; } }
+    .o_ag_grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+    .o_ag_dow { font-size: .68rem; text-transform: uppercase; color: $sb-muted; text-align: center; padding: .2rem 0; font-weight: 600; }
+    .o_ag_cell { min-height: 5.2rem; background: $sb-band; border-radius: 6px; padding: .25rem; cursor: pointer; overflow: hidden;
+        &.out { opacity: .45; } &.today .o_ag_n { background: $sb-navy; color: #fff; }
+        &.picked { outline: 2px solid $sb-steel; } }
+    .o_ag_n { display: inline-block; min-width: 1.4rem; text-align: center; border-radius: 999px; font-size: .75rem; font-weight: 700; color: $sb-navy; }
+    .o_ag_dot { font-size: .68rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 .25rem;
+        border-left: 3px solid $sb-line; margin-top: 2px; background: #fff; border-radius: 3px;
+        &.high { border-left-color: $sb-coral; } &.medium { border-left-color: $sb-amber; } }
+    .o_ag_more { font-size: .66rem; color: $sb-muted; padding-left: .25rem; }
+    @media (max-width: 575px) {
+        .o_ag_cell { min-height: 3.2rem; } .o_ag_dot { font-size: 0; height: 4px; padding: 0; border-left-width: 0; background: $sb-line;
+            &.high { background: $sb-coral; } &.medium { background: $sb-amber; } }
+        .o_ag_pop { padding-left: 0; }
+        .o_ag_acts { flex-basis: 100%; padding-left: 4.2rem; }
+    }
+}

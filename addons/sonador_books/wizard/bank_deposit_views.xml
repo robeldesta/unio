@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_bank_deposit_form" model="ir.ui.view">
+        <field name="name">sb.bank.deposit.form</field>
+        <field name="model">sb.bank.deposit</field>
+        <field name="arch" type="xml">
+            <form string="Bank Deposit">
+                <header>
+                    <button name="action_load" type="object" string="Load undeposited receipts" class="btn-secondary"/>
+                    <button name="action_deposit" type="object" string="Post the deposit" class="btn-primary" invisible="not line_ids"
+                            confirm="Post one deposit to the bank for the ticked receipts?" confirm-label="Post the deposit"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1>Bank Deposit</h1></div>
+                    <p class="text-muted">Receipts and cash sales saved to Undeposited funds wait here. Tick what goes on this
+                        deposit slip: the bank gets one line for the total, the same as on the bank statement.</p>
+                    <group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="source_id" options="{'no_create': True}"/>
+                            <field name="account_id" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="date"/>
+                            <field name="slip"/>
+                            <field name="voucher_id" invisible="not voucher_id"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom" create="0">
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="move_line_id" column_invisible="1"/>
+                            <field name="include" widget="boolean_toggle"/>
+                            <field name="date"/>
+                            <field name="move_name"/>
+                            <field name="partner_id"/>
+                            <field name="name"/>
+                            <field name="amount" sum="Total"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer">
+                        <field name="count" string="Items"/>
+                        <field name="total" string="Deposit total"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_bank_deposit" model="ir.actions.act_window">
+        <field name="name">Bank Deposit</field>
+        <field name="res_model">sb.bank.deposit</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- the standard employee form (reached from technical menus) shows the Ethiopian fields too -->
+    <record id="view_employee_form_sb" model="ir.ui.view">
+        <field name="name">hr.employee.form.sb.people</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Ethiopia" name="sb_ethiopia" groups="hr.group_hr_user">
+                    <group>
+                        <group string="Registration">
+                            <field name="sb_code"/>
+                            <field name="sb_tin"/>
+                            <field name="sb_pension_no"/>
+                            <field name="sb_pension"/>
+                            <field name="sb_fayda"/>
+                        </group>
+                        <group string="Address">
+                            <field name="sb_region"/>
+                            <field name="sb_subcity"/>
+                            <field name="sb_woreda"/>
+                            <field name="sb_kebele"/>
+                            <field name="sb_house_no"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

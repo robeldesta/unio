@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_projects" model="ir.actions.client">
+        <field name="name">Projects</field>
+        <field name="tag">sonador_project.app</field>
+        <field name="params" eval="{'page': 'portfolio'}"/>
+    </record>
+    <record id="action_timesheet" model="ir.actions.client">
+        <field name="name">My timesheet</field>
+        <field name="tag">sonador_project.app</field>
+        <field name="params" eval="{'page': 'timesheet'}"/>
+    </record>
+    <menuitem id="menu_root" name="Projects" sequence="24" web_icon="sonador_project,static/description/icon.png"
+              action="action_projects" groups="group_user"/>
+</odoo>

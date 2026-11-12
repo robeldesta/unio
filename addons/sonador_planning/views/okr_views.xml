@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_kr_form_plan" model="ir.ui.view">
+        <field name="name">sb.perf.kr.form.plan</field>
+        <field name="model">sb.perf.kr</field>
+        <field name="inherit_id" ref="sonador_performance.view_kr_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <div invisible="measure != 'plan'">
+                    <div class="text-muted small">Monthly plan tasks that deliver this key result (empty: the tasks linked to the goal in the goal period).</div>
+                    <field name="plan_task_ids">
+                        <list>
+                            <field name="employee_id"/>
+                            <field name="name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="status"/>
+                            <field name="progress"/>
+                        </list>
+                    </field>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

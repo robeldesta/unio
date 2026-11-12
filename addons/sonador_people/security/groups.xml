@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- HR Officers work on the Odoo employee records -->
+    <record id="sonador_books.group_sb_hr" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('hr.group_hr_user'))]"/>
+        <field name="comment">Works in the People app: every employee record, job and pay history, documents, assets, hiring and leaving.</field>
+    </record>
+</odoo>

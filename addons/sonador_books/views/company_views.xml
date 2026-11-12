@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_company_settings_form" model="ir.ui.view">
+        <field name="name">res.company.form.sb.settings</field>
+        <field name="model">res.company</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="Accounting Settings">
+                <header>
+                    <button name="action_sb_setup" type="object" string="Re-run setup"
+                            confirm="Adds any missing accounts, journals, IFRS mapping, costing categories and asset types. Existing data is kept." confirm-label="Set up"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group string="Withholding tax">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="sb_wht_rate"/>
+                            <field name="sb_wht_country_code" invisible="1"/>
+                            <field name="sb_wht_individual_rate" invisible="sb_wht_country_code != 'ET'"/>
+                            <field name="sb_wht_agent" invisible="sb_wht_country_code != 'UG'"/>
+                            <field name="sb_wht_goods_threshold"/>
+                            <field name="sb_wht_service_threshold"/>
+                            <field name="sb_wht_payable_account_id" options="{'no_create': True}"/>
+                            <field name="sb_wht_receivable_account_id" options="{'no_create': True}"/>
+                        </group>
+                        <group string="VAT">
+                            <field name="sb_vat_registered"/>
+                            <field name="sb_tot_goods_rate" invisible="sb_vat_registered or sb_wht_country_code != 'ET'"/>
+                            <field name="sb_tot_service_rate" invisible="sb_vat_registered or sb_wht_country_code != 'ET'"/>
+                            <field name="sb_tot_goods_exempt" invisible="sb_vat_registered or sb_wht_country_code != 'ET'"/>
+                            <field name="sb_fiscal_registers" invisible="sb_wht_country_code != 'ET'"/>
+                        </group>
+                        <group string="Document numbers" name="sb_numbering">
+                            <field name="sb_number_without_year"/>
+                            <field name="sb_only_invoices"/>
+                            <field name="sb_lock_series_ids" widget="many2many_tags" invisible="not sb_only_invoices"/>
+                            <field name="sb_lock_other" invisible="not sb_only_invoices"/>
+                            <field name="sb_lock_van" invisible="not sb_only_invoices"/>
+                        </group>
+                        <group string="Advances">
+                            <field name="sb_customer_advance_account_id" options="{'no_create': True}"/>
+                            <field name="sb_vendor_advance_account_id" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Banking, discounts, opening balances">
+                            <field name="sb_cheque_on_hand_account_id" options="{'no_create': True}"/>
+                            <field name="sb_cheque_outstanding_account_id" options="{'no_create': True}"/>
+                            <field name="sb_bank_charges_account_id" options="{'no_create': True}"/>
+                            <field name="sb_bank_charges_vat"/>
+                            <field name="sb_bank_charges_vat_account_id" options="{'no_create': True}" invisible="not sb_bank_charges_vat"/>
+                            <field name="sb_petty_cash_limit"/>
+                            <field name="sb_cash_negative" widget="radio" options="{'horizontal': true}"/>
+                            <field name="sb_discount_allowed_account_id" options="{'no_create': True}"/>
+                            <field name="sb_discount_received_account_id" options="{'no_create': True}"/>
+                            <field name="sb_discount_limit"/>
+                            <field name="sb_opening_equity_account_id" options="{'no_create': True}"/>
+                            <field name="sb_books_start"/>
+                        </group>
+                        <group string="Payroll">
+                            <field name="sb_pension_employee"/>
+                            <field name="sb_pension_employer"/>
+                        </group>
+                        <group string="Telegram">
+                            <field name="sb_telegram_token" password="True" groups="base.group_system"/>
+                        </group>
+                        <group string="Chart of accounts">
+                            <field name="sb_account_code_style" widget="radio" options="{'horizontal': true}"/>
+                            <button name="action_sb_apply_code_style" type="object" string="Apply to existing accounts" class="btn-secondary" colspan="2"
+                                    confirm="Rewrite every 8-digit account number in this style?" confirm-label="Renumber"/>
+                        </group>
+                        <group string="Fiscal year and costing">
+                            <field name="fiscalyear_last_month"/>
+                            <field name="fiscalyear_last_day"/>
+                            <field name="inventory_valuation"/>
+                            <field name="account_stock_valuation_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <group string="Notes to the financial statements">
+                        <field name="sb_fs_policies" nolabel="1" colspan="2" placeholder="The accounting policies note: one paragraph per line"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_company_settings" model="ir.actions.server">
+        <field name="name">Settings</field>
+        <field name="model_id" ref="base.model_res_company"/>
+        <field name="state">code</field>
+        <field name="code">action = {
+    'type': 'ir.actions.act_window', 'res_model': 'res.company', 'res_id': env.company.id,
+    'view_mode': 'form', 'views': [(env.ref('sonador_books.sb_company_settings_form').id, 'form')],
+    'name': 'Books Settings'}</field>
+    </record>
+    <!-- withholding on an entry brought over from the previous system: base and receipt number for the declaration -->
+    <record id="view_move_form_sb_wht" model="ir.ui.view">
+        <field name="name">account.move.form.sb.wht</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date']" position="after">
+                <field name="sb_has_wht" invisible="1"/>
+                <field name="sb_wht_base" invisible="not sb_has_wht"/>
+                <field name="sb_wht_receipt_no" invisible="not sb_has_wht"/>
+                <field name="sb_wht_receipt_date" invisible="not sb_has_wht"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

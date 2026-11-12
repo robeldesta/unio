@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_designer" model="ir.actions.client">
+        <field name="name">Documents and printing</field>
+        <field name="tag">sonador_print.designer</field>
+    </record>
+    <menuitem id="menu_designer" name="Documents and Printing" parent="sonador_books.menu_sb_gl" action="action_designer" sequence="90"
+              groups="sonador_books.group_sb_accountant"/>
+
+    <!-- "Print" on every printable document, in its own design -->
+    <!-- vouchers print from the Print button on the voucher, which sends each kind to its own printout (and is not offered
+         for sales invoices where only the fiscal register issues them) -->
+    <record id="server_print_voucher" model="ir.actions.server">
+        <field name="name">Print</field>
+        <field name="model_id" ref="sonador_books.model_sb_voucher"/>
+        <field name="binding_model_id" eval="False"/>
+        <field name="state">code</field>
+        <field name="code">action = env['sb.print'].print_action(records)</field>
+    </record>
+    <record id="server_print_sale" model="ir.actions.server">
+        <field name="name">Print</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+        <field name="state">code</field>
+        <field name="code">action = env['sb.print'].print_action(records)</field>
+    </record>
+    <record id="server_print_payslip" model="ir.actions.server">
+        <field name="name">Payslip</field>
+        <field name="model_id" ref="sonador_books.model_sb_payroll_line"/>
+        <field name="binding_model_id" ref="sonador_books.model_sb_payroll_line"/>
+        <field name="binding_type">report</field>
+        <field name="state">code</field>
+        <field name="code">action = env['sb.print'].print_action(records)</field>
+    </record>
+    <record id="server_print_statement" model="ir.actions.server">
+        <field name="name">Statement of account</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="binding_model_id" ref="base.model_res_partner"/>
+        <field name="binding_type">report</field>
+        <field name="group_ids" eval="[(4, ref('sonador_books.group_sb_accountant'))]"/>
+        <field name="state">code</field>
+        <field name="code">action = env['sb.print'].print_action(records)</field>
+    </record>
+    <record id="server_print_purchase" model="ir.actions.server">
+        <field name="name">Print</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">report</field>
+        <field name="state">code</field>
+        <field name="code">action = env['sb.print'].print_action(records)</field>
+    </record>
+    <record id="server_print_delivery" model="ir.actions.server">
+        <field name="name">Print</field>
+        <field name="model_id" ref="sonador_sales.model_sb_delivery_batch"/>
+        <field name="binding_model_id" ref="sonador_sales.model_sb_delivery_batch"/>
+        <field name="binding_type">report</field>
+        <field name="state">code</field>
+        <field name="code">action = env['sb.print'].print_action(records)</field>
+    </record>
+    <record id="server_print_stock" model="ir.actions.server">
+        <field name="name">Print</field>
+        <field name="model_id" ref="sonador_inventory.model_sb_stock_voucher"/>
+        <field name="binding_model_id" ref="sonador_inventory.model_sb_stock_voucher"/>
+        <field name="binding_type">report</field>
+        <field name="state">code</field>
+        <field name="code">action = env['sb.print'].print_action(records)</field>
+    </record>
+</odoo>

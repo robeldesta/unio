@@ -1,0 +1,40 @@
+.o_sb_pp {
+    .o_sb_pp_btn {
+        border: 1px solid $sb-line;
+        background: #fff;
+        border-radius: 8px;
+        padding: .35rem .8rem;
+        color: $sb-ink;
+        &:hover { border-color: $sb-steel; }
+    }
+    .o_sb_pp_pop {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 20;
+        width: 26rem;
+        max-width: calc(100vw - 2rem);
+        background: #fff;
+        border: 1px solid $sb-line;
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(31, 45, 54, .16);
+        padding: 1rem;
+    }
+    .o_sb_pp_grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: .4rem;
+    }
+    .o_sb_pp_month {
+        border: 1px solid $sb-line;
+        background: #fff;
+        border-radius: 8px;
+        padding: .35rem .2rem;
+        color: $sb-ink;
+        line-height: 1.2;
+        .small { color: $sb-muted; font-size: .72rem; }
+        &:hover { border-color: $sb-steel; }
+        &.current { border-color: $sb-amber; }
+        &.selected { background: $sb-navy; border-color: $sb-navy; color: #fff; .small { color: rgba(255, 255, 255, .75); } }
+    }
+}

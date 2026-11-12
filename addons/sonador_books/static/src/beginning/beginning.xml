@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.BeginningBalances">
+        <div class="o_sb_bb o_action h-100 d-flex flex-column" t-on-keydown="onKeydown">
+            <div class="o_sb_bb_head">
+                <div class="d-flex flex-wrap align-items-end gap-3">
+                    <div class="me-auto">
+                        <div class="o_sb_bb_kicker">Maintain</div>
+                        <h1 class="o_sb_bb_title">Beginning Balances</h1>
+                        <div class="o_sb_bb_sub">
+                            One opening balance as of <b t-esc="ctx.opening_label"/> <span class="text-muted">(<t t-esc="ctx.opening_ec"/>)</span>,
+                            the day before the books start. Debits must equal credits.
+                            <span class="o_sb_bb_pill ms-1" t-att-class="Math.abs(ctx.tb.diff) &gt; 0.004 ? 'warn' : 'ok'">
+                                <t t-if="Math.abs(ctx.tb.diff) &lt;= 0.004"><i class="fa fa-check"/> Balanced</t>
+                                <t t-else="">Out of balance <t t-esc="fmt(Math.abs(ctx.tb.diff))"/></t>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div t-if="ctx.can_edit and !canEdit" class="alert alert-warning py-2 px-3 mt-2 mb-0 small">
+                    <i class="fa fa-lock me-1"/>This period is closed. Reopen it (Accounting Periods or the Year-End wizard) to change its beginning balances.
+                </div>
+                <div class="o_sb_bb_tabs">
+                    <button t-att-class="state.tab === 'accounts' ? 'active' : ''" t-on-click="() => this.setTab('accounts')"><i class="fa fa-sitemap"/> Chart of Accounts</button>
+                    <button t-if="ctx.has_inventory" t-att-class="state.tab === 'inventory' ? 'active' : ''" t-on-click="() => this.setTab('inventory')"><i class="fa fa-cubes"/> Inventory Items</button>
+                    <button t-att-class="state.tab === 'customers' ? 'active' : ''" t-on-click="() => this.setTab('customers')"><i class="fa fa-users"/> Customers</button>
+                    <button t-att-class="state.tab === 'vendors' ? 'active' : ''" t-on-click="() => this.setTab('vendors')"><i class="fa fa-truck"/> Vendors</button>
+                    <span class="ms-auto o_sb_bb_busy" t-if="state.busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+
+            <!-- ============================================================ chart of accounts -->
+            <t t-if="state.tab === 'accounts'">
+                <div class="o_sb_bb_toolbar">
+                    <div class="o_sb_bb_caption">
+                        <b>Opening balance as of <t t-esc="ctx.opening_label"/></b>
+                        <span class="text-muted ms-2" t-esc="ctx.opening_ec"/>
+                    </div>
+                    <input class="form-control o_sb_bb_search" placeholder="Find account…" t-model="state.acctSearch"/>
+                    <div class="btn-group btn-group-sm">
+                        <button t-foreach="[['all','All'],['used','With balances'],['bs','Balance sheet'],['pl','Profit &amp; loss']]" t-as="f" t-key="f[0]"
+                                t-att-class="'btn ' + (state.acctFilter === f[0] ? 'btn-secondary' : 'btn-light border')"
+                                t-on-click="() => state.acctFilter = f[0]" t-esc="f[1]"/>
+                    </div>
+                </div>
+                <div class="o_sb_bb_grid flex-grow-1">
+                    <table class="o_sb_bb_table">
+                        <thead>
+                            <tr>
+                                <th class="w-code">Account ID</th>
+                                <th>Account Description</th>
+                                <th class="w-type">Account Type</th>
+                                <th class="num">Debit</th>
+                                <th class="num">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="accountRows" t-as="r" t-key="r.id" t-att-id="'acct-' + r.id"
+                                t-att-class="(state.acctDirty[r.id] !== undefined ? 'dirty ' : '') + (r.inactive ? 'inactive ' : '') + (r.id === state.focusAccount ? 'focus' : '')">
+                                <td class="w-code" t-esc="r.code"/>
+                                <td>
+                                    <t t-esc="r.name"/>
+                                    <span t-if="r.source" class="o_sb_bb_chip" t-on-click="() => this.gotoSource(r)"
+                                          t-att-title="r.source === 'inventory' ? 'Items make up this balance; type a different total to keep the rest as not itemised' : 'Comes from the ' + r.source + ' beginning balances'">
+                                        <i t-att-class="'fa ' + (r.source === 'customer' ? 'fa-users' : r.source === 'vendor' ? 'fa-truck' : 'fa-cubes')"/>
+                                        <t t-if="r.source === 'inventory'">items <t t-esc="fmt(r.sub)"/></t>
+                                        <t t-else="">from <t t-esc="r.source === 'customer' ? 'customers' : 'vendors'"/></t>
+                                    </span>
+                                </td>
+                                <td class="w-type text-muted" t-esc="r.type"/>
+                                <t t-foreach="['dr', 'cr']" t-as="side" t-key="side">
+                                    <td class="num">
+                                        <input t-if="acctEditable(r)" class="o_sb_bb_num" t-att-data-col="side"
+                                               t-att-value="sideValue(r, side)" t-on-focus="selectAll" t-on-change="(ev) => this.onAcctChange(r, side, ev)"/>
+                                        <span t-else="" class="o_sb_bb_ro" t-esc="sideValue(r, side)"/>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr t-if="!accountRows.length"><td colspan="5" class="text-center text-muted p-4">No accounts match.</td></tr>
+                        </tbody>
+                        <t t-set="t" t-value="acctTotals"/>
+                        <tfoot>
+                            <tr class="o_sb_bb_total">
+                                <td colspan="3" class="text-end">Total</td>
+                                <td class="num" t-esc="fmt(t.dr)"/>
+                                <td class="num" t-esc="fmt(t.cr)"/>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="o_sb_bb_foot">
+                    <div class="o_sb_bb_tot"><span>Total debits</span><b t-esc="fmt(t.dr)"/></div>
+                    <div class="o_sb_bb_tot"><span>Total credits</span><b t-esc="fmt(t.cr)"/></div>
+                    <div t-att-class="'o_sb_bb_tot ' + (acctBalanced ? 'ok' : 'warn')">
+                        <span t-if="acctBalanced"><i class="fa fa-check"/> Balanced</span>
+                        <span t-elif="t.diff &gt; 0">Out of balance: debits exceed credits by</span>
+                        <span t-else="">Out of balance: credits exceed debits by</span>
+                        <b t-esc="fmt(Math.abs(t.diff))"/>
+                    </div>
+                    <div class="ms-auto d-flex gap-2 align-items-center">
+                        <a t-if="state.acctVouchers and state.acctVouchers.length" href="#" class="small" t-on-click.prevent="() => this.openVouchers('gl')">
+                            <i class="fa fa-book"/> <t t-esc="state.acctVouchers.map((v) => v.name).join(', ')"/>
+                        </a>
+                        <button class="btn btn-light border" t-att-disabled="!dirty or state.busy" t-on-click="discard">Discard</button>
+                        <button class="btn btn-primary" t-att-disabled="!dirty or state.busy or !acctBalanced" t-on-click="saveAccounts"
+                                t-att-title="acctBalanced ? '' : 'Debits must equal credits'">
+                            <i class="fa fa-check me-1"/>Save &amp; post<t t-if="dirty"> (<t t-esc="Object.keys(state.acctDirty).length"/>)</t>
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ============================================================ inventory -->
+            <t t-if="state.tab === 'inventory'">
+                <div class="o_sb_bb_toolbar">
+                    <div class="o_sb_bb_caption">
+                        <b>Inventory beginning balances as of <t t-esc="ctx.opening_label"/></b>
+                        <span class="text-muted ms-2">Warehouse: <t t-esc="state.itemInfo.warehouse"/></span>
+                    </div>
+                    <input class="form-control o_sb_bb_search" placeholder="Find item…" t-model="state.itemSearch"/>
+                    <div class="btn-group btn-group-sm">
+                        <button t-foreach="[['all','All items'],['used','With quantity']]" t-as="f" t-key="f[0]"
+                                t-att-class="'btn ' + (state.itemFilter === f[0] ? 'btn-secondary' : 'btn-light border')"
+                                t-on-click="() => state.itemFilter = f[0]" t-esc="f[1]"/>
+                    </div>
+                </div>
+                <div class="o_sb_bb_grid flex-grow-1">
+                    <table class="o_sb_bb_table">
+                        <thead>
+                            <tr>
+                                <th class="w-code">Item ID</th>
+                                <th>Description</th>
+                                <th class="w-uom">Unit</th>
+                                <th class="num">Quantity</th>
+                                <th class="num">Unit Cost</th>
+                                <th class="num">Total Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="itemRows" t-as="r" t-key="r.id" t-att-id="'item-' + r.id"
+                                t-att-class="(state.itemDirty[r.id] ? 'dirty ' : '') + (r.id === state.focusItem ? 'focus' : '')">
+                                <td class="w-code" t-esc="r.code"/>
+                                <td t-esc="r.name"/>
+                                <td class="w-uom text-muted" t-esc="r.uom"/>
+                                <td class="num"><input class="o_sb_bb_num" data-col="qty" t-att-readonly="!canEdit" t-att-value="fmtQty(r.qty)"
+                                                       t-on-focus="selectAll" t-on-change="(ev) => this.onItem(r, 'qty', ev)"/></td>
+                                <td class="num"><input class="o_sb_bb_num" data-col="cost" t-att-readonly="!canEdit" t-att-value="r.cost ? r.cost.toFixed(4) : ''"
+                                                       t-on-focus="selectAll" t-on-change="(ev) => this.onItem(r, 'cost', ev)"/></td>
+                                <td class="num"><input class="o_sb_bb_num" data-col="value" t-att-readonly="!canEdit" t-att-value="fmt(r.value, true)"
+                                                       t-on-focus="selectAll" t-on-change="(ev) => this.onItem(r, 'value', ev)"/></td>
+                            </tr>
+                            <tr t-if="!itemRows.length"><td colspan="6" class="text-center text-muted p-4">No stock items match.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="o_sb_bb_foot">
+                    <div class="o_sb_bb_tot"><span>Total beginning balances</span><b t-esc="fmt(itemTotal)"/></div>
+                    <div t-att-class="'o_sb_bb_tot ' + (Math.abs(state.itemInfo.not_itemised || 0) &gt; 0.004 ? 'warn' : '')"
+                         title="Part of the inventory accounts' GL balance entered on the chart of accounts and not in items (e.g. work in process)">
+                        <span>Not itemised (chart of accounts)</span><b t-esc="fmt(state.itemInfo.not_itemised || 0)"/>
+                    </div>
+                    <div class="o_sb_bb_tot"><span>Inventory accounts</span><b t-esc="fmt(itemTotal + (state.itemInfo.not_itemised || 0))"/></div>
+                    <div class="ms-auto d-flex gap-2 align-items-center">
+                        <a t-if="state.itemInfo.vouchers and state.itemInfo.vouchers.length" href="#" class="small" t-on-click.prevent="() => this.openVouchers('stock')">
+                            <i class="fa fa-cubes"/> <t t-esc="state.itemInfo.vouchers.map((v) => v.name).join(', ')"/>
+                        </a>
+                        <button class="btn btn-light border" t-att-disabled="!dirty or state.busy" t-on-click="discard">Discard</button>
+                        <button class="btn btn-primary" t-att-disabled="!dirty or state.busy" t-on-click="saveItems">
+                            <i class="fa fa-check me-1"/>Save &amp; post<t t-if="dirty"> (<t t-esc="Object.keys(state.itemDirty).length"/>)</t>
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ============================================================ customers / vendors -->
+            <t t-if="state.tab === 'customers' or state.tab === 'vendors'">
+                <t t-set="cust" t-value="kind === 'customer'"/>
+                <div class="o_sb_bb_split flex-grow-1">
+                    <div t-att-class="'o_sb_bb_list ' + (state.pane === 'list' ? 'show' : '')">
+                        <div class="o_sb_bb_list_head">
+                            <b><t t-esc="cust ? 'Customer' : 'Vendor'"/> Balances</b>
+                            <input class="form-control form-control-sm mt-2" t-att-placeholder="cust ? 'Find customer…' : 'Find vendor…'" t-model="state.partnerSearch"/>
+                            <div class="btn-group btn-group-sm mt-2 w-100">
+                                <button t-foreach="[['all','All'],['used','With balances']]" t-as="f" t-key="f[0]"
+                                        t-att-class="'btn ' + (state.partnerFilter === f[0] ? 'btn-secondary' : 'btn-light border')"
+                                        t-on-click="() => state.partnerFilter = f[0]" t-esc="f[1]"/>
+                            </div>
+                        </div>
+                        <div class="o_sb_bb_list_body">
+                            <div t-foreach="partnerRows" t-as="p" t-key="p.id"
+                                 t-att-class="'o_sb_bb_prow ' + (p.id === state.partnerId ? 'active' : '')" t-on-click="() => this.pickPartner(p)">
+                                <span class="ref" t-esc="p.ref"/>
+                                <span class="name" t-esc="p.name"/>
+                                <span class="amt" t-esc="fmt(p.amount)"/>
+                            </div>
+                            <div t-if="!partnerRows.length" class="text-muted small p-3">
+                                No <t t-esc="cust ? 'customers' : 'vendors'"/> yet. Add them in <t t-esc="cust ? 'Customers' : 'Vendors'"/> first.
+                            </div>
+                        </div>
+                        <div class="o_sb_bb_list_foot">
+                            <div><span>Beginning balances</span><b t-esc="fmt(state.partnerInfo.total || 0)"/></div>
+                            <div><span>Current <t t-esc="cust ? 'receivables' : 'payables'"/></span><b t-esc="fmt(state.partnerInfo.current_balance || 0)"/></div>
+                        </div>
+                    </div>
+                    <div class="o_sb_bb_detail" t-if="state.detail">
+                        <div class="o_sb_bb_toolbar">
+                            <button class="btn btn-sm btn-light border d-lg-none" t-on-click="() => state.pane = 'list'"><i class="fa fa-list"/></button>
+                            <div class="o_sb_bb_caption">
+                                <t t-esc="cust ? 'Invoices for' : 'Purchases from'"/>:
+                                <b><t t-if="state.detail.partner.ref"><t t-esc="state.detail.partner.ref"/> </t><t t-esc="state.detail.partner.name"/></b>
+                                <a href="#" class="ms-2 small" t-on-click.prevent="openPartner"><i class="fa fa-external-link"/></a>
+                            </div>
+                            <span class="text-muted small ms-auto">
+                                <t t-if="cust">Open sales invoices on account</t><t t-else="">Unpaid bills and goods received (GRN / DRM) not paid</t>
+                                on or before <t t-esc="state.detail.last_day_label"/>
+                            </span>
+                        </div>
+                        <div class="o_sb_bb_grid flex-grow-1">
+                            <table class="o_sb_bb_table">
+                                <thead>
+                                    <tr>
+                                        <th><t t-esc="cust ? 'Invoice Number' : 'Invoice / GRN Number'"/></th>
+                                        <th class="w-date">Date</th>
+                                        <th class="w-date">Due Date</th>
+                                        <th>Purchase Order Number</th>
+                                        <th class="num">Amount</th>
+                                        <th class="w-acc"><t t-esc="cust ? 'A/R Account' : 'A/P Account'"/></th>
+                                        <th class="num muted">Paid since</th>
+                                        <th class="w-x"/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.rows" t-as="r" t-key="r.key" t-att-class="r.paid ? 'locked' : ''">
+                                        <td><input class="o_sb_bb_txt" data-col="no" t-att-value="r.number" t-att-readonly="!canEdit"
+                                                   t-on-change="(ev) => this.onRow(r, 'number', ev)" t-att-placeholder="cust ? 'INV-…' : 'DRM-GRN-…'"/></td>
+                                        <td class="w-date"><input type="date" class="o_sb_bb_txt" t-att-value="r.date" t-att-max="state.detail.last_day"
+                                                                  t-att-readonly="!canEdit" t-on-change="(ev) => this.onRow(r, 'date', ev)"/></td>
+                                        <td class="w-date"><input type="date" class="o_sb_bb_txt" t-att-value="r.due or ''" t-att-readonly="!canEdit"
+                                                                  t-on-change="(ev) => this.onRow(r, 'due', ev)"/></td>
+                                        <td><input class="o_sb_bb_txt" data-col="po" t-att-value="r.po" t-att-readonly="!canEdit"
+                                                   t-on-change="(ev) => this.onRow(r, 'po', ev)"/></td>
+                                        <td class="num"><input class="o_sb_bb_num" data-col="amt" t-att-value="fmt(r.amount, true)" t-att-readonly="!canEdit"
+                                                               t-on-focus="selectAll" t-on-change="(ev) => this.onRow(r, 'amount', ev)"/></td>
+                                        <td class="w-acc">
+                                            <select class="o_sb_bb_txt" t-att-disabled="!canEdit or r.paid" t-on-change="(ev) => this.onRow(r, 'account_id', ev)">
+                                                <option t-foreach="accountChoices()" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id === r.account_id">
+                                                    <t t-esc="a.code"/> <t t-esc="a.name"/>
+                                                </option>
+                                            </select>
+                                        </td>
+                                        <td class="num muted">
+                                            <t t-if="r.paid"><i class="fa fa-lock me-1" title="Payments are applied: the amount cannot go below what is paid"/><t t-esc="fmt(r.paid)"/></t>
+                                        </td>
+                                        <td class="w-x">
+                                            <button t-if="(r.number or r.amount) and !r.paid and canEdit" class="btn btn-link btn-sm text-muted p-0"
+                                                    title="Remove" t-on-click="() => this.removeRow(r)"><i class="fa fa-trash-o"/></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="o_sb_bb_foot">
+                            <div class="o_sb_bb_tot"><span>Account balance</span><b t-esc="fmt(detailTotal)"/></div>
+                            <div class="o_sb_bb_tot"><span>Number of transactions</span><b t-esc="detailCount"/></div>
+                            <div class="o_sb_bb_tot"><span>Current <t t-esc="cust ? 'accounts receivable' : 'accounts payable'"/></span><b t-esc="fmt(state.partnerInfo.current_balance || 0)"/></div>
+                            <div class="ms-auto d-flex gap-2">
+                                <button class="btn btn-light border" t-att-disabled="!dirty or state.busy" t-on-click="discardRows">Discard</button>
+                                <button class="btn btn-primary" t-att-disabled="!dirty or state.busy" t-on-click="saveRows"><i class="fa fa-check me-1"/>Save &amp; post</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_sb_bb_detail o_sb_bb_empty" t-else="">
+                        <i class="fa fa-hand-o-left fa-2x mb-2"/>
+                        <div>Pick a <t t-esc="cust ? 'customer' : 'vendor'"/> on the left.</div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

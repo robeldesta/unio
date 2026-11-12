@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- breeds with approximate targets by week of age (laying %, body weight g, feed g per bird per day): edit them to your supplier's guide -->
+        <record id="breed_lohmann" model="sb.farm.breed">
+            <field name="name">Lohmann Brown-Classic</field><field name="kind">layer</field><field name="lay_until_week">80</field>
+            <field name="note">Approximate published targets: replace with your supplier&apos;s guide.</field>
+            <field name="target_ids" eval="[(0, 0, {'week': 18, 'hen_day': 10, 'weight': 1550, 'feed': 85}), (0, 0, {'week': 20, 'hen_day': 35, 'weight': 1700, 'feed': 95}), (0, 0, {'week': 21, 'hen_day': 60, 'weight': 1750, 'feed': 100}), (0, 0, {'week': 22, 'hen_day': 80, 'weight': 1800, 'feed': 105}), (0, 0, {'week': 23, 'hen_day': 88, 'weight': 1830, 'feed': 108}), (0, 0, {'week': 24, 'hen_day': 92, 'weight': 1850, 'feed': 112}), (0, 0, {'week': 26, 'hen_day': 94, 'weight': 1880, 'feed': 114}), (0, 0, {'week': 30, 'hen_day': 93, 'weight': 1930, 'feed': 115}), (0, 0, {'week': 35, 'hen_day': 92, 'weight': 1950, 'feed': 116}), (0, 0, {'week': 40, 'hen_day': 90, 'weight': 1960, 'feed': 116}), (0, 0, {'week': 45, 'hen_day': 88, 'weight': 1970, 'feed': 117}), (0, 0, {'week': 50, 'hen_day': 86, 'weight': 1980, 'feed': 117}), (0, 0, {'week': 55, 'hen_day': 84, 'weight': 1985, 'feed': 118}), (0, 0, {'week': 60, 'hen_day': 81, 'weight': 1990, 'feed': 118}), (0, 0, {'week': 65, 'hen_day': 79, 'weight': 2000, 'feed': 118}), (0, 0, {'week': 70, 'hen_day': 77, 'weight': 2005, 'feed': 118}), (0, 0, {'week': 75, 'hen_day': 74, 'weight': 2010, 'feed': 118}), (0, 0, {'week': 80, 'hen_day': 71, 'weight': 2010, 'feed': 118})]"/>
+        </record>
+        <record id="breed_bovans" model="sb.farm.breed">
+            <field name="name">Bovans Brown</field><field name="kind">layer</field><field name="lay_until_week">80</field>
+            <field name="note">Approximate published targets: replace with your supplier&apos;s guide.</field>
+            <field name="target_ids" eval="[(0, 0, {'week': 18, 'hen_day': 8, 'weight': 1500, 'feed': 85}), (0, 0, {'week': 20, 'hen_day': 30, 'weight': 1650, 'feed': 95}), (0, 0, {'week': 22, 'hen_day': 78, 'weight': 1780, 'feed': 105}), (0, 0, {'week': 24, 'hen_day': 92, 'weight': 1850, 'feed': 110}), (0, 0, {'week': 26, 'hen_day': 94, 'weight': 1880, 'feed': 113}), (0, 0, {'week': 30, 'hen_day': 93, 'weight': 1920, 'feed': 115}), (0, 0, {'week': 40, 'hen_day': 90, 'weight': 1950, 'feed': 116}), (0, 0, {'week': 50, 'hen_day': 86, 'weight': 1970, 'feed': 117}), (0, 0, {'week': 60, 'hen_day': 82, 'weight': 1990, 'feed': 117}), (0, 0, {'week': 70, 'hen_day': 77, 'weight': 2000, 'feed': 118}), (0, 0, {'week': 80, 'hen_day': 71, 'weight': 2010, 'feed': 118})]"/>
+        </record>
+        <record id="breed_sasso" model="sb.farm.breed">
+            <field name="name">Sasso (dual purpose)</field><field name="kind">dual</field><field name="lay_until_week">72</field>
+            <field name="note">Ethiopian smallholder flocks: modest laying; replace with your supplier&apos;s figures.</field>
+            <field name="target_ids" eval="[(0, 0, {'week': 20, 'hen_day': 20, 'weight': 1900, 'feed': 100}), (0, 0, {'week': 24, 'hen_day': 55, 'weight': 2100, 'feed': 110}), (0, 0, {'week': 30, 'hen_day': 62, 'weight': 2250, 'feed': 115}), (0, 0, {'week': 40, 'hen_day': 58, 'weight': 2350, 'feed': 120}), (0, 0, {'week': 52, 'hen_day': 52, 'weight': 2400, 'feed': 120}), (0, 0, {'week': 72, 'hen_day': 45, 'weight': 2450, 'feed': 120})]"/>
+        </record>
+        <record id="breed_koekoek" model="sb.farm.breed">
+            <field name="name">Potchefstroom Koekoek (dual purpose)</field><field name="kind">dual</field><field name="lay_until_week">72</field>
+            <field name="note">Approximate figures; replace with your supplier&apos;s.</field>
+            <field name="target_ids" eval="[(0, 0, {'week': 20, 'hen_day': 15, 'weight': 1800, 'feed': 95}), (0, 0, {'week': 24, 'hen_day': 45, 'weight': 2000, 'feed': 105}), (0, 0, {'week': 30, 'hen_day': 55, 'weight': 2150, 'feed': 110}), (0, 0, {'week': 40, 'hen_day': 52, 'weight': 2250, 'feed': 115}), (0, 0, {'week': 52, 'hen_day': 48, 'weight': 2300, 'feed': 115}), (0, 0, {'week': 72, 'hen_day': 40, 'weight': 2350, 'feed': 115})]"/>
+        </record>
+        <record id="breed_cobb" model="sb.farm.breed">
+            <field name="name">Cobb 500</field><field name="kind">broiler</field><field name="lay_until_week">0</field>
+            <field name="note">Approximate published weights (as hatched): replace with your hatchery&apos;s guide.</field>
+            <field name="target_ids" eval="[(0, 0, {'week': 1, 'hen_day': 0, 'weight': 185, 'feed': 25}), (0, 0, {'week': 2, 'hen_day': 0, 'weight': 465, 'feed': 60}), (0, 0, {'week': 3, 'hen_day': 0, 'weight': 943, 'feed': 105}), (0, 0, {'week': 4, 'hen_day': 0, 'weight': 1524, 'feed': 145}), (0, 0, {'week': 5, 'hen_day': 0, 'weight': 2191, 'feed': 180}), (0, 0, {'week': 6, 'hen_day': 0, 'weight': 2857, 'feed': 205}), (0, 0, {'week': 7, 'hen_day': 0, 'weight': 3462, 'feed': 220})]"/>
+        </record>
+        <record id="breed_ross" model="sb.farm.breed">
+            <field name="name">Ross 308</field><field name="kind">broiler</field><field name="lay_until_week">0</field>
+            <field name="note">Approximate published weights (as hatched): replace with your hatchery&apos;s guide.</field>
+            <field name="target_ids" eval="[(0, 0, {'week': 1, 'hen_day': 0, 'weight': 200, 'feed': 27}), (0, 0, {'week': 2, 'hen_day': 0, 'weight': 520, 'feed': 63}), (0, 0, {'week': 3, 'hen_day': 0, 'weight': 1000, 'feed': 110}), (0, 0, {'week': 4, 'hen_day': 0, 'weight': 1600, 'feed': 150}), (0, 0, {'week': 5, 'hen_day': 0, 'weight': 2300, 'feed': 185}), (0, 0, {'week': 6, 'hen_day': 0, 'weight': 3000, 'feed': 210}), (0, 0, {'week': 7, 'hen_day': 0, 'weight': 3600, 'feed': 225})]"/>
+        </record>
+        <!-- a usual vaccination programme to start from: agree it with your veterinarian and set the products and doses -->
+        <record id="health_b_nd1" model="sb.farm.health.template"><field name="kind">broiler</field><field name="name">Newcastle (HB1)</field><field name="age_day">7</field><field name="repeat_days">0</field><field name="method">Eye drop / drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_b_ibd1" model="sb.farm.health.template"><field name="kind">broiler</field><field name="name">Gumboro (IBD)</field><field name="age_day">14</field><field name="repeat_days">0</field><field name="method">Drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_b_nd2" model="sb.farm.health.template"><field name="kind">broiler</field><field name="name">Newcastle (Lasota)</field><field name="age_day">21</field><field name="repeat_days">0</field><field name="method">Drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_b_ibd2" model="sb.farm.health.template"><field name="kind">broiler</field><field name="name">Gumboro (IBD) booster</field><field name="age_day">24</field><field name="repeat_days">0</field><field name="method">Drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_mar" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Marek&apos;s</field><field name="age_day">1</field><field name="repeat_days">0</field><field name="method">Injection (hatchery)</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_nd1" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Newcastle (HB1)</field><field name="age_day">7</field><field name="repeat_days">0</field><field name="method">Eye drop / drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_ibd1" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Gumboro (IBD)</field><field name="age_day">14</field><field name="repeat_days">0</field><field name="method">Drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_nd2" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Newcastle (Lasota)</field><field name="age_day">21</field><field name="repeat_days">0</field><field name="method">Drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_ibd2" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Gumboro (IBD) booster</field><field name="age_day">28</field><field name="repeat_days">0</field><field name="method">Drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_pox" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Fowl pox</field><field name="age_day">56</field><field name="repeat_days">0</field><field name="method">Wing web</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_ft" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Fowl typhoid</field><field name="age_day">63</field><field name="repeat_days">0</field><field name="method">Injection</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_ndb" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Newcastle (Lasota) booster</field><field name="age_day">112</field><field name="repeat_days">90</field><field name="method">Drinking water</field><field name="withdrawal_days">0</field></record>
+        <record id="health_l_worm" model="sb.farm.health.template"><field name="kind">layer</field><field name="name">Deworming</field><field name="age_day">112</field><field name="repeat_days">60</field><field name="method">Drinking water</field><field name="withdrawal_days">7</field></record>
+    </data>
+    <record id="cron_depreciate" model="ir.cron">
+        <field name="name">Farm: layer flocks, the month&apos;s share of the birds&apos; cost</field>
+        <field name="model_id" ref="model_sb_farm_flock"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_depreciate()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

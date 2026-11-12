@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_farm.App">
+        <div class="o_pp o_fm o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.company"/> · <t t-esc="ctx.today_ec"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-leaf me-2"/>Farm</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="['home', 'flock', 'newflock'].includes(state.page) ? 'active' : ''" t-on-click="() => this.go('home')"><i class="fa fa-home"/> Flocks</button>
+                        <button t-if="ctx.is_manager" t-att-class="state.page === 'setup' ? 'active' : ''" t-on-click="() => this.go('setup')"><i class="fa fa-cog"/> Setup</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'home' and state.home" t-call="sonador_farm.Home"/>
+                <t t-if="state.page === 'flock' and state.flock" t-call="sonador_farm.Flock"/>
+                <t t-if="state.page === 'record' and state.rec" t-call="sonador_farm.Record"/>
+                <t t-if="state.page === 'newflock' and state.edit" t-call="sonador_farm.NewFlock"/>
+                <t t-if="state.page === 'setup' and state.set" t-call="sonador_farm.Setup"/>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ home: every farm, its flocks, what needs attention -->
+    <t t-name="sonador_farm.Home">
+        <t t-set="H" t-value="state.home"/>
+        <div t-if="!H.farms.length and !ctx.is_manager" class="o_pp_card o_pp_empty p-4">No farm yet: the farm manager starts it.</div>
+        <div t-if="!H.farms.length and ctx.is_manager" class="o_pp_card o_fm_start">
+            <h3>Start your farm</h3>
+            <p class="text-muted">Name it and say how many houses it has. Next you add the birds, then you record each day: that is all.</p>
+            <div class="o_pp_formgrid">
+                <label class="wide">Farm<input class="form-control form-control-lg" t-model="state.start.name" placeholder="e.g. Sululta poultry farm"/></label>
+                <label>Where<input class="form-control" t-model="state.start.location"/></label>
+                <label>Houses<input type="number" min="1" class="form-control" t-model="state.start.houses"/></label>
+                <label>Birds a house<input type="number" class="form-control" t-model="state.start.capacity"/></label>
+            </div>
+            <button class="btn btn-primary btn-lg mt-3" t-att-disabled="!state.start.name" t-on-click="quickStart">Next: the birds <i class="fa fa-arrow-right ms-1"/></button>
+        </div>
+        <section t-foreach="H.farms" t-as="farm" t-key="farm.id" class="mb-4">
+            <div class="o_pp_toolbar">
+                <h4 class="m-0"><i class="fa fa-map-marker me-1 text-muted"/><t t-esc="farm.name"/></h4>
+                <span class="text-muted small" t-esc="farm.location"/>
+                <span t-if="farm.manager" class="text-muted small">· <t t-esc="farm.manager"/></span>
+                <button t-if="farm.setup_job_id and ctx.is_manager" class="btn btn-link btn-sm" t-on-click="() => this.openJob(farm.setup_job_id)"><i class="fa fa-wrench me-1"/>Setup project</button>
+                <button t-if="ctx.is_manager" class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.newFlock(farm)"><i class="fa fa-plus me-1"/>New flock</button>
+            </div>
+            <div t-if="!farm.flocks.length" class="o_pp_card o_pp_empty p-3">No flock running.</div>
+            <div class="o_fm_cards">
+                <div t-foreach="farm.flocks" t-as="f" t-key="f.id" t-attf-class="o_fm_card {{ f.kind }}">
+                    <div class="d-flex align-items-start gap-2" t-on-click="() => this.openFlock(f.id)">
+                        <div class="me-auto">
+                            <div class="o_fm_cname" t-esc="f.name"/>
+                            <div class="small text-muted"><t t-esc="kindLabel(f.kind)"/><t t-if="f.breed"> · <t t-esc="f.breed"/></t><t t-if="f.house"> · <t t-esc="f.house"/></t></div>
+                        </div>
+                        <span class="o_fm_age"><t t-esc="f.k.age_weeks"/> wk</span>
+                    </div>
+                    <div class="o_fm_nums" t-on-click="() => this.openFlock(f.id)">
+                        <div><span>Alive</span><b t-esc="fmt(f.k.alive)"/><small><t t-esc="f.k.mortality_pct"/>% lost</small></div>
+                        <t t-if="f.kind === 'layer'">
+                            <div><span>Laying</span><b><t t-esc="f.k.hen_day"/>%</b><small t-if="f.k.target_hen_day">target <t t-esc="f.k.target_hen_day"/>%</small></div>
+                            <div><span>Eggs today</span><b t-esc="fmt(f.k.eggs_today)"/><small><t t-esc="fmt(f.k.eggs_total)"/> in all</small></div>
+                        </t>
+                        <t t-else="">
+                            <div><span>Weight</span><b><t t-esc="fmt(f.k.weight)"/> g</b><small t-if="f.k.target_weight">target <t t-esc="fmt(f.k.target_weight)"/> g</small></div>
+                            <div><span>FCR</span><b t-esc="f.k.fcr || '-'"/><small>feed ÷ weight</small></div>
+                        </t>
+                        <div><span>Feed</span><b><t t-esc="f.k.feed_g_bird"/> g</b><small>per bird a day</small></div>
+                    </div>
+                    <div t-if="f.alerts.length" class="o_fm_alerts">
+                        <div t-foreach="f.alerts" t-as="a" t-key="a_index" t-attf-class="o_fm_alert {{ a.level }}"><i t-attf-class="fa {{ a.icon }} me-1"/><t t-esc="a.text"/></div>
+                    </div>
+                    <button class="btn btn-primary w-100 mt-2 o_fm_rec" t-on-click="() => this.record(f.id)"><i class="fa fa-pencil me-1"/>Record today</button>
+                </div>
+            </div>
+        </section>
+        <section t-if="H.closed.length" class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-archive"/>Closed flocks</div>
+            <table class="o_pp_table"><tbody>
+                <tr t-foreach="H.closed" t-as="c" t-key="c.id" class="o_pf_click" t-on-click="() => this.openFlock(c.id)">
+                    <td t-esc="c.name"/><td t-esc="kindLabel(c.kind)"/><td class="text-muted">closed <t t-esc="c.closed_ec"/></td></tr>
+            </tbody></table>
+        </section>
+    </t>
+
+    <!-- ============================================================ the daily record (phone first) -->
+    <t t-name="sonador_farm.Record">
+        <t t-set="R" t-value="state.rec"/>
+        <t t-set="V" t-value="state.recVals"/>
+        <div class="o_fm_rec_page">
+            <div class="o_pp_toolbar">
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.go('home')"><i class="fa fa-arrow-left"/></button>
+                <h4 class="m-0" t-esc="R.flock.name"/>
+                <div class="btn-group ms-auto o_fm_lang">
+                    <button t-attf-class="btn btn-sm {{ state.lang === 'en' ? 'btn-primary' : 'btn-light border' }}" t-on-click="() => this.setLang('en')">EN</button>
+                    <button t-attf-class="btn btn-sm {{ state.lang === 'am' ? 'btn-primary' : 'btn-light border' }}" t-on-click="() => this.setLang('am')">አማ</button>
+                    <button t-attf-class="btn btn-sm {{ state.lang === 'om' ? 'btn-primary' : 'btn-light border' }}" t-on-click="() => this.setLang('om')">Afaan Oromoo</button>
+                </div>
+            </div>
+            <div class="o_pp_card p-3">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <button class="btn btn-light border" t-on-click="() => this.recordDay(-1)"><i class="fa fa-chevron-left"/></button>
+                    <div class="text-center flex-grow-1"><b class="o_fm_day" t-esc="R.date_ec"/><div class="small text-muted"><t t-esc="W.title"/> · <t t-esc="W.alive"/>: <b t-esc="fmt(R.flock.alive)"/></div></div>
+                    <button class="btn btn-light border" t-att-disabled="R.date === ctx.today" t-on-click="() => this.recordDay(1)"><i class="fa fa-chevron-right"/></button>
+                </div>
+                <div class="o_fm_fields">
+                    <label><t t-esc="W.dead"/><input type="number" inputmode="numeric" min="0" class="form-control" t-model="V.dead"/><small t-if="R.before"><t t-esc="W.yesterday"/>: <t t-esc="before('dead')"/></small></label>
+                    <label><t t-esc="W.culled"/><input type="number" inputmode="numeric" min="0" class="form-control" t-model="V.culled"/><small t-if="R.before"><t t-esc="W.yesterday"/>: <t t-esc="before('culled')"/></small></label>
+                    <label><t t-esc="W.feed"/><input type="number" inputmode="decimal" min="0" class="form-control" t-model="V.feed"/>
+                        <small><t t-if="R.before"><t t-esc="W.yesterday"/>: <t t-esc="before('feed')"/> · </t><t t-esc="fmt(R.flock.feed_stock, 1)"/> kg <t t-esc="W.stock"/></small></label>
+                    <t t-if="R.flock.kind === 'layer'">
+                        <label t-foreach="ctx.egg_grades" t-as="g" t-key="g.id"><t t-esc="W.eggs"/> · <t t-esc="g.name"/>
+                            <input type="number" inputmode="numeric" min="0" class="form-control" t-model="V.eggs[g.id]"/><small t-if="R.before"><t t-esc="W.yesterday"/>: <t t-esc="beforeEgg(g.id)"/></small></label>
+                        <label><t t-esc="W.broken"/><input type="number" inputmode="numeric" min="0" class="form-control" t-model="V.broken"/><small t-if="R.before"><t t-esc="W.yesterday"/>: <t t-esc="before('broken')"/></small></label>
+                    </t>
+                    <t t-else="">
+                        <label><t t-esc="W.weight"/><input type="number" inputmode="decimal" min="0" class="form-control" t-model="V.weight"/><small t-if="R.before"><t t-esc="W.yesterday"/>: <t t-esc="before('weight')"/></small></label>
+                    </t>
+                    <label><t t-esc="W.out"/><input type="number" inputmode="numeric" min="0" class="form-control" t-model="V.out"/></label>
+                    <label><t t-esc="W.water"/><input type="number" inputmode="decimal" min="0" class="form-control" t-model="V.water"/><small t-if="R.before"><t t-esc="W.yesterday"/>: <t t-esc="before('water')"/></small></label>
+                    <label><t t-esc="W.manure"/><input type="number" inputmode="decimal" min="0" class="form-control" t-model="V.manure"/></label>
+                    <label class="wide"><t t-esc="W.note"/><input class="form-control" t-model="V.note"/></label>
+                </div>
+                <div t-if="R.store_skipped" class="o_fm_alert info mt-2"><i class="fa fa-info-circle me-1"/>Recorded. The store (feed issued, eggs received) is moved in the main system for now.</div>
+                <div t-if="R.flock.kind === 'layer'" class="o_fm_total"><t t-esc="W.eggs"/>: <b t-esc="fmt(eggTotal)"/></div>
+                <button class="btn btn-primary btn-lg w-100 mt-3" t-att-disabled="!R.can_edit" t-on-click="saveRecord"><i class="fa fa-check me-1"/><t t-esc="W.save"/></button>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ one flock -->
+    <t t-name="sonador_farm.Flock">
+        <t t-set="F" t-value="state.flock"/>
+        <t t-set="K" t-value="F.k"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.go('home')"><i class="fa fa-arrow-left me-1"/>Flocks</button>
+            <h4 class="m-0 ms-1" t-esc="F.name"/>
+            <span class="text-muted small"><t t-esc="kindLabel(F.kind)"/><t t-if="F.breed"> · <t t-esc="F.breed"/></t><t t-if="F.house"> · <t t-esc="F.house"/></t> · placed <t t-esc="F.placed_ec"/></span>
+            <span t-if="F.state === 'closed'" class="o_pp_badge">closed</span>
+            <div class="ms-auto d-flex flex-wrap gap-2">
+                <button t-if="F.state !== 'closed'" class="btn btn-primary btn-sm" t-on-click="() => this.record(F.id)"><i class="fa fa-pencil me-1"/>Record a day</button>
+                <t t-if="ctx.is_manager">
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.sell(false)"><i class="fa fa-shopping-basket me-1"/>Sell</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.sell(true)">Sell on credit</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="askFeed"><i class="fa fa-truck me-1"/>Ask for feed</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="editFlock"><i class="fa fa-pencil"/></button>
+                    <button t-if="F.state !== 'closed'" t-attf-class="btn btn-sm {{ state.confirmClose ? 'btn-danger' : 'btn-light border' }}" t-on-click="closeFlock"><t t-esc="state.confirmClose ? 'Close it: sure?' : 'Close flock'"/></button>
+                </t>
+            </div>
+        </div>
+        <div t-if="F.alerts.length" class="o_fm_alerts mb-3">
+            <div t-foreach="F.alerts" t-as="a" t-key="a_index" t-attf-class="o_fm_alert {{ a.level }}"><i t-attf-class="fa {{ a.icon }} me-1"/><t t-esc="a.text"/>
+                <button t-if="a.feed and ctx.is_manager" class="btn btn-link btn-sm p-0 ms-2" t-on-click="askFeed">Ask for feed</button></div>
+        </div>
+        <div class="o_fm_kpis">
+            <div><span>Age</span><b><t t-esc="K.age_weeks"/> <small>weeks</small></b><small><t t-esc="K.age_days"/> days</small></div>
+            <div><span>Alive</span><b t-esc="fmt(K.alive)"/><small>of <t t-esc="fmt(K.placed)"/> · <t t-esc="K.mortality_pct"/>% lost</small></div>
+            <t t-if="F.kind === 'layer'">
+                <div><span>Laying % (7 days)</span><b><t t-esc="K.hen_day"/>%</b><small t-if="K.target_hen_day">breed <t t-esc="K.target_hen_day"/>%</small></div>
+                <div><span>Eggs</span><b t-esc="fmt(K.eggs_total)"/><small>today <t t-esc="fmt(K.eggs_today)"/> · broken <t t-esc="fmt(K.broken_total)"/></small></div>
+            </t>
+            <t t-else="">
+                <div><span>Weight</span><b><t t-esc="fmt(K.weight)"/> <small>g</small></b><small t-if="K.target_weight">breed <t t-esc="fmt(K.target_weight)"/> g</small></div>
+                <div><span>FCR</span><b t-esc="K.fcr || '-'"/><small>livability <t t-esc="K.livability"/>%</small></div>
+            </t>
+            <div><span>Feed per bird</span><b><t t-esc="K.feed_g_bird"/> <small>g/day</small></b><small t-if="K.target_feed">breed <t t-esc="K.target_feed"/> g</small></div>
+            <div><span>Feed used</span><b><t t-esc="fmt(K.feed_total)"/> <small>kg</small></b><small t-esc="F.feed"/></div>
+            <t t-if="F.money">
+                <div><span>Cost to date</span><b t-esc="fmt(F.money.cost)"/><small><t t-esc="fmt(F.money.unit_cost, 2)"/> per <t t-esc="F.money.unit"/></small></div>
+                <div><span>Sales</span><b t-esc="fmt(F.money.revenue)"/><small t-attf-class="{{ F.money.profit >= 0 ? 'text-success' : 'text-danger' }}">profit <t t-esc="fmt(F.money.profit)"/></small></div>
+            </t>
+        </div>
+        <div class="o_fm_two">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-line-chart"/><t t-esc="F.kind === 'layer' ? 'Laying % against the breed' : 'Weight against the breed'"/></div>
+                <div class="p-3"><SbChart t-if="F.series.length" type="'line'" labels="layChart.labels" series="layChart.series" height="220"/><div t-else="" class="o_pp_empty">No days recorded yet.</div></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-heartbeat"/>Birds lost a day</div>
+                <div class="p-3"><SbChart t-if="F.series.length" type="'bar'" labels="deadChart.labels" series="deadChart.series" height="220"/><div t-else="" class="o_pp_empty">No days recorded yet.</div></div></div>
+        </div>
+        <nav class="o_fm_tabs">
+            <button t-att-class="state.tab === 'days' ? 'active' : ''" t-on-click="() => this.state.tab = 'days'">Days</button>
+            <button t-att-class="state.tab === 'health' ? 'active' : ''" t-on-click="() => this.state.tab = 'health'">Health calendar</button>
+            <button t-if="F.money" t-att-class="state.tab === 'money' ? 'active' : ''" t-on-click="() => this.state.tab = 'money'">Money</button>
+        </nav>
+        <div t-if="state.tab === 'days'" class="o_pp_card o_fm_scroll">
+            <table class="o_pp_table">
+                <thead><tr><th>Day</th><th class="num">Died</th><th class="num">Culled</th><th class="num">Out</th><th class="num">Feed kg</th>
+                    <th t-if="F.kind === 'layer'" class="num">Eggs</th><th t-if="F.kind === 'layer'" class="num">Broken</th><th t-if="F.kind !== 'layer'" class="num">Weight g</th>
+                    <th class="num">Manure</th><th>Store</th><th>By</th><th/></tr></thead>
+                <tbody>
+                    <tr t-foreach="F.records" t-as="r" t-key="r.id">
+                        <td><b t-esc="r.ec"/><div t-if="r.note" class="small text-muted" t-esc="r.note"/></td>
+                        <td class="num" t-esc="r.dead || ''"/><td class="num" t-esc="r.culled || ''"/><td class="num" t-esc="r.out || ''"/><td class="num" t-esc="fmt(r.feed, 1)"/>
+                        <td t-if="F.kind === 'layer'" class="num" t-esc="fmt(r.eggs)"/><td t-if="F.kind === 'layer'" class="num" t-esc="r.broken || ''"/>
+                        <td t-if="F.kind !== 'layer'" class="num" t-esc="r.weight ? fmt(r.weight) : ''"/>
+                        <td class="num" t-esc="r.manure || ''"/><td class="small text-muted"><t t-esc="r.issue"/><t t-if="r.receipt"> <t t-esc="r.receipt"/></t></td>
+                        <td class="small text-muted" t-esc="r.by"/>
+                        <td><button t-if="F.state !== 'closed'" class="btn btn-link btn-sm p-0" t-on-click="() => this.record(F.id, r.date)"><i class="fa fa-pencil"/></button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div t-if="!F.records.length" class="o_pp_empty p-3">No days recorded yet.</div>
+        </div>
+        <div t-if="state.tab === 'health'" class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>Due</th><th>What</th><th>How</th><th>Product</th><th class="num">Withdrawal</th><th>Status</th><th/></tr></thead>
+                <tbody>
+                    <tr t-foreach="F.health" t-as="h" t-key="h.id" t-attf-class="{{ h.late ? 'o_fm_late' : '' }}">
+                        <td t-esc="h.due_ec"/><td><b t-esc="h.name"/></td><td class="small" t-esc="h.method"/>
+                        <td class="small"><t t-esc="h.product"/><t t-if="h.dose"> × <t t-esc="h.dose"/></t></td>
+                        <td class="num"><t t-if="h.withdrawal"><t t-esc="h.withdrawal"/> days</t></td>
+                        <td><span t-attf-class="o_fm_st {{ h.state }} {{ h.late ? 'late' : '' }}" t-esc="h.state === 'done' ? 'Given ' + h.done_ec : h.state === 'skipped' ? 'Skipped' : (h.late ? 'Late' : 'Due')"/>
+                            <div t-if="h.issue" class="small text-muted" t-esc="h.issue"/></td>
+                        <td class="text-nowrap"><t t-if="h.state === 'due' and F.state !== 'closed'">
+                            <button class="btn btn-primary btn-sm" t-on-click="() => this.healthDone(h)">Given</button>
+                            <button t-if="ctx.is_manager" class="btn btn-link btn-sm" t-on-click="() => this.healthSkip(h)">Skip</button></t></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div t-if="ctx.is_manager and F.state !== 'closed'" class="p-2">
+                <button t-if="!state.health" class="btn btn-link btn-sm" t-on-click="newHealth"><i class="fa fa-plus me-1"/>Add to the calendar</button>
+                <div t-else="" class="o_pp_formgrid">
+                    <label class="wide">What<input class="form-control" t-model="state.health.name" placeholder="e.g. Vitamins after transport"/></label>
+                    <label>Due<input type="date" class="form-control" t-model="state.health.date"/></label>
+                    <label>How<input class="form-control" t-model="state.health.method"/></label>
+                    <label>Withdrawal (days)<input type="number" class="form-control" t-model="state.health.withdrawal"/></label>
+                    <div class="d-flex gap-2 align-items-end"><button class="btn btn-primary btn-sm" t-att-disabled="!state.health.name" t-on-click="saveHealth">Add</button>
+                        <button class="btn btn-light border btn-sm" t-on-click="() => this.state.health = null">Cancel</button></div>
+                </div>
+            </div>
+        </div>
+        <div t-if="state.tab === 'money' and F.money" class="o_fm_two">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-pie-chart"/>Cost to date
+                    <button class="btn btn-link btn-sm ms-auto" t-on-click="() => this.openJob(F.job_id)">In Projects</button></div>
+                <table class="o_pp_table"><tbody>
+                    <tr t-foreach="F.money.by" t-as="b" t-key="b.name"><td t-esc="b.name"/><td class="num" t-esc="fmt(b.amount, 2)"/></tr>
+                    <tr class="o_fm_tot"><td>Total</td><td class="num" t-esc="fmt(F.money.cost, 2)"/></tr>
+                    <tr><td>Sales</td><td class="num" t-esc="fmt(F.money.revenue, 2)"/></tr>
+                    <tr class="o_fm_tot"><td>Profit</td><td t-attf-class="num {{ F.money.profit >= 0 ? 'text-success' : 'text-danger' }}" t-esc="fmt(F.money.profit, 2)"/></tr>
+                </tbody></table>
+                <div t-if="F.kind === 'layer'" class="small text-muted p-2">Birds bought: <t t-esc="fmt(F.money.bird_cost, 2)"/>, worn off to date <t t-esc="fmt(F.money.worn_off, 2)"/>
+                    (until <t t-esc="F.lay_until_ec || 'the planned end'"/>).</div>
+            </div>
+            <div class="o_pp_card o_fm_scroll">
+                <div class="o_pp_card_head"><i class="fa fa-list"/>Every entry on the flock</div>
+                <table class="o_pp_table">
+                    <thead><tr><th>Date</th><th>Document</th><th>What</th><th class="num">Cost</th><th class="num">Sales</th></tr></thead>
+                    <tbody><tr t-foreach="F.money.lines" t-as="l" t-key="l_index" class="o_pf_click" t-on-click="() => this.openDoc(l.model, l.res_id)">
+                        <td t-esc="l.ec"/><td><t t-esc="l.ref"/> <small class="text-muted" t-esc="l.type"/></td><td class="small" t-esc="l.what"/>
+                        <td class="num" t-esc="l.cost ? fmt(l.cost, 2) : ''"/><td class="num" t-esc="l.revenue ? fmt(l.revenue, 2) : ''"/></tr></tbody>
+                </table>
+                <div t-if="!F.money.lines.length" class="o_pp_empty p-3">Nothing posted on the flock yet: buy for it (purchase request or order, "For"), issue feed to it, sell from it.</div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ a new flock -->
+    <t t-name="sonador_farm.NewFlock">
+        <t t-set="E" t-value="state.edit"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-plus"/><t t-esc="E.id ? 'The flock' : 'A new flock'"/></div>
+            <div class="o_pp_formgrid">
+                <label class="wide">Name<input class="form-control" t-model="E.name" placeholder="e.g. Layers 2019-1 (7,000 pullets)"/></label>
+                <label>Kind<div class="btn-group"><button t-attf-class="btn {{ E.kind === 'layer' ? 'btn-primary' : 'btn-light border' }}" t-on-click="() => this.setKind('layer')">Layers (eggs)</button>
+                    <button t-attf-class="btn {{ E.kind === 'broiler' ? 'btn-primary' : 'btn-light border' }}" t-on-click="() => this.setKind('broiler')">Broilers (meat)</button></div></label>
+                <label>Farm<select class="form-select" t-model="E.farm_id"><option t-foreach="ctx.farms" t-as="f" t-key="f.id" t-att-value="f.id" t-esc="f.name"/></select></label>
+                <label>House<select class="form-select" t-model="E.unit_id"><option value="">-</option><option t-foreach="unitsOfFarm" t-as="u" t-key="u.id" t-att-value="u.id" t-esc="u.name"/></select></label>
+                <label>Breed<select class="form-select" t-model="E.breed_id"><option value="">-</option>
+                    <option t-foreach="breedsOfKind" t-as="b" t-key="b.id" t-att-value="b.id" t-esc="b.name"/></select></label>
+                <label>Birds placed<input type="number" class="form-control" t-model="E.birds_placed"/></label>
+                <label>Placed on<input type="date" class="form-control" t-model="E.date_placed"/></label>
+                <label>Age when placed (days)<input type="number" class="form-control" t-model="E.age_placed"/><small class="text-muted"><t t-esc="E.kind === 'layer' ? 'pullets at 16 weeks: 112' : 'day-old chicks: 1'"/></small></label>
+                <label>Feed (from the store)<select class="form-select" t-model="E.feed_id"><option value="">-</option>
+                    <option t-foreach="ctx.feeds" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label t-if="E.kind === 'layer'">Kept until<input type="date" class="form-control" t-model="E.lay_until"/><small class="text-muted">empty: the breed's usual age</small></label>
+                <label class="wide">Note<input class="form-control" t-model="E.note"/></label>
+            </div>
+            <div class="small text-muted px-3">Its vaccine calendar and its costs are kept for you: anything bought "For" this flock, the feed given to it and what it sells.</div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => this.go('home')">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="!E.name or !E.farm_id or !E.birds_placed" t-on-click="saveFlock">Save</button></div>
+        </div>
+    </t>
+
+    <!-- ============================================================ setup -->
+    <t t-name="sonador_farm.Setup">
+        <t t-set="S" t-value="state.set"/>
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-book"/>Accounts and items (made for you)</div>
+            <table class="o_pp_table"><tbody>
+                <tr><td>Layer flocks (biological assets)</td><td t-esc="S.accounts.bio ? S.accounts.bio.name : '-'"/><td class="small text-muted">Pullets bought for a layer flock are kept here.</td></tr>
+                <tr><td>Layer flocks: worn off to date</td><td t-esc="S.accounts.bio_dep ? S.accounts.bio_dep.name : '-'"/><td class="small text-muted">The birds wear off from placing to the planned end.</td></tr>
+                <tr><td>Layer flock depreciation</td><td t-esc="S.accounts.dep ? S.accounts.dep.name : '-'"/><td class="small text-muted">Each month's share: part of the cost of the eggs.</td></tr>
+                <tr><td>Feed, medicine and inputs used</td><td t-esc="S.accounts.cost ? S.accounts.cost.name : '-'"/><td class="small text-muted">Feed and medicine issued to a flock.</td></tr>
+                <tr><td>Broiler chicks bought</td><td t-esc="S.accounts.chicks ? S.accounts.chicks.name : '-'"/><td class="small text-muted">A cost of the batch.</td></tr>
+                <tr><td>Egg grades</td><td colspan="2" t-esc="S.products.eggs.join(', ') || '-'"/></tr>
+                <tr><td>Manure</td><td colspan="2" t-esc="S.products.manure || '-'"/></tr>
+                <tr><td>Broilers to sell</td><td colspan="2" t-esc="S.products.broiler || '-'"/></tr>
+            </tbody></table>
+            <div class="small text-muted p-2">Made the first time the farm was opened, numbered like your chart. Buy pullets with an item of the category
+                "Pullets (layer flocks)" and the bill lands on the flock's assets; feed and medicine with the categories "Feed" and "Veterinary medicine and vaccines".</div>
+        </div>
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-map-marker"/>Farms and houses
+                <button class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.editFarm(null)"><i class="fa fa-plus me-1"/>Farm</button></div>
+            <table class="o_pp_table"><tbody>
+                <tr t-foreach="S.farms" t-as="f" t-key="f.id" class="o_pf_click" t-on-click="() => this.editFarm(f)">
+                    <td><b t-esc="f.name"/> <span class="text-muted small" t-esc="f.location"/></td>
+                    <td class="small" t-esc="f.units.map((u) => u.name + (u.capacity ? ' (' + u.capacity + ')' : '')).join(', ')"/></tr>
+            </tbody></table>
+            <div t-if="state.edit" class="o_pp_panel p-3 border-top">
+                <t t-set="E" t-value="state.edit"/>
+                <div class="o_pp_formgrid">
+                    <label class="wide">Farm<input class="form-control" t-model="E.name"/></label>
+                    <label>Where<input class="form-control" t-model="E.location"/></label>
+                    <label>Farm manager<select class="form-select" t-model="E.manager_id"><option value="">-</option>
+                        <option t-foreach="S.employees" t-as="e" t-key="e.id" t-att-value="e.id" t-esc="e.name"/></select></label>
+                    <label>Farm store<select class="form-select" t-model="E.warehouse_id"><option t-foreach="S.warehouses" t-as="w" t-key="w.id" t-att-value="w.id" t-esc="w.name"/></select></label>
+                </div>
+                <div class="small fw-bold mt-2">Houses</div>
+                <div t-foreach="E.units" t-as="u" t-key="u_index" class="d-flex gap-2 mb-1">
+                    <input class="form-control form-control-sm" style="max-width: 14rem" t-model="u.name"/>
+                    <select class="form-select form-select-sm" style="max-width: 11rem" t-model="u.kind"><option value="house">Poultry house</option><option value="pen">Pen</option>
+                        <option value="greenhouse">Greenhouse</option><option value="field">Field / block</option><option value="store">Store / other</option></select>
+                    <input type="number" class="form-control form-control-sm" style="max-width: 9rem" t-model="u.capacity" placeholder="Birds"/>
+                </div>
+                <button class="btn btn-link btn-sm px-0" t-on-click="addUnit"><i class="fa fa-plus me-1"/>House</button>
+                <div class="small fw-bold mt-2">Farm workers</div>
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                    <button t-foreach="S.employees" t-as="e" t-key="e.id" t-attf-class="o_py_chip {{ E.worker_ids.includes(e.id) ? 'on' : '' }}" t-on-click="() => this.toggleWorker(e.id)" t-esc="e.name"/>
+                </div>
+                <label t-if="!E.setup_job_id" class="small"><input type="checkbox" t-model="E.make_setup_job"/> A setup project for building the houses (ventilation, water, lights): its costs become fixed assets</label>
+                <div class="d-flex gap-2 mt-2"><button class="btn btn-primary btn-sm" t-att-disabled="!E.name" t-on-click="saveFarm">Save</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.state.edit = null">Cancel</button></div>
+            </div>
+        </div>
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-medkit"/>Health programme (agree it with your veterinarian)
+                <button class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.editTemplate(null)"><i class="fa fa-plus me-1"/>Add</button></div>
+            <table class="o_pp_table">
+                <thead><tr><th>For</th><th>What</th><th class="num">Age (days)</th><th class="num">Then every</th><th>How</th><th class="num">Withdrawal</th><th/></tr></thead>
+                <tbody><tr t-foreach="S.health" t-as="t" t-key="t.id">
+                    <td t-esc="kindLabel(t.kind)"/><td><b t-esc="t.name"/></td><td class="num" t-esc="t.age"/><td class="num"><t t-if="t.repeat"><t t-esc="t.repeat"/> days</t></td>
+                    <td class="small" t-esc="t.method"/><td class="num"><t t-if="t.withdrawal"><t t-esc="t.withdrawal"/> days</t></td>
+                    <td class="text-nowrap"><button class="btn btn-link btn-sm p-0" t-on-click="() => this.editTemplate(t)"><i class="fa fa-pencil"/></button>
+                        <button class="btn btn-link btn-sm p-0 ms-2 text-danger" t-on-click="() => this.deleteTemplate(t)"><i class="fa fa-times"/></button></td></tr></tbody>
+            </table>
+            <div t-if="state.tpl" class="o_pp_formgrid p-3 border-top">
+                <label>For<select class="form-select" t-model="state.tpl.kind"><option value="layer">Layers</option><option value="broiler">Broilers</option></select></label>
+                <label class="wide">What<input class="form-control" t-model="state.tpl.name"/></label>
+                <label>At age (days)<input type="number" class="form-control" t-model="state.tpl.age"/></label>
+                <label>Then every (days)<input type="number" class="form-control" t-model="state.tpl.repeat"/></label>
+                <label>How<input class="form-control" t-model="state.tpl.method"/></label>
+                <label>Withdrawal (days)<input type="number" class="form-control" t-model="state.tpl.withdrawal"/></label>
+                <div class="d-flex gap-2 align-items-end"><button class="btn btn-primary btn-sm" t-att-disabled="!state.tpl.name" t-on-click="saveTemplate">Save</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.state.tpl = null">Cancel</button></div>
+            </div>
+        </div>
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-line-chart"/>Breeds and their targets</div>
+            <table class="o_pp_table"><tbody>
+                <tr t-foreach="S.breeds" t-as="b" t-key="b.id"><td><b t-esc="b.name"/></td><td t-esc="kindLabel(b.kind)"/>
+                    <td class="small text-muted"><t t-esc="b.targets"/> weeks of targets<t t-if="b.until"> · kept to <t t-esc="b.until"/> weeks</t></td></tr>
+            </tbody></table>
+        </div>
+    </t>
+</templates>

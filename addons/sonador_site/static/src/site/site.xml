@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="sonador_site.App">
+    <div class="o_ws" t-if="state.d">
+        <t t-set="d" t-value="state.d"/>
+        <header class="o_ws_top">
+            <div class="o_ws_title">
+                <h1>Website</h1>
+                <span t-attf-class="o_ws_status {{ d.site.published ? 'on' : '' }}"><i class="fa fa-circle"/><t t-if="d.site.published"> Online</t><t t-else=""> Offline</t></span>
+            </div>
+            <nav class="o_ws_tabs">
+                <button t-att-class="state.tab === 'home' ? 'active' : ''" t-on-click="() => this.go('home')"><i class="fa fa-home"/> Overview</button>
+                <button t-att-class="state.tab === 'pages' ? 'active' : ''" t-on-click="() => this.go('pages')"><i class="fa fa-files-o"/> Pages</button>
+                <button t-att-class="state.tab === 'products' ? 'active' : ''" t-on-click="() => this.go('products')"><i class="fa fa-shopping-bag"/> Products</button>
+                <button t-att-class="state.tab === 'look' ? 'active' : ''" t-on-click="() => this.go('look')"><i class="fa fa-paint-brush"/> Look</button>
+                <button t-att-class="state.tab === 'settings' ? 'active' : ''" t-on-click="() => this.go('settings')"><i class="fa fa-sliders"/> Shop and contact</button>
+            </nav>
+            <button class="btn btn-light border" t-on-click="openSite"><i class="fa fa-external-link me-1"/>Open the site</button>
+        </header>
+
+        <!-- ============================================================ overview -->
+        <div t-if="state.tab === 'home'" class="o_ws_home">
+            <div class="o_ws_cards">
+                <div class="o_ws_card o_ws_online">
+                    <div class="o_ws_label">Your site</div>
+                    <a t-att-href="siteUrl" target="_blank" class="o_ws_url" t-esc="siteUrl"/>
+                    <button t-attf-class="btn {{ d.site.published ? 'btn-light border' : 'btn-primary' }} mt-2" t-on-click="toggleOnline">
+                        <t t-if="d.site.published">Take it offline</t><t t-else="">Put it online</t>
+                    </button>
+                </div>
+                <div class="o_ws_card"><div class="o_ws_label">Visits, last 7 days</div><div class="o_ws_big" t-esc="d.visits.week"/></div>
+                <div class="o_ws_card o_ws_click" t-on-click="openOrders"><div class="o_ws_label">Orders to handle</div><div class="o_ws_big" t-esc="d.counts.new_orders"/><div class="small text-muted"><t t-esc="d.counts.orders"/> web orders in all</div></div>
+                <div class="o_ws_card o_ws_click" t-on-click="() => this.go('products')"><div class="o_ws_label">Products on the site</div><div class="o_ws_big" t-esc="d.counts.published"/><div class="small text-muted">of <t t-esc="d.counts.products"/> you sell</div></div>
+            </div>
+            <div class="o_ws_grid">
+                <div class="o_ws_panel">
+                    <h3>Getting ready</h3>
+                    <div t-foreach="checklist" t-as="c" t-key="c_index" t-attf-class="o_ws_check {{ c.done ? 'done' : '' }}" t-on-click="() => this.go(c.tab)">
+                        <i t-attf-class="fa {{ c.done ? 'fa-check-circle' : 'fa-circle-o' }}"/> <span t-esc="c.text"/>
+                    </div>
+                </div>
+                <div class="o_ws_panel">
+                    <h3>Visits, last 14 days</h3>
+                    <div class="o_ws_bars">
+                        <div t-foreach="d.visits.days" t-as="v" t-key="v.date" class="o_ws_bar" t-att-title="v.date + ': ' + v.views">
+                            <span t-attf-style="height: {{ barHeight(v.views) }}%"/>
+                        </div>
+                    </div>
+                    <div t-foreach="d.visits.top" t-as="t" t-key="t_index" class="o_ws_kv small"><span t-esc="t[0]"/><b t-esc="t[1]"/></div>
+                </div>
+                <div class="o_ws_panel o_ws_wide">
+                    <h3>Latest web orders</h3>
+                    <p t-if="!d.orders.length" class="text-muted">No orders yet. They land here and in Sales as soon as a customer orders.</p>
+                    <table t-else="" class="table table-sm o_ws_table">
+                        <tr t-foreach="d.orders" t-as="o" t-key="o.id" t-on-click="() => this.openOrder(o)">
+                            <td><b t-esc="o.name"/></td><td t-esc="o.customer"/><td t-esc="o.date"/>
+                            <td><t t-if="o.how === 'delivery'">Delivery</t><t t-else="">Pickup</t></td>
+                            <td class="text-end" t-esc="money(o.total)"/>
+                            <td><span t-attf-class="badge {{ o.state === 'sale' ? 'text-bg-success' : (o.state === 'cancel' ? 'text-bg-secondary' : 'text-bg-warning') }}">
+                                <t t-if="o.state === 'sale'">Confirmed</t><t t-elif="o.state === 'cancel'">Cancelled</t><t t-else="">New</t></span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================ pages -->
+        <div t-if="state.tab === 'pages' and state.page" class="o_ws_builder">
+            <aside class="o_ws_side">
+                <div class="o_ws_side_head">Pages <button class="btn btn-sm btn-link" t-on-click="newPage"><i class="fa fa-plus"/> New</button></div>
+                <div t-foreach="d.pages" t-as="p" t-key="p.id" t-attf-class="o_ws_pagerow {{ state.page.id === p.id ? 'active' : '' }}" t-on-click="() => this.selectPage(p)">
+                    <i t-attf-class="fa {{ p.slug === 'home' ? 'fa-home' : 'fa-file-o' }}"/> <span t-esc="p.name"/>
+                    <i t-if="p.changed" class="fa fa-circle o_ws_dot" title="Changes not published yet"/>
+                </div>
+                <div class="o_ws_side_head mt-3">Blocks on this page</div>
+                <div class="o_ws_blocks">
+                    <t t-foreach="state.page.blocks" t-as="b" t-key="b_index">
+                        <div t-attf-class="o_ws_block {{ state.block === b ? 'active' : '' }}">
+                            <div class="o_ws_block_head" t-on-click="() => this.editBlock(b)">
+                                <i t-attf-class="fa {{ blockInfo(b).icon }}"/>
+                                <div class="o_ws_block_name"><b t-esc="blockInfo(b).label"/><small t-esc="blockSummary(b)"/></div>
+                                <span class="o_ws_block_tools">
+                                    <button t-on-click.stop="() => this.moveBlock(b, -1)" title="Up"><i class="fa fa-chevron-up"/></button>
+                                    <button t-on-click.stop="() => this.moveBlock(b, 1)" title="Down"><i class="fa fa-chevron-down"/></button>
+                                    <button t-on-click.stop="() => this.removeBlock(b)" title="Remove"><i class="fa fa-trash-o"/></button>
+                                </span>
+                            </div>
+                            <div t-if="state.block === b" class="o_ws_fields">
+                                <t t-foreach="blockInfo(b).fields" t-as="f" t-key="f[0]">
+                                    <t t-set="kind" t-value="fieldKind(f)"/>
+                                    <label t-esc="f[2]"/>
+                                    <input t-if="kind === 'text' or kind === 'link'" class="form-control form-control-sm" t-att-value="b[f[0]] or ''"
+                                        t-att-placeholder="kind === 'link' ? '/shop, /about, https://...' : ''" t-on-input="(ev) => this.setField(b, f[0], ev.target.value)"/>
+                                    <textarea t-elif="kind === 'textarea'" class="form-control form-control-sm" rows="3" t-att-value="b[f[0]] or ''" t-on-input="(ev) => this.setField(b, f[0], ev.target.value)"/>
+                                    <input t-elif="kind === 'number'" type="number" class="form-control form-control-sm" t-att-value="b[f[0]]" t-on-input="(ev) => this.setNumber(b, f[0], ev)"/>
+                                    <div t-elif="kind === 'bool'" class="form-check form-switch">
+                                        <input type="checkbox" class="form-check-input" t-att-checked="b[f[0]]" t-on-change="(ev) => this.setField(b, f[0], ev.target.checked)"/>
+                                    </div>
+                                    <div t-elif="kind === 'choice'" class="o_ws_seg">
+                                        <button t-foreach="fieldChoices(f)" t-as="c" t-key="c" t-att-class="b[f[0]] === c ? 'active' : ''" t-on-click="() => this.setField(b, f[0], c)" t-esc="choiceLabel(c)"/>
+                                    </div>
+                                    <select t-elif="kind === 'category'" class="form-select form-select-sm" t-on-change="(ev) => this.setNumber(b, f[0], ev)">
+                                        <option value="">Choose…</option>
+                                        <option t-foreach="d.categories" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="b[f[0]] === c.id" t-esc="c.name"/>
+                                    </select>
+                                    <div t-elif="kind === 'image'" class="o_ws_img">
+                                        <img t-if="b[f[0]]" t-att-src="b[f[0]]"/>
+                                        <label class="btn btn-sm btn-light border mb-0"><i class="fa fa-upload me-1"/>Choose a picture
+                                            <input type="file" accept="image/*" class="d-none" t-on-change="(ev) => this.uploadTo(b, f[0], ev)"/></label>
+                                        <button t-if="b[f[0]]" class="btn btn-sm btn-link" t-on-click="() => this.setField(b, f[0], '')">Remove</button>
+                                    </div>
+                                    <div t-elif="kind === 'images'" class="o_ws_imgs">
+                                        <span t-foreach="b[f[0]] or []" t-as="u" t-key="u_index" class="o_ws_thumb"><img t-att-src="u"/><button t-on-click="() => this.removeImage(b, f[0], u_index)"><i class="fa fa-times"/></button></span>
+                                        <label class="btn btn-sm btn-light border"><i class="fa fa-plus me-1"/>Add pictures
+                                            <input type="file" accept="image/*" multiple="1" class="d-none" t-on-change="(ev) => this.uploadTo(b, f[0], ev, true)"/></label>
+                                    </div>
+                                    <div t-elif="kind === 'list'" class="o_ws_list">
+                                        <div t-foreach="b[f[0]] or []" t-as="item" t-key="item_index" class="o_ws_item">
+                                            <t t-foreach="listKeys(f)" t-as="k" t-key="k">
+                                                <select t-if="k === 'icon'" class="form-select form-select-sm" t-on-change="(ev) => this.setItem(b, f[0], item_index, k, ev.target.value)">
+                                                    <option t-foreach="icons" t-as="ic" t-key="ic" t-att-value="ic" t-att-selected="item[k] === ic" t-esc="ic"/>
+                                                </select>
+                                                <textarea t-elif="k === 'text' or k === 'a' or k === 'quote'" class="form-control form-control-sm" rows="2" t-att-placeholder="k === 'a' ? 'Answer' : (k === 'quote' ? 'What they said' : 'Text')" t-att-value="item[k]" t-on-input="(ev) => this.setItem(b, f[0], item_index, k, ev.target.value)"/>
+                                                <input t-else="" class="form-control form-control-sm" t-att-placeholder="k === 'q' ? 'Question' : (k === 'role' ? 'Who they are' : (k === 'name' ? 'Name' : 'Title'))" t-att-value="item[k]" t-on-input="(ev) => this.setItem(b, f[0], item_index, k, ev.target.value)"/>
+                                            </t>
+                                            <button class="btn btn-sm btn-link text-danger px-0" t-on-click="() => this.removeItem(b, f[0], item_index)">Remove</button>
+                                        </div>
+                                        <button class="btn btn-sm btn-light border" t-on-click="() => this.addItem(b, f[0], f)"><i class="fa fa-plus me-1"/>Add</button>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <button class="btn btn-light border w-100 mt-2" t-on-click="() => this.state.adding = !state.adding"><i class="fa fa-plus me-1"/>Add a block</button>
+                <div t-if="state.adding" class="o_ws_catalog">
+                    <button t-foreach="blockKeys" t-as="k" t-key="k" t-on-click="() => this.addBlock(k)"><i t-attf-class="fa {{ d.blocks[k].icon }}"/><span t-esc="d.blocks[k].label"/></button>
+                </div>
+                <div class="o_ws_side_head mt-3">This page</div>
+                <div class="o_ws_fields">
+                    <label>Name</label><input class="form-control form-control-sm" t-att-value="state.page.name" t-on-input="(ev) => this.setPage('name', ev.target.value)"/>
+                    <t t-if="state.page.slug !== 'home'">
+                        <label>Address</label><div class="input-group input-group-sm"><span class="input-group-text">/</span><input class="form-control" t-att-value="state.page.slug" t-on-change="(ev) => this.setPage('slug', ev.target.value)"/></div>
+                        <div class="form-check mt-2"><input type="checkbox" class="form-check-input" id="ws_menu" t-att-checked="state.page.menu" t-on-change="(ev) => this.setPage('menu', ev.target.checked)"/><label class="form-check-label" for="ws_menu">Show in the menu</label></div>
+                    </t>
+                    <label>Title in Google</label><input class="form-control form-control-sm" t-att-value="state.page.seo_title" t-on-input="(ev) => this.setPage('seo_title', ev.target.value)"/>
+                    <label>Description in Google</label><textarea class="form-control form-control-sm" rows="2" t-att-value="state.page.seo_description" t-on-input="(ev) => this.setPage('seo_description', ev.target.value)"/>
+                    <button t-if="state.page.slug !== 'home'" class="btn btn-sm btn-link text-danger px-0 mt-2" t-on-click="deletePage">
+                        <t t-if="state.confirmDel === state.page.id">Click again to delete this page</t><t t-else="">Delete this page</t></button>
+                </div>
+            </aside>
+            <section class="o_ws_preview">
+                <div class="o_ws_preview_bar">
+                    <span class="o_ws_seg">
+                        <button t-att-class="state.device === 'desktop' ? 'active' : ''" t-on-click="() => this.state.device = 'desktop'"><i class="fa fa-desktop"/></button>
+                        <button t-att-class="state.device === 'mobile' ? 'active' : ''" t-on-click="() => this.state.device = 'mobile'"><i class="fa fa-mobile"/></button>
+                    </span>
+                    <span class="text-muted small"><t t-if="state.saving">Saving…</t><t t-elif="state.page.changed">Draft saved, not published</t><t t-else="">Published</t></span>
+                    <button class="btn btn-primary btn-sm" t-on-click="publish"><i class="fa fa-globe me-1"/>Publish</button>
+                </div>
+                <div t-attf-class="o_ws_frame_wrap {{ state.device }}">
+                    <iframe t-if="state.previewUrl" t-ref="frame" t-att-src="state.previewUrl"/>
+                </div>
+            </section>
+        </div>
+
+        <!-- ============================================================ products -->
+        <div t-if="state.tab === 'products'" class="o_ws_products">
+            <div class="o_ws_row">
+                <input class="form-control" placeholder="Search products" t-on-input="onSearch"/>
+                <button class="btn btn-light border" t-on-click="() => this.publishAll(true)">Put all these on the site</button>
+                <button class="btn btn-light border" t-on-click="openCategories"><i class="fa fa-th-large me-1"/>Categories</button>
+            </div>
+            <p class="text-muted small mt-2">Prices, pictures and stock come from the product itself. Open a product to add its pictures and website description.</p>
+            <table class="table o_ws_table">
+                <thead><tr><th/><th>Product</th><th class="text-end">Price</th><th class="text-end">In stock</th><th>Categories</th><th class="text-center">On the site</th><th class="text-center">Featured</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.products" t-as="p" t-key="p.id">
+                        <td class="o_ws_pimg"><img t-if="p.has_image" t-attf-src="/web/image/product.template/{{ p.id }}/image_128"/><i t-else="" class="fa fa-picture-o text-muted" title="No picture yet"/></td>
+                        <td><a href="#" t-on-click.prevent="() => this.openProduct(p)" t-esc="p.name"/><div class="small text-muted" t-esc="p.code"/></td>
+                        <td class="text-end" t-esc="money(p.price)"/>
+                        <td class="text-end"><t t-if="p.stock !== null" t-esc="p.stock"/><t t-else="">–</t></td>
+                        <td><span t-foreach="d.categories" t-as="c" t-key="c.id" t-attf-class="o_ws_chip {{ p.categories.includes(c.id) ? 'on' : '' }}" t-on-click="() => this.toggleCat(p, c.id)" t-esc="c.name"/></td>
+                        <td class="text-center"><div class="form-check form-switch d-inline-block"><input type="checkbox" class="form-check-input" t-att-checked="p.published" t-on-change="(ev) => this.setProduct(p, 'published', ev.target.checked)"/></div></td>
+                        <td class="text-center"><button class="btn btn-link p-0" t-on-click="() => this.setProduct(p, 'featured', !p.featured)"><i t-attf-class="fa {{ p.featured ? 'fa-star text-warning' : 'fa-star-o text-muted' }}"/></button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p t-if="state.ptotal > state.products.length" class="text-muted small">Showing <t t-esc="state.products.length"/> of <t t-esc="state.ptotal"/>. Search to find the others.</p>
+        </div>
+
+        <!-- ============================================================ look -->
+        <div t-if="state.tab === 'look'" class="o_ws_form">
+            <t t-set="s" t-value="state.settings"/>
+            <div class="o_ws_panel">
+                <h3>Style</h3>
+                <div class="o_ws_themes">
+                    <button t-foreach="d.themes" t-as="t" t-key="t[0]" t-attf-class="o_ws_theme o_ws_theme_{{ t[0] }} {{ s.theme === t[0] ? 'active' : '' }}" t-on-click="() => this.setS('theme', t[0])">
+                        <span class="o_ws_theme_pic"><i/><i/><i/></span><t t-esc="t[1]"/></button>
+                </div>
+                <div class="o_ws_two">
+                    <div><label>Main colour</label><input type="color" class="form-control form-control-color" t-att-value="s.color" t-on-input="(ev) => this.setS('color', ev.target.value)"/></div>
+                    <div><label>Accent</label><input type="color" class="form-control form-control-color" t-att-value="s.accent" t-on-input="(ev) => this.setS('accent', ev.target.value)"/></div>
+                    <div><label>Font</label><select class="form-select" t-on-change="(ev) => this.setS('font', ev.target.value)">
+                        <option t-foreach="d.fonts" t-as="f" t-key="f[0]" t-att-value="f[0]" t-att-selected="s.font === f[0]" t-esc="f[1]"/></select></div>
+                </div>
+                <label>Logo</label>
+                <div class="o_ws_img"><img t-attf-src="/unio/site/img/logo?{{ d.site.write_date }}"/>
+                    <label class="btn btn-sm btn-light border mb-0"><i class="fa fa-upload me-1"/>Upload a logo<input type="file" accept="image/*" class="d-none" t-on-change="uploadLogo"/></label>
+                    <span class="small text-muted">Without one, your company logo is used.</span></div>
+                <label>Site name</label><input class="form-control" t-att-value="s.name" t-on-input="(ev) => this.setS('name', ev.target.value)"/>
+                <label>Tagline</label><input class="form-control" t-att-value="s.tagline" t-on-input="(ev) => this.setS('tagline', ev.target.value)"/>
+                <label>Line across the top</label><input class="form-control" placeholder="e.g. Free delivery over 2,000 birr" t-att-value="s.announcement" t-on-input="(ev) => this.setS('announcement', ev.target.value)"/>
+                <button class="btn btn-primary mt-3" t-on-click="saveSettings">Save</button>
+            </div>
+        </div>
+
+        <!-- ============================================================ settings -->
+        <div t-if="state.tab === 'settings'" class="o_ws_form">
+            <t t-set="s" t-value="state.settings"/>
+            <div class="o_ws_panel">
+                <h3>Contact</h3>
+                <div class="o_ws_two">
+                    <div><label>Phone</label><input class="form-control" t-att-value="s.phone" t-on-input="(ev) => this.setS('phone', ev.target.value)"/></div>
+                    <div><label>WhatsApp</label><input class="form-control" t-att-value="s.whatsapp" t-on-input="(ev) => this.setS('whatsapp', ev.target.value)"/></div>
+                    <div><label>Telegram</label><input class="form-control" placeholder="@yourshop" t-att-value="s.telegram" t-on-input="(ev) => this.setS('telegram', ev.target.value)"/></div>
+                    <div><label>Email</label><input class="form-control" t-att-value="s.email" t-on-input="(ev) => this.setS('email', ev.target.value)"/></div>
+                    <div><label>Opening hours</label><input class="form-control" placeholder="Mon–Sat 8:30–6:00" t-att-value="s.hours" t-on-input="(ev) => this.setS('hours', ev.target.value)"/></div>
+                    <div><label>Map link</label><input class="form-control" placeholder="Google Maps link" t-att-value="s.map_url" t-on-input="(ev) => this.setS('map_url', ev.target.value)"/></div>
+                    <div><label>Facebook</label><input class="form-control" t-att-value="s.facebook" t-on-input="(ev) => this.setS('facebook', ev.target.value)"/></div>
+                    <div><label>Instagram</label><input class="form-control" t-att-value="s.instagram" t-on-input="(ev) => this.setS('instagram', ev.target.value)"/></div>
+                    <div><label>TikTok</label><input class="form-control" t-att-value="s.tiktok" t-on-input="(ev) => this.setS('tiktok', ev.target.value)"/></div>
+                </div>
+                <label>Address</label><textarea class="form-control" rows="2" t-att-value="s.address" t-on-input="(ev) => this.setS('address', ev.target.value)"/>
+            </div>
+            <div class="o_ws_panel">
+                <h3>Shop</h3>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_shop" t-att-checked="s.shop" t-on-change="(ev) => this.setS('shop', ev.target.checked)"/><label class="form-check-label" for="ws_shop">Take orders online</label></div>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_stock" t-att-checked="s.show_stock" t-on-change="(ev) => this.setS('show_stock', ev.target.checked)"/><label class="form-check-label" for="ws_stock">Show how many are left</label></div>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_oos" t-att-checked="s.sell_out_of_stock" t-on-change="(ev) => this.setS('sell_out_of_stock', ev.target.checked)"/><label class="form-check-label" for="ws_oos">Take orders when out of stock</label></div>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_conf" t-att-checked="s.confirm_orders" t-on-change="(ev) => this.setS('confirm_orders', ev.target.checked)"/><label class="form-check-label" for="ws_conf">Confirm, invoice and prepare delivery at once (paid by Chapa: once Chapa confirms the payment)</label></div>
+                <div class="o_ws_two">
+                    <div><label>Smallest order</label><input type="number" class="form-control" t-att-value="s.min_order" t-on-input="(ev) => this.setSNum('min_order', ev)"/></div>
+                    <div><label>Send new orders to</label><input class="form-control" t-att-value="s.notify_email" t-on-input="(ev) => this.setS('notify_email', ev.target.value)"/></div>
+                </div>
+            </div>
+            <div class="o_ws_panel">
+                <h3>Getting the order</h3>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_pick" t-att-checked="s.pickup" t-on-change="(ev) => this.setS('pickup', ev.target.checked)"/><label class="form-check-label" for="ws_pick">Pickup</label></div>
+                <input t-if="s.pickup" class="form-control mb-2" t-att-value="s.pickup_text" t-on-input="(ev) => this.setS('pickup_text', ev.target.value)"/>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_del" t-att-checked="s.delivery" t-on-change="(ev) => this.setS('delivery', ev.target.checked)"/><label class="form-check-label" for="ws_del">Delivery</label></div>
+                <div t-if="s.delivery" class="o_ws_two">
+                    <div><label>Delivery fee</label><input type="number" class="form-control" t-att-value="s.delivery_fee" t-on-input="(ev) => this.setSNum('delivery_fee', ev)"/></div>
+                    <div><label>Free over (0: never)</label><input type="number" class="form-control" t-att-value="s.free_over" t-on-input="(ev) => this.setSNum('free_over', ev)"/></div>
+                    <div class="o_ws_span2"><label>What to say about delivery</label><input class="form-control" t-att-value="s.delivery_text" t-on-input="(ev) => this.setS('delivery_text', ev.target.value)"/></div>
+                </div>
+            </div>
+            <div class="o_ws_panel">
+                <h3>Payment</h3>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_cod" t-att-checked="s.pay_cod" t-on-change="(ev) => this.setS('pay_cod', ev.target.checked)"/><label class="form-check-label" for="ws_cod">On delivery or pickup (cash or telebirr)</label></div>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_bank" t-att-checked="s.pay_bank" t-on-change="(ev) => this.setS('pay_bank', ev.target.checked)"/><label class="form-check-label" for="ws_bank">Bank transfer</label></div>
+                <textarea t-if="s.pay_bank" class="form-control mb-2" rows="2" placeholder="Bank and account number, shown after ordering" t-att-value="s.bank_text" t-on-input="(ev) => this.setS('bank_text', ev.target.value)"/>
+                <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_tb" t-att-checked="s.pay_telebirr" t-on-change="(ev) => this.setS('pay_telebirr', ev.target.checked)"/><label class="form-check-label" for="ws_tb">telebirr transfer to your till (you check it yourself)</label></div>
+                <input t-if="s.pay_telebirr" class="form-control" placeholder="Your telebirr till or phone number" t-att-value="s.telebirr_text" t-on-input="(ev) => this.setS('telebirr_text', ev.target.value)"/>
+                <div class="o_ws_chapa">
+                    <div class="d-flex align-items-center gap-2">
+                        <b>Chapa</b><span class="text-muted small">cards, telebirr, CBE Birr, M-Pesa on one page</span>
+                        <span t-if="s.chapa_ok" t-attf-class="badge {{ s.chapa_test ? 'text-bg-warning' : 'text-bg-success' }}"><t t-if="s.chapa_test">Test key</t><t t-else="">Live key</t> <t t-esc="s.chapa_hint"/></span>
+                    </div>
+                    <p class="small text-muted mb-2">Payments go straight to <b>your own Chapa account</b>; Unio never holds your money. Start with your test key, make a test order, then put in the live key.</p>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="password" class="form-control" placeholder="Chapa secret key (CHASECK_TEST-… or CHASECK-…)" t-model="state.chapaKey" autocomplete="off"/>
+                        <button class="btn btn-light border" t-on-click="saveChapa" t-att-disabled="!state.chapaKey">Check and save</button>
+                        <button t-if="s.chapa_ok" class="btn btn-link text-danger" t-on-click="removeChapa">Remove</button>
+                    </div>
+                    <t t-if="s.chapa_ok">
+                        <div class="form-check form-switch"><input type="checkbox" class="form-check-input" id="ws_chapa" t-att-checked="s.pay_chapa" t-on-change="(ev) => this.setS('pay_chapa', ev.target.checked)"/><label class="form-check-label" for="ws_chapa">Offer Chapa at checkout</label></div>
+                        <label>Record Chapa money in</label>
+                        <select class="form-select form-select-sm" t-on-change="(ev) => this.setSNum('chapa_account_id', ev)">
+                            <option t-foreach="d.cash_accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="s.chapa_account_id === a.id" t-esc="a.name"/>
+                        </select>
+                    </t>
+                </div>
+                <label>Terms of sale</label><textarea class="form-control" rows="3" t-att-value="s.terms" t-on-input="(ev) => this.setS('terms', ev.target.value)"/>
+            </div>
+            <div class="o_ws_panel">
+                <h3>Search engines and address</h3>
+                <label>Title in Google</label><input class="form-control" t-att-value="s.seo_title" t-on-input="(ev) => this.setS('seo_title', ev.target.value)"/>
+                <label>Description in Google</label><textarea class="form-control" rows="2" t-att-value="s.seo_description" t-on-input="(ev) => this.setS('seo_description', ev.target.value)"/>
+                <label>Your own domain (optional)</label><input class="form-control" placeholder="www.yourshop.et" t-att-value="s.domain" t-on-input="(ev) => this.setS('domain', ev.target.value)"/>
+                <p class="small text-muted mt-1">Point it at Unio and tell us; we switch it on with a security certificate.</p>
+            </div>
+            <button class="btn btn-primary" t-on-click="saveSettings">Save</button>
+        </div>
+    </div>
+</t>
+</templates>

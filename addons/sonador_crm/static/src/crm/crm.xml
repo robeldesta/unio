@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_crm.App">
+        <div class="o_pp o_cr o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.company"/> · <t t-esc="ctx.today_ec"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-address-book-o me-2"/>CRM</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="state.page === 'home' ? 'active' : ''" t-on-click="() => this.go('home')"><i class="fa fa-tachometer"/> Dashboard</button>
+                        <button t-att-class="state.page === 'tasks' ? 'active' : ''" t-on-click="() => this.go('tasks')"><i class="fa fa-sun-o"/> My day</button>
+                        <button t-att-class="state.page === 'contacts' or state.page === 'record' ? 'active' : ''" t-on-click="() => this.go('contacts')"><i class="fa fa-users"/> Contacts</button>
+                        <button t-att-class="state.page === 'deals' ? 'active' : ''" t-on-click="() => this.go('deals')"><i class="fa fa-columns"/> Deals</button>
+                        <button t-att-class="state.page === 'reorders' ? 'active' : ''" t-on-click="() => this.go('reorders')"><i class="fa fa-refresh"/> Reorders due</button>
+                        <button t-if="ctx.is_manager" t-att-class="state.page === 'settings' ? 'active' : ''" t-on-click="() => this.go('settings')"><i class="fa fa-cog"/></button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'home' and state.dash" t-call="sonador_crm.Home"/>
+                <t t-if="state.page === 'tasks' and state.tasks" t-call="sonador_crm.Tasks"/>
+                <t t-if="state.page === 'contacts' and state.list" t-call="sonador_crm.Contacts"/>
+                <t t-if="state.page === 'record' and state.rec" t-call="sonador_crm.Record"/>
+                <t t-if="state.page === 'deals'" t-call="sonador_crm.Deals"/>
+                <t t-if="state.page === 'reorders' and state.reorders" t-call="sonador_crm.Reorders"/>
+                <t t-if="state.page === 'settings'" t-call="sonador_crm.Settings"/>
+            </div>
+            <t t-if="state.deal" t-call="sonador_crm.Deal"/>
+            <t t-if="state.lostAsk">
+                <div class="o_cr_shade o_cr_top" t-on-click="() => this.state.lostAsk = null"/>
+                <div class="o_cr_modal o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-times-circle"/>Why was "<t t-esc="state.lostAsk.deal.name"/>" lost?</div>
+                    <div class="p-3 d-flex flex-column gap-2">
+                        <select class="form-select" t-on-change="(ev) => this.state.lostAsk.reason = ev.target.value">
+                            <option value="">Choose a reason…</option>
+                            <option t-foreach="ctx.lost_reasons" t-as="r" t-key="r.id" t-att-value="r.id" t-esc="r.name"/>
+                        </select>
+                        <input class="form-control" placeholder="A word more (competitor, price they got…)" t-on-change="(ev) => this.state.lostAsk.note = ev.target.value"/>
+                    </div>
+                    <div class="o_pp_panel_foot"><button class="btn btn-danger btn-sm" t-att-disabled="!state.lostAsk.reason" t-on-click="confirmLost">Mark lost</button>
+                        <button class="btn btn-light border btn-sm" t-on-click="() => this.state.lostAsk = null">Cancel</button></div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- ============================================================ dashboard -->
+    <t t-name="sonador_crm.Home">
+        <t t-set="d" t-value="state.dash"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group"><button class="btn btn-light border btn-sm" t-on-click="() => this.shiftDash(-1)"><i class="fa fa-chevron-left"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftDash(1)"><i class="fa fa-chevron-right"/></button></div>
+            <div><b t-esc="d.label"/><div class="small text-muted" t-esc="d.range"/></div>
+            <select t-if="ctx.is_manager" class="form-select form-select-sm w-auto ms-3" t-on-change="(ev) => this.setDashOwner(ev.target.value)">
+                <option value="">Whole team</option><option value="me" t-att-selected="state.dashOwner === 'me'">Just me</option>
+                <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-att-selected="state.dashOwner == u.id" t-esc="u.name"/>
+            </select>
+            <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.go('deals')"><i class="fa fa-plus me-1"/>Deal</button>
+        </div>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>Sales this month</span><b><t t-esc="short(d.kpi.sales)"/></b>
+                <small t-if="d.kpi.target">of <t t-esc="short(d.kpi.target)"/> target · <t t-esc="pct(d.kpi.sales, d.kpi.target)"/>%</small><small t-else=""><t t-esc="ctx.currency"/> invoiced, incl. VAT</small>
+                <div t-if="d.kpi.target" class="o_cr_bar"><div t-att-style="'width:' + pct(d.kpi.sales, d.kpi.target) + '%'"/></div></div>
+            <div class="o_pp_kpi"><span>Open pipeline</span><b t-esc="short(d.kpi.open)"/><small><t t-esc="d.kpi.open_count"/> deals · weighted <t t-esc="short(d.kpi.weighted)"/></small></div>
+            <div class="o_pp_kpi"><span>Won this month</span><b class="o_pp_good" t-esc="short(d.kpi.won)"/><small><t t-esc="d.kpi.won_count"/> won · <t t-esc="d.kpi.lost_count"/> lost<t t-if="d.kpi.win_rate !== null"> · <t t-esc="d.kpi.win_rate"/>% win rate</t></small></div>
+            <div class="o_pp_kpi o_cr_click" t-on-click="() => this.go('tasks')"><span>Overdue tasks</span><b t-att-class="d.kpi.overdue ? 'o_pp_badtxt' : ''" t-esc="d.kpi.overdue"/><small>open My day</small></div>
+            <div class="o_pp_kpi o_cr_click" t-on-click="() => this.go('reorders')"><span>Reorders due</span><b t-esc="d.kpi.reorders"/><small>customers past their usual cycle</small></div>
+            <div class="o_pp_kpi"><span>New contacts</span><b t-esc="d.kpi.new_contacts"/><small>this month</small></div>
+        </div>
+        <div class="o_pp_grid mb-3">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-columns"/>Open deals by stage</div>
+                <div class="p-3"><SbChart t-if="d.stages.length" type="'bar'" labels="stageChart.labels" series="stageChart.series" height="220"/><div t-else="" class="o_pp_empty">No open deals.</div></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-line-chart"/>Forecast (weighted, by month of expected close)</div>
+                <div class="p-3"><SbChart type="'bar'" labels="forecastChart.labels" series="forecastChart.series" height="220"/></div></div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-user"/>Reps: sales against target and activity</div>
+                <table class="o_pp_table">
+                    <thead><tr><th>Rep</th><th class="text-end">Sales</th><th class="text-end">Target</th><th style="width:22%"/><th class="text-end" title="Calls"><i class="fa fa-phone"/></th><th class="text-end" title="Field visits"><i class="fa fa-map-marker"/></th><th class="text-end" title="Meetings"><i class="fa fa-handshake-o"/></th><th class="text-end" title="Telegram / SMS / email"><i class="fa fa-paper-plane"/></th></tr></thead>
+                    <tbody><tr t-foreach="d.reps" t-as="r" t-key="r.name">
+                        <td t-esc="r.name"/><td class="text-end" t-esc="money(r.sales)"/><td class="text-end" t-esc="r.target ? money(r.target) : ''"/>
+                        <td><div t-if="r.target" class="o_cr_bar"><div t-att-style="'width:' + pct(r.sales, r.target) + '%'"/></div></td>
+                        <td class="text-end" t-esc="r.calls or ''"/><td class="text-end" t-esc="r.visits or ''"/><td class="text-end" t-esc="r.meetings or ''"/><td class="text-end" t-esc="r.messages or ''"/>
+                    </tr><tr t-if="!d.reps.length"><td colspan="8" class="o_pp_empty">Nothing this month yet.</td></tr></tbody>
+                </table></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-map"/>Sales by region</div>
+                <div class="p-3"><SbChart t-if="d.regions.length" type="'bar'" labels="regionChart.labels" series="regionChart.series" height="240"/><div t-else="" class="o_pp_empty">No sales this month.</div></div>
+                <div t-if="d.lost_reasons.length" class="px-3 pb-3 small"><b>Lost this month:</b> <t t-foreach="d.lost_reasons" t-as="l" t-key="l_index"><span class="o_pp_badge me-1"><t t-esc="l.name"/> · <t t-esc="l.count"/></span></t></div></div>
+        </div>
+    </t>
+
+    <!-- ============================================================ my day -->
+    <t t-name="sonador_crm.Tasks">
+        <t t-set="T" t-value="state.tasks"/>
+        <div class="o_pp_toolbar">
+            <select t-if="ctx.is_manager" class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setTaskWho(ev.target.value)">
+                <option value="me">My tasks</option><option value="all" t-att-selected="state.taskWho === 'all'">Everyone</option>
+                <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-att-selected="state.taskWho == u.id" t-esc="u.name"/>
+            </select>
+            <span class="small text-muted ms-auto"><t t-esc="T.done_today"/> calls, visits and messages logged today</span>
+        </div>
+        <t t-foreach="[['overdue', 'Overdue'], ['today', 'Today'], ['week', 'Next 7 days'], ['later', 'Later']]" t-as="g" t-key="g[0]">
+            <div t-if="T.groups[g[0]].length or g[0] === 'today'" class="o_pp_card mb-3">
+                <div t-att-class="'o_pp_card_head ' + (g[0] === 'overdue' ? 'o_pp_badtxt' : '')"><i class="fa fa-calendar-check-o"/><t t-esc="g[1]"/> (<t t-esc="T.groups[g[0]].length"/>)</div>
+                <div t-if="!T.groups[g[0]].length" class="o_pp_empty">Nothing due today. Pick customers from Reorders due or Contacts to call.</div>
+                <div t-foreach="T.groups[g[0]]" t-as="t" t-key="t.id" class="o_cr_task">
+                    <div class="me-auto">
+                        <b t-esc="t.subject"/>
+                        <div class="small"><a href="#" t-on-click.prevent="() => this.openRecord(t.partner_id)" t-esc="t.partner"/><t t-if="t.deal"> · <a href="#" t-on-click.prevent="() => this.openDeal(t.deal_id)" t-esc="t.deal"/></t>
+                            · <span t-att-class="t.overdue ? 'o_pp_badtxt' : 'text-muted'"><t t-esc="t.ec"/> <t t-esc="t.time"/></span><t t-if="state.taskWho !== 'me'"> · <t t-esc="t.user"/></t></div>
+                        <div t-if="t.body" class="small text-muted" t-esc="t.body"/>
+                    </div>
+                    <a t-if="t.phone" class="btn btn-light border btn-sm" t-att-href="tel(t.phone)" title="Call"><i class="fa fa-phone"/></a>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-light border" t-on-click="() => this.snooze(t, 1)" title="Tomorrow">+1d</button>
+                        <button class="btn btn-light border" t-on-click="() => this.snooze(t, 7)" title="Next week">+1w</button>
+                    </div>
+                    <button class="btn btn-primary btn-sm" t-on-click="() => this.finish(t)"><i class="fa fa-check me-1"/>Done</button>
+                </div>
+            </div>
+        </t>
+    </t>
+
+    <!-- ============================================================ contacts -->
+    <t t-name="sonador_crm.Contacts">
+        <t t-set="L" t-value="state.list"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group btn-group-sm">
+                <button t-foreach="[['all', 'All'], ['companies', 'Companies'], ['people', 'People']]" t-as="k" t-key="k[0]"
+                        t-att-class="'btn border ' + (state.f.kind === k[0] ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setF('kind', k[0])" t-esc="k[1]"/>
+            </div>
+            <input class="form-control form-control-sm o_pp_search" placeholder="Name, phone, TIN, place…" t-att-value="state.f.search" t-on-change="(ev) => this.setF('search', ev.target.value)"/>
+            <div class="ms-auto d-flex gap-2">
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.newContact(true)"><i class="fa fa-building-o me-1"/>Company</button>
+                <button class="btn btn-primary btn-sm" t-on-click="() => this.newContact(false)"><i class="fa fa-user-plus me-1"/>Contact</button>
+            </div>
+        </div>
+        <div class="o_cr_filters">
+            <select class="form-select form-select-sm" t-on-change="(ev) => this.setF('lifecycle', ev.target.value)"><option value="">Any stage</option>
+                <option t-foreach="ctx.lifecycle" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="state.f.lifecycle === x.id" t-esc="x.name"/></select>
+            <select class="form-select form-select-sm" t-on-change="(ev) => this.setF('ctype', ev.target.value)"><option value="">Any type</option>
+                <option t-foreach="ctx.ctypes" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="state.f.ctype === x.id" t-esc="x.name"/></select>
+            <select class="form-select form-select-sm" t-on-change="(ev) => this.setF('region', ev.target.value)"><option value="">Any region</option>
+                <option t-foreach="ctx.regions" t-as="x" t-key="x" t-att-value="x" t-att-selected="state.f.region === x" t-esc="x"/></select>
+            <select class="form-select form-select-sm" t-on-change="(ev) => this.setF('owner', ev.target.value)"><option value="">Any owner</option><option value="me">Mine</option><option value="none">No owner</option>
+                <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-esc="u.name"/></select>
+            <select class="form-select form-select-sm" t-on-change="(ev) => this.setF('tag', ev.target.value)"><option value="">Any tag</option>
+                <option t-foreach="ctx.tags" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select>
+            <select class="form-select form-select-sm" t-on-change="(ev) => this.setF('quiet', ev.target.value)"><option value="">Any last contact</option>
+                <option value="30">Not touched in 30 days</option><option value="90">Not touched in 90 days</option></select>
+            <select class="form-select form-select-sm" t-on-change="(ev) => this.setF('order', ev.target.value)"><option value="name">A–Z</option>
+                <option value="recent">Recently touched</option><option value="oldest">Longest untouched</option><option value="new">Newest</option></select>
+        </div>
+        <div t-if="selIds.length" class="o_pp_card o_cr_bulk mb-2">
+            <b><t t-esc="selIds.length"/> selected</b>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.state.bulk.owner_id = ev.target.value"><option value="">Owner…</option><option value="0">No owner</option>
+                <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-esc="u.name"/></select>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.state.bulk.lifecycle = ev.target.value"><option value="">Stage…</option>
+                <option t-foreach="ctx.lifecycle" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.state.bulk.tag = ev.target.value"><option value="">Add tag…</option>
+                <option t-foreach="ctx.tags" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select>
+            <button class="btn btn-primary btn-sm" t-on-click="applyBulk">Apply</button>
+            <button class="btn btn-link btn-sm" t-on-click="() => this.state.sel = {}">Clear</button>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table o_cr_list">
+                <thead><tr><th style="width:2rem"/><th>Name</th><th>Phone</th><th>Stage</th><th>Type</th><th>Area</th><th>Owner</th><th>Last activity</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="L.rows" t-as="r" t-key="r.id">
+                        <td><input type="checkbox" t-att-checked="state.sel[r.id]" t-on-change="() => this.toggleSel(r.id)"/></td>
+                        <td class="o_cr_click" t-on-click="() => this.openRecord(r.id)"><i t-att-class="'fa me-1 text-muted ' + (r.company ? 'fa-building-o' : 'fa-user-o')"/><b t-esc="r.name"/>
+                            <div t-if="r.parent" class="small text-muted" t-esc="r.parent"/></td>
+                        <td><a t-if="r.phone" t-att-href="tel(r.phone)" t-esc="r.phone"/></td>
+                        <td><span t-if="r.lifecycle" t-att-class="'o_cr_life ' + r.lifecycle" t-esc="label('lifecycle', r.lifecycle)"/></td>
+                        <td class="small" t-esc="label('ctypes', r.ctype)"/>
+                        <td class="small"><t t-esc="r.woreda"/><div class="text-muted"><t t-esc="r.zone"/><t t-if="r.zone and r.region">, </t><t t-esc="r.region"/></div></td>
+                        <td class="small" t-esc="r.owner"/>
+                        <td class="small text-muted" t-esc="r.last_touch"/>
+                    </tr>
+                    <tr t-if="!L.rows.length"><td colspan="8" class="o_pp_empty">Nobody matches.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-2 small text-muted">
+            <span><t t-esc="state.f.offset + 1"/>–<t t-esc="Math.min(state.f.offset + L.page, L.total)"/> of <t t-esc="L.total"/></span>
+            <button class="btn btn-light border btn-sm" t-att-disabled="!state.f.offset" t-on-click="() => this.page(-1)"><i class="fa fa-chevron-left"/></button>
+            <button class="btn btn-light border btn-sm" t-att-disabled="state.f.offset + L.page &gt;= L.total" t-on-click="() => this.page(1)"><i class="fa fa-chevron-right"/></button>
+        </div>
+    </t>
+
+    <!-- ============================================================ contact record -->
+    <t t-name="sonador_crm.Record">
+        <t t-set="R" t-value="state.rec"/>
+        <t t-set="F" t-value="R.fields"/>
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <button class="btn btn-link btn-sm px-0" t-on-click="goBack"><i class="fa fa-arrow-left me-1"/>Back</button>
+        </div>
+        <div class="o_cr_rec">
+            <!-- left: about -->
+            <div class="o_pp_card o_cr_about">
+                <div class="o_cr_head">
+                    <div class="o_cr_avatar"><i t-att-class="'fa ' + (R.company ? 'fa-building-o' : 'fa-user')"/></div>
+                    <div class="min-w-0"><h2 t-esc="R.name"/>
+                        <div t-if="R.parent" class="small"><a href="#" t-on-click.prevent="() => this.openRecord(R.parent.id)" t-esc="R.parent.name"/></div>
+                        <div class="small text-muted"><t t-esc="F.function"/></div></div>
+                </div>
+                <div t-if="R.id and !state.edit" class="o_cr_quick">
+                    <a t-if="F.phone" class="btn btn-light border btn-sm" t-att-href="tel(F.phone)"><i class="fa fa-phone me-1"/>Call</a>
+                    <a t-if="tg(R)" class="btn btn-light border btn-sm" t-att-href="tg(R)" target="_blank"><i class="fa fa-paper-plane me-1"/>Telegram</a>
+                    <a t-if="F.email" class="btn btn-light border btn-sm" t-att-href="'mailto:' + F.email"><i class="fa fa-envelope-o"/></a>
+                    <button class="btn btn-light border btn-sm" t-on-click="startEdit"><i class="fa fa-pencil"/></button>
+                </div>
+                <div t-if="R.id and !state.edit" class="o_cr_lifebar">
+                    <t t-foreach="ctx.lifecycle" t-as="x" t-key="x.id"><span t-att-class="(lifeIndex(F.lifecycle) &gt;= lifeIndex(x.id) ? 'on ' : '') + (F.lifecycle === x.id ? 'cur' : '')" t-att-title="x.name"/></t>
+                    <div class="small mt-1"><b t-esc="label('lifecycle', F.lifecycle) or 'No stage'"/></div>
+                </div>
+                <div t-if="!state.edit" class="o_pp_fields">
+                    <label><span>Owner</span><b t-esc="label('users', F.owner_id) or '—'"/></label>
+                    <label><span>Phone</span><b><a t-if="F.phone" t-att-href="tel(F.phone)" t-esc="F.phone"/><t t-else="">—</t></b></label>
+                    <label t-if="F.telegram"><span>Telegram</span><b t-esc="F.telegram"/></label>
+                    <label t-if="F.email"><span>Email</span><b t-esc="F.email"/></label>
+                    <label><span>Type</span><b t-esc="label('ctypes', F.ctype) or '—'"/></label>
+                    <label t-if="F.channel"><span>Channel</span><b t-esc="label('channels', F.channel)"/></label>
+                    <label><span t-esc="ctx.area_label"/><b t-esc="F.woreda or '—'"/></label>
+                    <label t-if="F.kebele"><span>Kebele / town</span><b t-esc="F.kebele"/></label>
+                    <label t-if="F.latitude"><span>Location</span><b><a t-att-href="'https://maps.google.com/?q=' + F.latitude + ',' + F.longitude" target="_blank">map</a></b></label>
+                    <label t-if="F.vat"><span>TIN</span><b t-esc="F.vat"/></label>
+                    <label t-if="F.language"><span>Language</span><b t-esc="label('languages', F.language)"/></label>
+                    <label t-if="F.source"><span>Source</span><b t-esc="label('sources', F.source)"/></label>
+                    <label t-if="F.hectares"><span>Farm size</span><b><t t-esc="F.hectares"/> ha</b></label>
+                    <label t-if="F.crops"><span>Crops</span><b t-esc="F.crops"/></label>
+                    <label t-if="F.ref"><span>Customer ID</span><b t-esc="F.ref"/></label>
+                    <div t-if="F.tags.length" class="pt-2"><t t-foreach="F.tags" t-as="tg_id" t-key="tg_id"><span class="o_pp_badge me-1" t-esc="label('tags', tg_id)"/></t></div>
+                </div>
+                <t t-if="state.edit" t-call="sonador_crm.ContactEdit"/>
+            </div>
+
+            <!-- middle: timeline -->
+            <div t-if="R.id" class="o_cr_mid">
+                <t t-call="sonador_crm.Composer"><t t-set="target" t-value="'contact'"/><t t-set="deals" t-value="R.deals"/></t>
+                <t t-call="sonador_crm.Timeline"><t t-set="items" t-value="R.timeline"/><t t-set="target" t-value="'contact'"/></t>
+            </div>
+
+            <!-- right: sales, deals, people -->
+            <div t-if="R.id" class="o_cr_side">
+                <div class="o_pp_card mb-3">
+                    <div class="o_pp_card_head"><i class="fa fa-shopping-cart"/>What they buy</div>
+                    <div t-if="R.sales and R.sales.count" class="o_pp_fields">
+                        <label><span>This fiscal year</span><b t-esc="money(R.sales.total_fy)"/></label>
+                        <label><span>All time</span><b t-esc="money(R.sales.total)"/></label>
+                        <label><span>Purchases</span><b t-esc="R.sales.count"/></label>
+                        <label><span>Last bought</span><b><t t-esc="R.sales.last"/> <small class="text-muted">(<t t-esc="R.sales.days_since"/> days ago)</small></b></label>
+                        <label t-if="R.sales.cycle"><span>Usually buys every</span><b><t t-esc="R.sales.cycle"/> days</b></label>
+                        <div class="o_cr_mini"><div t-foreach="R.sales.recent" t-as="s" t-key="s_index"><span t-esc="s.date"/><b t-esc="money(s.amount)"/></div></div>
+                    </div>
+                    <div t-else="" class="o_pp_empty">No sales yet.</div>
+                </div>
+                <div class="o_pp_card mb-3">
+                    <div class="o_pp_card_head"><i class="fa fa-columns"/>Deals<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.newDeal({id: R.id, name: R.name})"><i class="fa fa-plus"/> Deal</button></div>
+                    <div t-foreach="R.deals" t-as="dl" t-key="dl.id" class="o_cr_dealmini" t-on-click="() => this.openDeal(dl.id)">
+                        <div class="d-flex"><b class="me-auto" t-esc="dl.name"/><b t-esc="money(dl.amount)"/></div>
+                        <div class="small"><span t-att-class="'o_cr_state ' + dl.state" t-esc="dl.stage"/> <span class="text-muted" t-esc="dl.close_ec"/></div>
+                    </div>
+                    <div t-if="!R.deals.length" class="o_pp_empty">No deals.</div>
+                </div>
+                <div t-if="R.company" class="o_pp_card mb-3">
+                    <div class="o_pp_card_head"><i class="fa fa-users"/>People here</div>
+                    <div t-foreach="R.people" t-as="pp" t-key="pp.id" class="o_cr_dealmini" t-on-click="() => this.openRecord(pp.id)">
+                        <b t-esc="pp.name"/><div class="small text-muted"><t t-esc="pp.function"/> <t t-esc="pp.phone"/></div></div>
+                    <div t-if="!R.people.length" class="o_pp_empty">Nobody added. Add a contact and pick this company.</div>
+                </div>
+                <div t-if="R.orders.length" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-file-text-o"/>Quotations and orders</div>
+                    <div t-foreach="R.orders" t-as="o" t-key="o.id" class="o_cr_dealmini" t-on-click="() => this.openOrder(o.id)">
+                        <div class="d-flex"><b class="me-auto" t-esc="o.name"/><span t-esc="money(o.amount)"/></div><div class="small text-muted"><t t-esc="o.date"/> · <t t-esc="o.state"/></div></div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_crm.ContactEdit">
+        <t t-set="E" t-value="state.edit"/>
+        <div class="o_cr_form">
+            <label>Name<input class="form-control form-control-sm" t-att-value="E.name" t-on-change="(ev) => this.setE('name', ev.target.value)"/></label>
+            <label t-if="!E.is_company">Job title<input class="form-control form-control-sm" t-att-value="E.function" t-on-change="(ev) => this.setE('function', ev.target.value)"/></label>
+            <label>Phone<input class="form-control form-control-sm" placeholder="09… or +251…" t-att-value="E.phone" t-on-change="(ev) => this.setE('phone', ev.target.value)"/></label>
+            <label>Telegram<input class="form-control form-control-sm" placeholder="username or phone" t-att-value="E.telegram" t-on-change="(ev) => this.setE('telegram', ev.target.value)"/></label>
+            <label>Email<input class="form-control form-control-sm" t-att-value="E.email" t-on-change="(ev) => this.setE('email', ev.target.value)"/></label>
+            <label>Lifecycle stage<select class="form-select form-select-sm" t-on-change="(ev) => this.setE('lifecycle', ev.target.value)"><option value="">—</option>
+                <option t-foreach="ctx.lifecycle" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="E.lifecycle === x.id" t-esc="x.name"/></select></label>
+            <label>Owner<select class="form-select form-select-sm" t-on-change="(ev) => this.setE('owner_id', ev.target.value)"><option value="">—</option>
+                <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-att-selected="E.owner_id == u.id" t-esc="u.name"/></select></label>
+            <label>Customer type<select class="form-select form-select-sm" t-on-change="(ev) => this.setE('ctype', ev.target.value)"><option value="">—</option>
+                <option t-foreach="ctx.ctypes" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="E.ctype === x.id" t-esc="x.name"/></select></label>
+            <label>Trade channel<select class="form-select form-select-sm" t-on-change="(ev) => this.setE('channel', ev.target.value)"><option value="">—</option>
+                <option t-foreach="ctx.channels" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="E.channel === x.id" t-esc="x.name"/></select></label>
+            <label class="position-relative"><t t-esc="ctx.area_label"/><input class="form-control form-control-sm" placeholder="type a place, zone or region" t-att-value="E.woreda" t-on-input="(ev) => this.findWoreda(ev.target.value)"/>
+                <div t-if="state.woredaHits.length" class="o_cr_hits"><div t-foreach="state.woredaHits" t-as="w" t-key="w.id" t-on-click="() => this.pickWoreda(w)" t-esc="w.label"/></div></label>
+            <label>Kebele / town<input class="form-control form-control-sm" t-att-value="E.kebele" t-on-change="(ev) => this.setE('kebele', ev.target.value)"/></label>
+            <label>TIN<input class="form-control form-control-sm" t-att-value="E.vat" t-on-change="(ev) => this.setE('vat', ev.target.value)"/></label>
+            <label>Language<select class="form-select form-select-sm" t-on-change="(ev) => this.setE('language', ev.target.value)"><option value="">—</option>
+                <option t-foreach="ctx.languages" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="E.language === x.id" t-esc="x.name"/></select></label>
+            <label>Source<select class="form-select form-select-sm" t-on-change="(ev) => this.setE('source', ev.target.value)"><option value="">—</option>
+                <option t-foreach="ctx.sources" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="E.source === x.id" t-esc="x.name"/></select></label>
+            <label>Farm size (ha)<input type="number" class="form-control form-control-sm" t-att-value="E.hectares" t-on-change="(ev) => this.setE('hectares', ev.target.value)"/></label>
+            <label>Crops<input class="form-control form-control-sm" placeholder="teff, wheat, coffee…" t-att-value="E.crops" t-on-change="(ev) => this.setE('crops', ev.target.value)"/></label>
+            <label>Location <span class="d-flex gap-1 align-items-center"><button class="btn btn-light border btn-sm" t-on-click="here"><i class="fa fa-crosshairs me-1"/>I am here</button>
+                <small class="text-muted" t-if="E.latitude"><t t-esc="coord(E.latitude)"/>, <t t-esc="coord(E.longitude)"/></small></span></label>
+            <div class="o_cr_tags">Tags
+                <div><t t-foreach="ctx.tags" t-as="x" t-key="x.id"><span t-att-class="'o_cr_tag ' + (E.tags.includes(x.id) ? 'on' : '')" t-on-click="() => this.toggleTag(x.id)" t-esc="x.name"/></t></div>
+                <div class="d-flex gap-1 mt-1"><input class="form-control form-control-sm" placeholder="new tag" t-att-value="state.newTag" t-on-change="(ev) => this.state.newTag = ev.target.value"/><button class="btn btn-light border btn-sm" t-on-click="addTag"><i class="fa fa-plus"/></button></div>
+            </div>
+            <div class="d-flex gap-2 mt-2"><button class="btn btn-primary btn-sm" t-on-click="saveContact">Save</button><button class="btn btn-light border btn-sm" t-on-click="cancelEdit">Cancel</button></div>
+        </div>
+    </t>
+
+    <!-- ============================================================ composer and timeline (contact and deal) -->
+    <t t-name="sonador_crm.Composer">
+        <t t-set="lg" t-value="state.log"/>
+        <div class="o_pp_card o_cr_composer mb-3">
+            <div class="o_cr_kinds">
+                <button t-foreach="[['note', 'Note'], ['call', 'Call'], ['visit', 'Visit'], ['meeting', 'Meeting'], ['telegram', 'Telegram'], ['sms', 'SMS'], ['task', 'Task']]" t-as="k" t-key="k[0]"
+                        t-att-class="lg.kind === k[0] ? 'on' : ''" t-on-click="() => this.setLogKind(k[0])"><i t-att-class="'fa ' + kindIcon(k[0])"/> <t t-esc="k[1]"/></button>
+            </div>
+            <div class="p-2 d-flex flex-column gap-2">
+                <input t-if="lg.kind === 'task' or lg.kind === 'meeting'" class="form-control form-control-sm" t-att-placeholder="lg.kind === 'task' ? 'What to do (e.g. Call about the Meskerem order)' : 'Subject'"
+                       t-att-value="lg.subject" t-on-change="(ev) => this.setL('subject', ev.target.value)"/>
+                <textarea class="form-control form-control-sm" rows="2" t-att-placeholder="lg.kind === 'visit' ? 'What you saw and agreed (your location is recorded)' : (lg.kind === 'task' ? 'Details (optional)' : 'What was said or written…')"
+                          t-att-value="lg.body" t-on-change="(ev) => this.setL('body', ev.target.value)"/>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <select t-if="lg.kind === 'call' or lg.kind === 'visit' or lg.kind === 'meeting'" class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setL('outcome', ev.target.value)">
+                        <option value="">Outcome…</option><option t-foreach="ctx.outcomes" t-as="o" t-key="o.id" t-att-value="o.id" t-esc="o.name"/></select>
+                    <input t-if="lg.kind === 'call' or lg.kind === 'meeting'" type="number" class="form-control form-control-sm" style="width:6rem" placeholder="minutes" t-on-change="(ev) => this.setL('minutes', ev.target.value)"/>
+                    <t t-if="lg.kind === 'task'">
+                        <input type="datetime-local" class="form-control form-control-sm w-auto" t-att-value="lg.due" t-on-change="(ev) => this.setL('due', ev.target.value)"/>
+                        <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setL('user_id', ev.target.value)"><option value="">For me</option>
+                            <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-esc="u.name"/></select>
+                    </t>
+                    <select t-if="target === 'contact' and deals and deals.length" class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setL('deal_id', ev.target.value)">
+                        <option value="">No deal</option><option t-foreach="deals" t-as="dl" t-key="dl.id" t-att-value="dl.id" t-esc="dl.name"/></select>
+                    <select t-if="lg.kind !== 'task' and lg.kind !== 'note'" class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setL('followup_days', ev.target.value)">
+                        <option value="">No follow-up</option><option value="1">Follow up tomorrow</option><option value="3">in 3 days</option><option value="7">in a week</option><option value="14">in 2 weeks</option><option value="30">in a month</option></select>
+                    <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.submitLog(target)"><t t-esc="lg.kind === 'task' ? 'Add task' : 'Log'"/></button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_crm.Timeline">
+        <div class="o_cr_timeline">
+            <div t-foreach="items" t-as="a" t-key="a.id" t-att-class="'o_cr_item ' + a.kind + (a.done ? '' : ' open') + (a.overdue ? ' overdue' : '')">
+                <div class="o_cr_dot"><i t-att-class="'fa ' + kindIcon(a.kind)"/></div>
+                <div class="o_cr_itembody">
+                    <div class="d-flex gap-2 align-items-baseline">
+                        <b class="me-auto"><t t-esc="a.subject or label('kinds', a.kind)"/><t t-if="a.outcome"> · <span class="o_cr_out" t-esc="label('outcomes', a.outcome)"/></t></b>
+                        <span class="small text-muted text-nowrap"><t t-if="!a.done">due </t><t t-esc="a.ec"/> <t t-esc="a.time"/></span>
+                    </div>
+                    <div t-if="a.body" class="o_cr_text" t-esc="a.body"/>
+                    <div class="small text-muted d-flex gap-2 align-items-center">
+                        <span t-esc="a.user"/><t t-if="a.minutes"><span><t t-esc="a.minutes"/> min</span></t>
+                        <t t-if="a.deal and target === 'contact'"><a href="#" t-on-click.prevent="() => this.openDeal(a.deal_id)"><i class="fa fa-columns me-1"/><t t-esc="a.deal"/></a></t>
+                        <a t-if="a.map" t-att-href="a.map" target="_blank"><i class="fa fa-map-marker me-1"/>where</a>
+                        <button t-if="!a.done" class="btn btn-link btn-sm p-0 ms-auto" t-on-click="() => this.finishHere(a, target)"><i class="fa fa-check me-1"/>Mark done</button>
+                        <button t-if="a.user_id === ctx.me or ctx.is_manager" t-att-class="'btn btn-link btn-sm p-0 text-muted ' + (a.done ? 'ms-auto' : '')" title="Remove" t-on-click="() => this.removeAct(a, target)"><i class="fa fa-trash-o"/></button>
+                    </div>
+                </div>
+            </div>
+            <div t-if="!items.length" class="o_pp_empty">Nothing yet: log the first call, visit or note above.</div>
+        </div>
+    </t>
+
+    <!-- ============================================================ deals board -->
+    <t t-name="sonador_crm.Deals">
+        <div class="o_pp_toolbar">
+            <select class="form-select form-select-sm w-auto fw-bold" t-on-change="(ev) => this.setPipeline(ev.target.value)">
+                <option t-foreach="ctx.pipelines" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id === state.pipelineId" t-esc="p.name"/></select>
+            <input class="form-control form-control-sm o_pp_search" placeholder="Search deals or customers" t-att-value="state.bf.search" t-on-change="(ev) => this.setBf('search', ev.target.value)"/>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setBf('owner', ev.target.value)"><option value="">All owners</option><option value="me">Mine</option>
+                <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-esc="u.name"/></select>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setBf('region', ev.target.value)"><option value="">All regions</option>
+                <option t-foreach="ctx.regions" t-as="x" t-key="x" t-att-value="x" t-esc="x"/></select>
+            <span t-if="state.board" class="small text-muted ms-auto">Open <b t-esc="money(state.board.open_amount)"/> · weighted <b t-esc="money(state.board.weighted)"/> <t t-esc="ctx.currency"/></span>
+            <button class="btn btn-primary btn-sm" t-on-click="() => this.newDeal()"><i class="fa fa-plus me-1"/>Deal</button>
+        </div>
+        <div t-if="state.board" class="o_cr_board">
+            <div t-foreach="state.board.columns" t-as="c" t-key="c.id" t-att-class="'o_cr_col ' + c.kind" t-on-dragover.prevent="noop" t-on-drop="() => this.dropOn(c)">
+                <div class="o_cr_colhead"><b t-esc="c.name"/><span class="ms-auto small text-muted" t-esc="c.count"/>
+                    <div class="w-100 small text-muted"><t t-esc="money(c.amount)"/> <t t-esc="ctx.currency"/><t t-if="c.kind === 'open'"> · <t t-esc="c.probability"/>%</t><t t-if="c.kind !== 'open'"> · last 60 days</t></div></div>
+                <div class="o_cr_cards">
+                    <div t-foreach="c.deals" t-as="d" t-key="d.id" t-att-class="'o_cr_card ' + (d.stale ? 'stale ' : '') + (d.overdue ? 'late' : '')" draggable="true"
+                         t-on-dragstart="() => this.dragStart(d)" t-on-click="() => this.openDeal(d.id)">
+                        <b t-esc="d.name"/>
+                        <div class="small" t-esc="d.partner"/>
+                        <div class="d-flex small mt-1"><b class="me-auto" t-esc="money(d.amount)"/><span t-att-class="d.overdue ? 'o_pp_badtxt' : 'text-muted'" t-esc="d.close_ec"/></div>
+                        <div class="d-flex small text-muted"><span class="me-auto" t-esc="d.owner"/><span t-if="d.stale" class="o_pp_badge warn" t-att-title="d.days_in_stage + ' days in this stage'"><t t-esc="d.days_in_stage"/>d</span></div>
+                        <div t-if="d.next_task" class="small o_cr_next"><i class="fa fa-check-square-o me-1"/><t t-esc="d.next_task.subject"/> · <t t-esc="d.next_task.ec"/></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="small text-muted mt-2">Drag a card to move it. A sales order confirmed from a deal's quotation moves it to Won by itself.</div>
+    </t>
+
+    <!-- ============================================================ deal drawer -->
+    <t t-name="sonador_crm.Deal">
+        <t t-set="D" t-value="state.deal"/>
+        <div class="o_cr_shade" t-on-click="closeDeal"/>
+        <div class="o_cr_drawer">
+            <div class="o_cr_dhead">
+                <div class="me-auto min-w-0">
+                    <h3 class="m-0" t-esc="D.id ? D.name : 'New deal'"/>
+                    <div t-if="D.id" class="small"><a href="#" t-if="D.partner_id" t-on-click.prevent="() => this.openRecord(D.partner_id)" t-esc="D.partner"/> · <t t-esc="D.owner"/></div>
+                </div>
+                <button t-if="D.id and !state.dealEdit" class="btn btn-light border btn-sm me-1" t-on-click="editDeal"><i class="fa fa-pencil"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="closeDeal"><i class="fa fa-times"/></button>
+            </div>
+            <div class="o_cr_dbody">
+                <t t-if="state.dealEdit">
+                    <t t-set="E" t-value="state.dealEdit"/>
+                    <div class="o_cr_form">
+                        <label class="position-relative">Customer<input class="form-control form-control-sm" placeholder="type a name or phone" t-att-value="E.partner" t-on-input="(ev) => this.findPartner(ev.target.value)"/>
+                            <div t-if="state.partnerHits.length" class="o_cr_hits"><div t-foreach="state.partnerHits" t-as="h" t-key="h.id" t-on-click="() => this.pickPartner(h)"><t t-esc="h.name"/> <small class="text-muted"><t t-esc="h.phone"/> <t t-esc="h.region"/></small></div></div></label>
+                        <label>Deal name<input class="form-control form-control-sm" placeholder="empty: customer and month" t-att-value="E.name" t-on-change="(ev) => this.setD('name', ev.target.value)"/></label>
+                        <label>Amount (<t t-esc="state.ctx.currency"/>)<input type="number" class="form-control form-control-sm" t-att-value="E.amount" t-on-change="(ev) => this.setD('amount', ev.target.value)"/></label>
+                        <label>Quantity<input type="number" class="form-control form-control-sm" placeholder="litres, units…" t-att-value="E.quantity" t-on-change="(ev) => this.setD('quantity', ev.target.value)"/></label>
+                        <label>Expected close<input type="date" class="form-control form-control-sm" t-att-value="E.close_date" t-on-change="(ev) => this.setD('close_date', ev.target.value)"/></label>
+                        <label>Pipeline<select class="form-select form-select-sm" t-on-change="(ev) => this.setD('pipeline_id', ev.target.value)">
+                            <option t-foreach="ctx.pipelines" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == E.pipeline_id" t-esc="p.name"/></select></label>
+                        <label>Stage<select class="form-select form-select-sm" t-on-change="(ev) => this.setD('stage_id', ev.target.value)">
+                            <option t-foreach="stagesOfEdit" t-as="s" t-key="s.id" t-att-value="s.id" t-att-selected="s.id == E.stage_id" t-esc="s.name"/></select></label>
+                        <label>Owner<select class="form-select form-select-sm" t-on-change="(ev) => this.setD('owner_id', ev.target.value)">
+                            <option t-foreach="ctx.users" t-as="u" t-key="u.id" t-att-value="u.id" t-att-selected="u.id == E.owner_id" t-esc="u.name"/></select></label>
+                        <label>Source<select class="form-select form-select-sm" t-on-change="(ev) => this.setD('source', ev.target.value)"><option value="">—</option>
+                            <option t-foreach="ctx.sources" t-as="x" t-key="x.id" t-att-value="x.id" t-att-selected="E.source === x.id" t-esc="x.name"/></select></label>
+                        <label class="wide">Notes<textarea class="form-control form-control-sm" rows="2" t-att-value="E.note" t-on-change="(ev) => this.setD('note', ev.target.value)"/></label>
+                        <div class="d-flex gap-2"><button class="btn btn-primary btn-sm" t-on-click="saveDeal">Save</button>
+                            <button class="btn btn-light border btn-sm" t-on-click="cancelDeal">Cancel</button></div>
+                    </div>
+                </t>
+                <t t-elif="D.id">
+                    <div class="o_cr_stagebar">
+                        <button t-foreach="stagesOf(D.pipeline_id)" t-as="s" t-key="s.id" t-att-class="(s.id === D.stage_id ? 'on ' : '') + s.kind" t-on-click="() => this.moveTo(s.id)" t-esc="s.name"/>
+                    </div>
+                    <div class="o_cr_dealkpi">
+                        <div><span>Amount</span><b t-esc="money(D.amount)"/></div>
+                        <div><span>Probability</span><b><t t-esc="D.probability"/>%</b></div>
+                        <div><span>Expected close</span><b t-att-class="D.overdue ? 'o_pp_badtxt' : ''" t-esc="D.close_ec or '—'"/></div>
+                        <div><span>In stage</span><b><t t-esc="D.days_in_stage"/> days</b></div>
+                    </div>
+                    <div t-if="D.state === 'lost'" class="o_pp_warn small mb-2">Lost: <t t-esc="D.lost_reason"/><t t-if="D.lost_note"> – <t t-esc="D.lost_note"/></t></div>
+                    <div t-if="D.note" class="small mb-2 o_cr_text" t-esc="D.note"/>
+                    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+                        <button class="btn btn-light border btn-sm" t-on-click="quote"><i class="fa fa-file-text-o me-1"/>Create quotation</button>
+                        <t t-foreach="D.orders" t-as="o" t-key="o.id"><a href="#" class="small" t-on-click.prevent="() => this.openOrder(o.id)"><t t-esc="o.name"/> (<t t-esc="o.state"/>, <t t-esc="money(o.amount)"/>)</a></t>
+                    </div>
+                    <t t-call="sonador_crm.Composer"><t t-set="target" t-value="'deal'"/><t t-set="deals" t-value="[]"/></t>
+                    <t t-call="sonador_crm.Timeline"><t t-set="items" t-value="D.timeline"/><t t-set="target" t-value="'deal'"/></t>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ reorders -->
+    <t t-name="sonador_crm.Reorders">
+        <div class="o_pp_toolbar">
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setRf('owner', ev.target.value)"><option value="">Everyone's customers</option><option value="me" t-att-selected="state.rf.owner === 'me'">My customers</option></select>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setRf('region', ev.target.value)"><option value="">All regions</option>
+                <option t-foreach="ctx.regions" t-as="x" t-key="x" t-att-value="x" t-att-selected="state.rf.region === x" t-esc="x"/></select>
+            <span class="small text-muted">Customers past their usual time between purchases, biggest buyers first.</span>
+            <button class="btn btn-light border btn-sm ms-auto" t-on-click="selectAllReorders">Select all</button>
+            <button class="btn btn-primary btn-sm" t-att-disabled="!anyR" t-on-click="reorderTasks"><i class="fa fa-phone me-1"/>Make call tasks</button>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th style="width:2rem"/><th>Customer</th><th>Phone</th><th>Area</th><th>Owner</th><th>Last bought</th><th class="text-end">Usually every</th><th class="text-end">Overdue by</th><th class="text-end">Last order</th><th class="text-end">Last 12 months</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.reorders" t-as="r" t-key="r.id">
+                        <td><input t-if="!r.has_task" type="checkbox" t-att-checked="state.rsel[r.id]" t-on-change="() => this.toggleR(r.id)"/><i t-else="" class="fa fa-check-square-o text-muted" title="Has an open task"/></td>
+                        <td class="o_cr_click" t-on-click="() => this.openRecord(r.id)"><b t-esc="r.name"/></td>
+                        <td><a t-if="r.phone" t-att-href="tel(r.phone)" t-esc="r.phone"/></td>
+                        <td class="small"><t t-esc="r.zone"/><t t-if="r.zone and r.region">, </t><t t-esc="r.region"/></td>
+                        <td class="small" t-esc="r.owner"/>
+                        <td class="small"><t t-esc="r.last"/> <span class="text-muted">(<t t-esc="r.days"/> d)</span></td>
+                        <td class="text-end"><t t-esc="r.cycle"/> d<span t-if="r.buys &lt; 2" class="text-muted" title="Bought once: 90 days assumed">*</span></td>
+                        <td class="text-end"><b t-att-class="r.overdue_by &gt; r.cycle ? 'o_pp_badtxt' : ''"><t t-esc="r.overdue_by"/> d</b></td>
+                        <td class="text-end" t-esc="money(r.last_amount)"/>
+                        <td class="text-end" t-esc="money(r.year_amount)"/>
+                    </tr>
+                    <tr t-if="!state.reorders.length"><td colspan="10" class="o_pp_empty">Nobody is overdue.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ settings -->
+    <t t-name="sonador_crm.Settings">
+        <div class="o_pp_tabs">
+            <button t-att-class="state.set.tab === 'pipelines' ? 'active' : ''" t-on-click="() => this.state.set.tab = 'pipelines'">Pipelines and stages</button>
+            <button t-att-class="state.set.tab === 'targets' ? 'active' : ''" t-on-click="() => this.state.set.tab = 'targets'">Monthly targets</button>
+            <button t-att-class="state.set.tab === 'team' ? 'active' : ''" t-on-click="openTeam">Team and access</button>
+        </div>
+        <t t-if="state.set.tab === 'team' and state.set.team">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-key"/>Who can use the CRM
+                    <input class="form-control form-control-sm ms-auto" style="max-width:15rem" placeholder="Filter…" t-on-input="(ev) => this.state.set.teamFilter = ev.target.value"/></div>
+                <table class="o_pp_table"><thead><tr><th>Person</th><th>Login</th><th class="text-end">Contacts owned</th><th>CRM access</th></tr></thead>
+                    <tbody><tr t-foreach="teamRows" t-as="u" t-key="u.id">
+                        <td><b t-esc="u.name"/><div class="small text-muted" t-esc="u.department"/></td><td class="small" t-esc="u.login"/>
+                        <td class="text-end" t-esc="u.contacts or ''"/>
+                        <td><div class="btn-group btn-group-sm">
+                            <button t-att-class="'btn border ' + (!u.crm ? 'btn-secondary' : 'btn-light')" t-att-disabled="u.via_sales" t-on-click="() => this.setAccess(u, 'none')">None</button>
+                            <button t-att-class="'btn border ' + (u.crm and !u.manager ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setAccess(u, 'user')">Rep</button>
+                            <button t-att-class="'btn border ' + (u.manager ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setAccess(u, 'manager')">Manager</button></div>
+                            <div t-if="u.via_sales" class="small text-muted">has it through Sales</div></td>
+                    </tr></tbody></table>
+                <div class="o_pp_empty small">Rep: contacts, deals, tasks and visits, nothing from the books. Manager: also every rep's numbers, targets and pipelines. People still need a password to sign in (Settings › Users).</div>
+            </div>
+        </t>
+        <t t-if="state.set.tab === 'pipelines'">
+            <div class="o_pp_grid">
+                <div t-foreach="ctx.pipelines" t-as="p" t-key="p.id" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-columns"/><t t-esc="p.name"/><button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.editPipe(p)">Edit</button></div>
+                    <div class="o_pp_fields"><label t-foreach="p.stages" t-as="s" t-key="s.id"><span t-esc="s.name"/><b><t t-esc="s.probability"/>% <span t-att-class="'o_cr_state ' + s.kind" t-esc="s.kind"/></b></label></div>
+                </div>
+            </div>
+            <button class="btn btn-light border btn-sm mt-3" t-on-click="() => this.editPipe()"><i class="fa fa-plus me-1"/>Pipeline</button>
+            <div t-if="state.set.pipe" class="o_pp_card mt-3">
+                <div class="o_pp_card_head"><input class="form-control form-control-sm" style="max-width:20rem" placeholder="Pipeline name" t-att-value="state.set.pipe.name" t-on-change="(ev) => this.state.set.pipe.name = ev.target.value"/></div>
+                <table class="o_pp_table"><thead><tr><th>Stage</th><th>Win %</th><th>Kind</th><th>Stale after (days)</th><th/></tr></thead>
+                    <tbody><tr t-foreach="state.set.pipe.stages" t-as="s" t-key="s_index">
+                        <td><input class="form-control form-control-sm" t-att-value="s.name" t-on-change="(ev) => this.setStage(s, 'name', ev.target.value)"/></td>
+                        <td><input type="number" class="form-control form-control-sm" style="width:5rem" t-att-value="s.probability" t-on-change="(ev) => this.setStage(s, 'probability', ev.target.value)"/></td>
+                        <td><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setStage(s, 'kind', ev.target.value)">
+                            <option value="open" t-att-selected="s.kind === 'open'">Open</option><option value="won" t-att-selected="s.kind === 'won'">Won</option><option value="lost" t-att-selected="s.kind === 'lost'">Lost</option></select></td>
+                        <td><input type="number" class="form-control form-control-sm" style="width:5rem" t-att-value="s.rot" t-on-change="(ev) => this.setStage(s, 'rot', ev.target.value)"/></td>
+                        <td class="text-nowrap"><button class="btn btn-link btn-sm p-0 me-2" t-on-click="() => this.moveStage(s_index, -1)"><i class="fa fa-arrow-up"/></button>
+                            <button class="btn btn-link btn-sm p-0 me-2" t-on-click="() => this.moveStage(s_index, 1)"><i class="fa fa-arrow-down"/></button>
+                            <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.dropStage(s_index)"><i class="fa fa-trash-o"/></button></td>
+                    </tr></tbody></table>
+                <div class="o_pp_panel_foot"><button class="btn btn-light border btn-sm" t-on-click="addStage"><i class="fa fa-plus me-1"/>Stage</button>
+                    <button class="btn btn-primary btn-sm ms-auto" t-on-click="savePipe">Save pipeline</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.set.pipe = null">Cancel</button></div>
+            </div>
+        </t>
+        <t t-if="state.set.tab === 'targets' and state.set.targets">
+            <div class="o_pp_toolbar">
+                <div class="btn-group"><button class="btn btn-light border btn-sm" t-on-click="() => this.shiftTargets(-1)"><i class="fa fa-chevron-left"/></button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftTargets(1)"><i class="fa fa-chevron-right"/></button></div>
+                <b t-esc="state.set.targets.label"/>
+            </div>
+            <div class="o_pp_card" style="max-width:36rem">
+                <table class="o_pp_table"><thead><tr><th>Rep</th><th class="text-end">Sales target (<t t-esc="ctx.currency"/>, incl. VAT)</th></tr></thead>
+                    <tbody><tr t-foreach="state.set.targets.rows" t-as="r" t-key="r.user_id"><td t-esc="r.name"/>
+                        <td class="text-end"><input type="number" class="form-control form-control-sm text-end" t-att-value="r.amount or ''" t-on-change="(ev) => r.amount = ev.target.value"/></td></tr></tbody></table>
+                <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveTargets">Save targets</button>
+                    <span class="small text-muted">Compared with the invoiced sales of each rep's customers.</span></div>
+            </div>
+        </t>
+    </t>
+</templates>

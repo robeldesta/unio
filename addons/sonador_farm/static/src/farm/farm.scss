@@ -1,0 +1,53 @@
+.o_fm {
+    .o_pp_body { width: 100%; }
+    .o_pp_body > section { width: 100%; }
+    .o_fm_kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .6rem; margin-bottom: 1rem;
+        > div { background: #fff; border: 1px solid $sb-line; border-radius: 10px; padding: .6rem .75rem; display: flex; flex-direction: column; min-width: 0; }
+        span { font-size: .68rem; text-transform: uppercase; color: $sb-muted; font-weight: 700; letter-spacing: .02em; }
+        b { font-size: 1.3rem; color: $sb-navy; white-space: nowrap; small { font-size: .8rem; color: $sb-muted; font-weight: 600; } }
+        small { color: $sb-muted; font-size: .74rem; } }
+    .o_fm_start { padding: 1.6rem 1.8rem; max-width: 46rem; h3 { color: $sb-navy; font-weight: 700; } }
+    .o_fm_hint { padding: .8rem 1rem; margin-bottom: 1rem; border-left: 4px solid $sb-amber; }
+    .o_fm_cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); gap: .9rem; }
+    .o_fm_card { background: #fff; border: 1px solid $sb-line; border-top: 4px solid $sb-teal; border-radius: 12px; padding: .9rem 1rem; cursor: pointer;
+        &.broiler { border-top-color: $sb-amber; }
+        &:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, .07); } }
+    .o_fm_cname { font-weight: 700; color: $sb-navy; font-size: 1.05rem; }
+    .o_fm_age { background: $sb-band; color: $sb-navy; border-radius: 999px; padding: .1rem .6rem; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+    .o_fm_nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; margin: .7rem 0 .2rem;
+        div { display: flex; flex-direction: column; min-width: 0; }
+        span { font-size: .66rem; text-transform: uppercase; color: $sb-muted; font-weight: 700; }
+        b { font-size: 1.15rem; color: $sb-navy; white-space: nowrap; }
+        small { font-size: .7rem; color: $sb-muted; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
+    .o_fm_alerts { display: flex; flex-direction: column; gap: .3rem; margin-top: .5rem; }
+    .o_fm_alert { font-size: .8rem; border-radius: 8px; padding: .3rem .55rem; background: $sb-band; color: $sb-navy;
+        &.bad { background: rgba($sb-coral, .12); color: darken($sb-coral, 18%); }
+        &.warn { background: rgba($sb-amber, .18); color: darken($sb-amber, 30%); }
+        &.info { background: rgba($sb-steel, .12); } }
+    .o_fm_rec { border-radius: 10px; font-weight: 700; }
+    .o_fm_two { display: grid; grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr)); gap: 1rem; margin-bottom: 1rem;
+        > .o_pp_card { margin-bottom: 0; min-width: 0; } }
+    .o_fm_tabs { display: flex; gap: .3rem; margin: .5rem 0 .6rem;
+        button { border: 1px solid $sb-line; background: #fff; border-radius: 999px; padding: .3rem .9rem; font-weight: 600; color: $sb-muted;
+            &.active { background: $sb-navy; color: #fff; border-color: $sb-navy; } } }
+    .o_fm_scroll { overflow-x: auto; }
+    .o_fm_tot td { font-weight: 700; border-top: 2px solid $sb-line; }
+    .o_fm_late td { background: rgba($sb-coral, .06); }
+    .o_fm_st { font-size: .72rem; font-weight: 700; padding: .08rem .55rem; border-radius: 999px; background: $sb-band; color: $sb-muted;
+        &.done { background: rgba($sb-good, .15); color: $sb-good; } &.late { background: rgba($sb-coral, .15); color: darken($sb-coral, 15%); } }
+    // the daily record: big fields a farm hand fills on a phone
+    .o_fm_rec_page { max-width: 46rem; margin: 0 auto; }
+    .o_fm_day { font-size: 1.2rem; color: $sb-navy; }
+    .o_fm_fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .8rem;
+        label { display: flex; flex-direction: column; gap: .25rem; font-weight: 700; color: $sb-navy; margin: 0; font-size: .9rem; }
+        label.wide { grid-column: 1 / -1; }
+        input { font-size: 1.35rem; font-weight: 700; padding: .45rem .7rem; }
+        small { color: $sb-muted; font-weight: 500; font-size: .76rem; } }
+    .o_fm_total { margin-top: .8rem; font-size: 1.05rem; color: $sb-navy; text-align: right; }
+    @media (max-width: 640px) {
+        .o_fm_nums { grid-template-columns: repeat(2, 1fr); }
+        .o_fm_two { grid-template-columns: 1fr; }
+        .o_fm_fields { grid-template-columns: 1fr 1fr; }
+        .o_fm_lang .btn { padding: .2rem .45rem; font-size: .75rem; }
+    }
+}

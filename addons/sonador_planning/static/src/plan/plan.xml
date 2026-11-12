@@ -1,0 +1,620 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_planning.App">
+        <div class="o_pp o_pl o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.me_name"/> · <t t-esc="ctx.today_ec"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-calendar-check-o me-2"/>Planning</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-if="ctx.me or state.viewing" t-att-class="state.page === 'week' ? 'active' : ''" t-on-click="() => this.go('week')"><i class="fa fa-sun-o"/> This week</button>
+                        <button t-if="ctx.me or state.viewing" t-att-class="state.page === 'month' ? 'active' : ''" t-on-click="() => this.go('month')"><i class="fa fa-th-list"/> My month</button>
+                        <button t-if="ctx.me or state.viewing" t-att-class="state.page === 'year' ? 'active' : ''" t-on-click="() => this.go('year')"><i class="fa fa-flag-o"/> My year</button>
+                        <button t-if="ctx.has_team" t-att-class="state.page === 'team' ? 'active' : ''" t-on-click="() => this.go('team', {viewing: null})"><i class="fa fa-users"/> My team</button>
+                        <button t-if="ctx.can_board" t-att-class="state.page === 'board' ? 'active' : ''" t-on-click="() => this.go('board', {viewing: null})"><i class="fa fa-th-large"/> Board</button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'overview' ? 'active' : ''" t-on-click="() => this.go('overview', {viewing: null})"><i class="fa fa-binoculars"/> Overview</button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'settings' ? 'active' : ''" t-on-click="() => this.go('settings', {viewing: null})"><i class="fa fa-cog"/></button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <div t-if="gate.reasons.length and !state.viewing" t-att-class="'o_pl_gate ' + (gate.locked ? 'locked' : '')">
+                    <div class="o_pl_gate_head"><i t-att-class="'fa ' + (gate.locked ? 'fa-lock' : 'fa-bell')"/>
+                        <b t-esc="gate.locked ? 'Planning first: the rest of the system opens when these are done' : 'To do in Planning'"/></div>
+                    <div t-foreach="gate.reasons" t-as="r" t-key="r_index" class="o_pl_gate_item">
+                        <span t-esc="r.msg"/><button class="btn btn-sm btn-light border ms-auto" t-on-click="() => this.fixReason(r)">Do it now <i class="fa fa-arrow-right ms-1"/></button>
+                    </div>
+                </div>
+                <div t-if="state.viewing and (state.page === 'week' or state.page === 'month' or state.page === 'year')" class="o_pl_viewing">
+                    <i class="fa fa-eye me-1"/>You are looking at <b t-esc="(state.wk and state.page === 'week' ? state.wk.employee.name : (state.mo and state.page === 'month' ? state.mo.employee.name : (state.yr ? state.yr.employee.name : '')))"/>'s planning.
+                    <button class="btn btn-link btn-sm" t-on-click="() => this.go('team', {viewing: null})">Back to my team</button>
+                </div>
+                <div t-if="state.page === 'none'" class="o_pp_card p-4 text-muted">Your login is not linked to a person in People. HR links it on your profile (Overview › Login).</div>
+                <t t-if="state.page === 'week' and state.wk" t-call="sonador_planning.Week"/>
+                <t t-if="state.page === 'month' and state.mo" t-call="sonador_planning.Month"/>
+                <t t-if="state.page === 'year' and state.yr" t-call="sonador_planning.Year"/>
+                <t t-if="state.page === 'team' and state.team" t-call="sonador_planning.Team"/>
+                <t t-if="state.page === 'overview' and state.ov" t-call="sonador_planning.Overview"/>
+                <t t-if="state.page === 'settings' and state.set" t-call="sonador_planning.Settings"/>
+                <t t-if="state.page === 'board' and state.board" t-call="sonador_planning.Board"/>
+            </div>
+            <t t-if="state.review" t-call="sonador_planning.Review"/>
+            <t t-if="state.paste">
+                <div class="o_pl_shade o_pl_top" t-on-click="() => this.state.paste = null"/>
+                <div class="o_pl_modal o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-clipboard"/>Paste rows from Excel</div>
+                    <div class="p-3">
+                        <div class="small text-muted mb-2">Copy the rows in Excel (columns: What · Done when · From · To · Evidence; a No. column in front is fine) and paste them here.</div>
+                        <textarea class="form-control" rows="9" placeholder="Paste here (Ctrl+V / Cmd+V)" t-on-input="(ev) => this.state.paste.text = ev.target.value"/>
+                    </div>
+                    <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="applyPaste">Add the rows</button>
+                        <button class="btn btn-light border btn-sm" t-on-click="() => this.state.paste = null">Cancel</button></div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- ============================================================ this week -->
+    <t t-name="sonador_planning.Week">
+        <t t-set="W" t-value="state.wk"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group"><button class="btn btn-light border btn-sm" t-on-click="() => this.shiftWeek(-1)"><i class="fa fa-chevron-left"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftWeek(1)"><i class="fa fa-chevron-right"/></button></div>
+            <b t-esc="W.label"/>
+            <span t-if="W.plan_score !== null and W.plan_score !== undefined" t-att-class="'o_pl_score ' + W.band" title="Plan score: this week's lines against their targets (Must ×3, Should ×2, Could ×1)"><t t-esc="W.plan_score"/><small>/100</small></span>
+            <button t-if="W.mine" class="btn btn-light border btn-sm ms-auto" t-on-click="startAddTask"><i class="fa fa-plus me-1"/>A task came up</button>
+        </div>
+        <div t-if="W.plan_missing and W.mine" class="o_pp_warn mb-3">Your plan for this month is not with your manager yet: <a href="#" t-on-click.prevent="() => this.go('month')">open My month</a>. Tasks show here once it is submitted.</div>
+        <div class="o_pl_days">
+            <button t-foreach="W.days" t-as="d" t-key="d.date" t-att-class="'o_pl_day ' + (d.date === W.selected ? 'on ' : '') + (d.off ? 'off ' : '') + (d.today ? 'today ' : '') + (d.due and !d.future and !d.off ? (d.checked &gt;= d.due ? 'full' : 'part') : '')"
+                    t-on-click="() => this.pickDay(d)" t-att-title="d.holiday or d.ec">
+                <span class="o_pl_dname" t-esc="d.name"/><b t-esc="d.n"/>
+                <small t-if="d.due and !d.off"><t t-esc="d.checked"/>/<t t-esc="d.due"/></small><small t-elif="d.holiday" t-esc="'holiday'"/><small t-elif="d.off">off</small>
+            </button>
+        </div>
+
+        <div class="o_pp_card mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-hand-pointer-o"/><t t-esc="W.selected === ctx.today ? 'Today' : W.selected_ec"/>: how is each task going?
+                <span class="small text-muted ms-auto" t-if="W.mine">one tap per task</span></div>
+            <div t-if="W.selected_off" class="o_pp_empty">A day off: nothing to check in.</div>
+            <div t-elif="!W.strip.length" class="o_pp_empty">No task planned on this day.</div>
+            <div t-foreach="W.strip" t-as="t" t-key="t.id" class="o_pl_ck">
+                <t t-set="c" t-value="ckOf(t)"/>
+                <div class="o_pl_ck_main">
+                    <div class="o_pl_ck_text">
+                        <b t-esc="t.name"/><span t-if="t.added_later" class="o_pp_badge ms-1">added</span>
+                        <div class="small text-muted"><i class="fa fa-bullseye me-1"/><t t-esc="t.done_when"/><t t-if="t.target_qty"> · target <t t-esc="fmt(t.target_qty)"/> <t t-esc="t.unit"/></t> · until <t t-esc="t.to_ec"/></div>
+                        <div class="o_pl_bar mt-1"><div t-att-style="'width:' + (c.progress || 0) + '%'"/></div>
+                    </div>
+                    <div t-if="W.mine and t.checkin and t.checkin.status === 'done'" class="o_pl_taps">
+                        <span class="o_pl_st done"><i class="fa fa-check me-1"/>Done</span>
+                        <button class="more" title="Not done after all" t-on-click="() => this.tap(t, 'on_track')"><i class="fa fa-undo"/></button>
+                    </div>
+                    <div t-elif="W.mine" class="o_pl_taps">
+                        <button t-att-class="'ontrack ' + (c.status === 'on_track' ? 'on' : '')" t-on-click="() => this.tap(t, 'on_track')"><i class="fa fa-arrow-right"/> On track</button>
+                        <button t-att-class="'blocked ' + (c.status === 'blocked' ? 'on' : '')" t-on-click="() => this.tap(t, 'blocked')"><i class="fa fa-hand-paper-o"/> Blocked</button>
+                        <button t-att-class="'done ' + (c.status === 'done' ? 'on' : '')" t-on-click="() => this.tap(t, 'done')"><i class="fa fa-check"/> Done</button>
+                        <button class="more" title="Progress, amount and a note" t-on-click="() => c.open = !c.open"><i class="fa fa-ellipsis-h"/></button>
+                    </div>
+                    <div t-else="" class="small"><span t-if="t.checkin" t-att-class="'o_pl_st ' + t.checkin.status" t-esc="statusLabel(t.checkin.status)"/><span t-else="" class="text-muted">no check-in</span></div>
+                </div>
+                <div t-if="c.open" class="o_pl_ck_more">
+                    <label t-if="c.status !== 'done'">Progress <b><t t-esc="c.progress"/>%</b>
+                        <input type="range" min="0" max="99" step="5" class="form-range" t-att-value="c.progress" t-on-input="(ev) => this.setCk(c, 'progress', ev.target.value)"/></label>
+                    <label t-if="t.target_qty">Achieved so far (<t t-esc="t.unit"/>)<input type="number" class="form-control form-control-sm" t-att-value="c.done_qty" t-on-change="(ev) => c.done_qty = ev.target.value"/></label>
+                    <label class="flex-grow-1"><t t-esc="c.status === 'blocked' ? 'What is blocking it? (required)' : (c.status === 'done' ? (t.requires_document ? 'Where is the document? (' + (t.output or t.indicator) + ')' : 'Where is the evidence? (' + (t.output or 'optional') + ')') : 'Note (optional)')"/>
+                        <input class="form-control form-control-sm" t-att-value="c.note" t-on-change="(ev) => c.note = ev.target.value"/></label>
+                    <button class="btn btn-primary btn-sm" t-on-click="() => this.sendCheckin(t)">Save</button>
+                </div>
+                <div t-if="t.checkin and !c.open" class="small text-muted o_pl_ck_saved"><i class="fa fa-check-circle text-success me-1"/>Checked in: <t t-esc="statusLabel(t.checkin.status)"/>, <t t-esc="t.checkin.progress"/>%<t t-if="t.checkin.note"> – <t t-esc="t.checkin.note"/></t><t t-if="t.checkin.late"> (late)</t></div>
+            </div>
+        </div>
+
+        <div t-if="state.addTask" class="o_pp_card o_pp_panel mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-plus"/>A task that came up (added to your month plan, marked "added")</div>
+            <div class="o_pp_formgrid">
+                <label class="wide">What will you do?<input class="form-control" t-on-change="(ev) => this.state.addTask.name = ev.target.value"/></label>
+                <label class="wide">Done when…<input class="form-control" t-on-change="(ev) => this.state.addTask.done_when = ev.target.value"/></label>
+                <label>From<input type="date" class="form-control" t-att-value="state.addTask.date_from" t-on-change="(ev) => this.state.addTask.date_from = ev.target.value"/></label>
+                <label>To<input type="date" class="form-control" t-att-value="state.addTask.date_to" t-on-change="(ev) => this.state.addTask.date_to = ev.target.value"/></label>
+                <label>Evidence<input class="form-control" t-on-change="(ev) => this.state.addTask.output = ev.target.value"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveAddTask">Add</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.addTask = null">Cancel</button></div>
+        </div>
+
+        <div class="o_pp_card mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-table"/>The week</div>
+            <div class="o_pl_gridwrap">
+                <table class="o_pl_wgrid">
+                    <thead><tr><th class="name">Task</th><th t-foreach="W.days" t-as="d" t-key="d.date" t-att-class="d.off ? 'off' : ''"><t t-esc="d.name"/><br/><t t-esc="d.n"/></th><th>Progress</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="W.tasks" t-as="t" t-key="t.id">
+                            <td class="name"><b t-esc="t.name"/><div class="small text-muted"><t t-esc="t.from_ec"/> – <t t-esc="t.to_ec"/></div></td>
+                            <td t-foreach="W.days" t-as="d" t-key="d.date" t-att-class="d.off ? 'off' : ''"><t t-set="cell" t-value="weekCell(t, d)"/><span t-att-class="'o_pl_c ' + cell.cls" t-esc="cell.text"/></td>
+                            <td style="min-width:9rem"><div class="o_pl_bar"><div t-att-style="'width:' + t.progress + '%'"/></div><span t-att-class="'o_pl_st ' + t.status" t-esc="statusLabel(t.status)"/></td>
+                        </tr>
+                        <tr t-if="!W.tasks.length"><td colspan="9" class="o_pp_empty">No tasks this week.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="o_pp_card mb-3 o_pl_plan">
+            <div class="o_pp_card_head"><i class="fa fa-bullseye"/>This week's plan
+                <span class="small text-muted ms-2">Must ×3 · Should ×2 · Could ×1</span>
+                <span t-if="W.plan_score !== null" t-att-class="'o_pl_score ms-auto ' + W.band"><t t-esc="W.plan_score"/><small>/100</small></span></div>
+            <div t-if="!W.lines.length" class="o_pp_empty">No lines this week yet. Lines come from your month plan, your role's standard lines and what you plan under "Next week".</div>
+            <div class="o_pl_gridwrap" t-if="W.lines.length">
+                <table class="o_pl_lines">
+                    <thead><tr><th></th><th class="name">Line</th><th class="n">Target</th><th class="n">Actual</th><th style="min-width:9rem">Achieved</th></tr></thead>
+                    <tbody>
+                        <t t-foreach="W.lines" t-as="l" t-key="l.id">
+                            <tr t-att-class="(l.unplanned ? 'unplanned ' : '') + (l.missed ? 'missed' : '')">
+                                <td><span t-att-class="'o_pl_pri ' + l.priority" t-esc="priLabel(l.priority)"/></td>
+                                <td class="name"><b t-esc="l.name"/>
+                                    <span t-if="l.carried" class="o_pp_badge ms-1" t-att-title="'Not done in ' + l.carried + ' earlier week(s)'">carried<t t-if="l.carried &gt; 1"> ×<t t-esc="l.carried"/></t></span>
+                                    <span t-if="l.unplanned" class="o_pp_badge ms-1">came up · not scored</span>
+                                    <div class="small text-muted" t-if="l.done_when"><t t-esc="l.done_when"/></div></td>
+                                <td class="n"><t t-if="l.target"><t t-esc="fmt(l.target)"/> <small t-esc="l.unit"/></t><t t-else="">–</t></td>
+                                <td class="n"><t t-if="l.actual !== null and l.actual !== undefined"><t t-esc="fmt(l.actual)"/></t><t t-else="" t-esc="statusLabel(l.status)"/>
+                                    <div t-if="l.source === 'system'" class="o_pl_src" title="Counted by the system">system</div></td>
+                                <td><div class="o_pl_bar"><div t-att-class="l.pct &gt;= 100 ? 'ok' : (l.pct &gt;= 65 ? 'mid' : 'low')" t-att-style="'width:' + Math.min(l.pct, 100) + '%'"/></div>
+                                    <small t-att-class="l.missed and l.priority === 'must' and !reasonOf(l) ? 'o_pp_badtxt' : 'text-muted'"><t t-esc="l.pct"/>%<t t-if="l.running"> of pace · <t t-esc="l.expected_pct"/>% of its time gone</t><t t-if="l.missed"> · missed</t></small></td>
+                            </tr>
+                            <tr t-if="l.missed and !l.unplanned" class="o_pl_whyrow">
+                                <td></td><td colspan="4">
+                                    <input class="form-control form-control-sm" t-att-placeholder="l.priority === 'must' ? 'Why was it missed? (needed: a Must without a reason scores 0)' : 'Why was it missed? (optional)'"
+                                           t-att-value="reasonOf(l)" t-att-disabled="!W.mine or W.report.state === 'confirmed'" t-on-change="(ev) => this.setReason(l, ev.target.value)"/></td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="o_pp_card mb-3 o_pl_next" t-if="W.mine or W.nextweek.rows.length">
+            <div class="o_pp_card_head"><i class="fa fa-forward"/>Next week<span class="small text-muted ms-2" t-esc="W.nextweek.label"/>
+                <span class="small text-muted ms-auto">most urgent first: at most 3 Must</span></div>
+            <div class="o_pl_gridwrap">
+                <table class="o_pl_lines o_pl_edit">
+                    <thead><tr><th>Priority</th><th class="name">What</th><th>Target</th><th>Unit</th><th>Actual from</th><th class="name">Done when</th><th></th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="state.next" t-as="r" t-key="r.key">
+                            <td><select class="form-select form-select-sm" t-att-disabled="!W.mine or r.standard" t-on-change="(ev) => this.setNext(r, 'priority', ev.target.value)">
+                                <option t-foreach="ctx.priorities" t-as="p" t-key="p.key" t-att-value="p.key" t-att-selected="r.priority === p.key" t-esc="p.name"/></select></td>
+                            <td class="name"><input class="form-control form-control-sm" t-att-value="r.name" t-att-disabled="!W.mine or r.standard" placeholder="What will you do?" t-on-change="(ev) => this.setNext(r, 'name', ev.target.value)"/>
+                                <small t-if="r.standard" class="text-muted">standard line of your role</small><small t-if="r.carried" class="o_pp_badtxt">carried from this week</small>
+                                <small t-if="r.review === 'returned'" class="o_pp_badtxt">returned: <t t-esc="r.review_note"/></small></td>
+                            <td><input type="number" class="form-control form-control-sm o_pl_num" t-att-value="r.target_qty" t-att-disabled="!W.mine" t-on-change="(ev) => this.setNext(r, 'target_qty', ev.target.value)"/></td>
+                            <td><input class="form-control form-control-sm o_pl_unit" t-att-value="r.unit" t-att-disabled="!W.mine or r.standard" t-on-change="(ev) => this.setNext(r, 'unit', ev.target.value)"/></td>
+                            <td><select class="form-select form-select-sm" t-att-disabled="!W.mine or r.standard" t-on-change="(ev) => this.setNext(r, 'measure', ev.target.value)">
+                                <option value="" t-att-selected="!r.measure">My check-ins</option>
+                                <option t-foreach="ctx.measures" t-as="m" t-key="m.key" t-att-value="m.key" t-att-selected="r.measure === m.key" t-esc="m.name"/></select></td>
+                            <td class="name"><input class="form-control form-control-sm" t-att-value="r.done_when" t-att-disabled="!W.mine or r.standard" placeholder="e.g. 14 orders delivered" t-on-change="(ev) => this.setNext(r, 'done_when', ev.target.value)"/></td>
+                            <td><button t-if="W.mine and !r.standard and !r.carried" class="btn btn-link btn-sm text-muted" title="Remove" t-on-click="() => this.removeNext(r)"><i class="fa fa-times"/></button></td>
+                        </tr>
+                        <tr t-if="!state.next.length"><td colspan="7" class="o_pp_empty">Nothing planned for next week yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-if="W.mine" class="o_pp_panel_foot">
+                <button class="btn btn-light border btn-sm" t-on-click="addNext"><i class="fa fa-plus me-1"/>Add a line</button>
+                <button class="btn btn-primary btn-sm" t-att-disabled="!state.nextDirty" t-on-click="saveNext">Save next week</button>
+                <span t-if="state.nextDirty" class="small text-muted">not saved yet</span>
+            </div>
+        </div>
+
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-file-text-o"/>Weekly report<span class="small text-muted ms-2">open <t t-esc="W.window.label"/></span>
+                <span t-if="W.report.state === 'confirmed'" class="o_pl_st done ms-auto">Sent<t t-if="W.report.late"> late</t></span></div>
+            <div class="p-3">
+                <div class="o_pl_sum">
+                    <div><span>Plan score</span><b t-att-class="'o_pl_band ' + W.band"><t t-esc="W.plan_score === null ? '–' : W.plan_score"/></b></div>
+                    <div><span>Must done</span><b><t t-esc="W.lines.filter((l) =&gt; l.priority === 'must' and !l.unplanned and l.pct &gt;= 100).length"/>/<t t-esc="W.lines.filter((l) =&gt; l.priority === 'must' and !l.unplanned).length"/></b></div>
+                    <div><span>Came up</span><b t-esc="W.unplanned"/></div>
+                    <div><span>Blocked</span><b t-att-class="W.tasks.some((t) =&gt; t.status === 'blocked') ? 'o_pp_badtxt' : ''" t-esc="W.tasks.filter((t) =&gt; t.status === 'blocked').length"/></div>
+                </div>
+                <div class="small text-muted my-2">The numbers are counted for you. Say only what they do not: what went well, what got in the way, what you need.</div>
+                <textarea class="form-control mb-2" rows="2" placeholder="Remarks" t-att-value="state.rep.remarks"
+                          t-att-disabled="!W.mine or W.report.state === 'confirmed'" t-on-change="(ev) => this.state.rep.remarks = ev.target.value"/>
+                <div t-if="W.report.flags.length" class="o_pp_warn small mb-2"><b>Check-in signals:</b> <t t-esc="W.report.flags.join('; ')"/></div>
+                <div t-if="W.report.review_state === 'agreed'" class="small mb-2 text-success"><i class="fa fa-check me-1"/>Your manager agreed with the score.</div>
+                <div t-if="W.report.review_state === 'changed'" class="o_pp_warn small mb-2"><b>Score after review: <t t-esc="W.report.manager_score"/></b> – <t t-esc="W.report.manager_reason"/></div>
+                <div t-if="W.report.manager_note" class="small mb-2"><b>Manager:</b> <t t-esc="W.report.manager_note"/></div>
+                <div t-if="W.mine and W.report.state !== 'confirmed'" class="d-flex gap-2 align-items-center flex-wrap">
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.saveReport(false)">Save draft</button>
+                    <button class="btn btn-primary btn-sm" t-att-disabled="!W.window.open" t-on-click="() => this.saveReport(true)"><i class="fa fa-paper-plane me-1"/>Send report and next week's plan</button>
+                    <span t-if="!W.window.open" class="small text-muted">opens <t t-esc="W.window.label"/></span>
+                    <span t-elif="W.window.late" class="small o_pp_badtxt">past Saturday 12:00: it will show as late</span>
+                </div>
+                <div t-if="W.report.can_review" class="o_pl_review">
+                    <b>Your review</b>
+                    <div class="d-flex gap-2 flex-wrap align-items-center mt-2">
+                        <button class="btn btn-primary btn-sm" t-on-click="() => this.reviewWeek(true)"><i class="fa fa-check me-1"/>Agree with <t t-esc="W.report.plan_score"/></button>
+                        <span class="small text-muted">or change it:</span>
+                        <input type="number" min="0" max="100" class="form-control form-control-sm o_pl_num" t-att-value="state.reviewScore" t-on-change="(ev) => this.state.reviewScore = ev.target.value"/>
+                        <input class="form-control form-control-sm flex-grow-1" style="min-width:12rem" placeholder="Why (the person sees it)" t-on-change="(ev) => this.state.reviewReason = ev.target.value"/>
+                        <button class="btn btn-light border btn-sm" t-on-click="() => this.reviewWeek(false)">Change score</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ board -->
+    <t t-name="sonador_planning.Board">
+        <t t-set="B" t-value="state.board"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group"><button class="btn btn-light border btn-sm" t-on-click="() => this.shiftBoard(-1)"><i class="fa fa-chevron-left"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftBoard(1)"><i class="fa fa-chevron-right"/></button></div>
+            <b t-esc="B.label"/>
+            <span t-if="B.company !== null" t-att-class="'o_pl_score ms-auto ' + bandOf(B.company)">Company <t t-esc="B.company"/><small>/100</small></span>
+        </div>
+        <div class="o_pp_card mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-exclamation-triangle"/>The differences<span class="small text-muted ms-2">what needs your attention, worst first</span></div>
+            <div t-if="!B.exceptions.length" class="o_pp_empty">Nothing off plan this week.</div>
+            <div t-foreach="B.exceptions" t-as="x" t-key="x_index" class="o_pl_ex">
+                <span t-att-class="'o_pl_xk ' + x.kind" t-esc="x.label"/>
+                <span class="o_pl_xd" t-esc="x.dept"/>
+                <a t-if="x.employee_id" href="#" t-on-click.prevent="() => this.viewPerson(x.employee_id, 'week')" t-esc="x.who"/>
+                <span class="flex-grow-1" t-esc="x.text"/>
+            </div>
+        </div>
+        <div class="o_pl_board">
+            <div t-foreach="B.departments" t-as="d" t-key="d.id" class="o_pl_dept">
+                <div class="o_pl_dept_head"><b t-esc="d.name"/><span t-att-class="'o_pl_score ' + d.band"><t t-esc="d.score === null ? '–' : d.score"/></span></div>
+                <div class="o_pl_bar"><div t-att-class="d.band === 'good' ? 'ok' : (d.band === 'mid' ? 'mid' : 'low')" t-att-style="'width:' + (d.score || 0) + '%'"/></div>
+                <div t-foreach="d.kpis" t-as="k" t-key="k.name" class="o_pl_kpi">
+                    <span t-esc="k.name"/><b t-att-class="'o_pl_band ' + k.band" t-att-title="k.pace ? k.pct + '% of where the week should be by now' : k.pct + '% of target'"><t t-esc="fmt(k.actual)"/> <small>/ <t t-esc="fmt(k.target)"/> <t t-esc="k.unit"/></small></b></div>
+                <div class="o_pl_people">
+                    <button t-foreach="d.people" t-as="p" t-key="p.id" t-att-class="'o_pl_person ' + p.band" t-on-click="() => this.viewPerson(p.id, 'week')"
+                            t-att-title="(p.sent ? 'Report sent' : 'Report not sent') + (p.late ? ', late' : '') + ' · ' + p.missed + ' Must missed · ' + p.unplanned + ' came up'">
+                        <span t-esc="p.name"/><b t-esc="p.score === null ? '–' : p.score"/><i t-if="!p.sent" class="fa fa-clock-o"/></button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ my month -->
+    <t t-name="sonador_planning.Month">
+        <t t-set="M" t-value="state.mo"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group"><button class="btn btn-light border btn-sm" t-on-click="() => this.shiftMonth(-1)"><i class="fa fa-chevron-left"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftMonth(1)"><i class="fa fa-chevron-right"/></button></div>
+            <div><b t-esc="M.label"/><div class="small text-muted" t-esc="M.range"/></div>
+            <span t-if="M.plan" t-att-class="'o_pl_state ' + M.plan.state" t-esc="planState(M.plan.state)"/>
+            <span t-else="" class="o_pl_state draft">Not started</span>
+            <span class="small text-muted">Approver: <b t-esc="M.approver or 'not set (People › manager)'"/> · due <t t-esc="M.deadline"/></span>
+            <div class="ms-auto d-flex flex-wrap gap-2" t-if="canEdit">
+                <button t-if="ctx.role" class="btn btn-light border btn-sm" t-on-click="addRoleItems" t-att-title="'The must-do items of the ' + ctx.role.name + ' role'"><i class="fa fa-list-ul me-1"/>Add my role's items</button>
+                <button t-if="M.editable" class="btn btn-light border btn-sm" t-on-click="copyLast" title="Start from last month's tasks"><i class="fa fa-copy me-1"/>Copy last month</button>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-light border" t-on-click="downloadExcel"><i class="fa fa-download me-1"/>Excel template</button>
+                    <button class="btn btn-light border" t-on-click="pickExcel"><i class="fa fa-upload me-1"/>Import</button>
+                    <button class="btn btn-light border" t-on-click="startPaste"><i class="fa fa-clipboard me-1"/>Paste</button>
+                </div>
+            </div>
+            <div t-else="" class="ms-auto d-flex gap-2">
+                <button t-if="M.can_propose" class="btn btn-primary btn-sm" t-on-click="startChange" title="Change, add or drop tasks; your manager accepts in one click"><i class="fa fa-pencil me-1"/>Propose a change</button>
+                <button t-if="M.tasks.length" class="btn btn-light border btn-sm" t-on-click="downloadExcel"><i class="fa fa-download me-1"/>Excel</button>
+            </div>
+        </div>
+        <div t-if="!M.opens" class="o_pp_warn mb-3">Planning for <t t-esc="M.label"/> opens on <t t-esc="M.opens_on"/>.</div>
+        <div t-if="M.plan and M.plan.state === 'returned'" class="o_pl_returned mb-3"><i class="fa fa-reply me-1"/><b>Your manager returned some tasks.</b> Fix the ones marked in orange and send the plan again.
+            <div t-if="M.plan.manager_note" class="small mt-1" t-esc="M.plan.manager_note"/></div>
+        <div t-if="M.plan and M.plan.state === 'submitted'" class="o_pp_warn mb-3">With <t t-esc="M.plan.approver"/> since <t t-esc="M.plan.submitted"/>. You can check in on the tasks already, and you can still change the plan until it is approved: <b>Save changes</b> sends them the new version.</div>
+        <div t-if="M.changes.length" class="o_pp_card mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-hourglass-half"/>Changes waiting for <t t-esc="M.approver or 'your manager'"/></div>
+            <div t-foreach="M.changes" t-as="ch" t-key="ch.id" class="o_pp_li"><span t-esc="ch.summary"/><span class="small text-muted ms-auto" t-esc="ch.reason"/></div>
+        </div>
+
+        <t t-if="canEdit">
+            <div class="o_pl_meter mb-2">
+                <div class="o_pl_meter_bar"><div t-att-class="blocking ? 'bad' : (readiness &gt;= 80 ? 'good' : 'mid')" t-att-style="'width:' + (readiness === null ? 0 : readiness) + '%'"/></div>
+                <span class="small"><t t-if="state.checking"><i class="fa fa-circle-o-notch fa-spin me-1"/>checking…</t>
+                    <t t-elif="readiness === null">The plan checker reviews each row as you type.</t>
+                    <t t-elif="blocking"><b class="o_pp_badtxt">Not ready</b>: fix the red items to submit.</t>
+                    <t t-else=""><b class="o_pp_good">Ready to submit</b> · quality <t t-esc="readiness"/>/100</t></span>
+            </div>
+            <div t-if="state.check and state.check.plan.length" class="o_pl_planflags mb-2">
+                <div t-foreach="state.check.plan" t-as="f" t-key="f_index" t-att-class="'o_pl_flag ' + f.level"><i t-att-class="'fa ' + (f.level === 'block' ? 'fa-times-circle' : 'fa-exclamation-triangle')"/> <t t-esc="f.msg"/></div>
+            </div>
+        </t>
+
+        <div class="o_pp_card o_pl_plan">
+            <t t-if="canEdit">
+                <div t-foreach="state.rows" t-as="r" t-key="r.key" t-att-class="'o_pl_task ' + rowLevel(r) + (r.review === 'returned' ? ' returned' : '')">
+                    <div class="o_pl_task_no"><span t-att-class="'o_pl_dot ' + rowLevel(r)"/><t t-esc="r_index + 1"/></div>
+                    <div class="o_pl_task_body">
+                        <div class="o_pl_task_main">
+                            <label>What will you do?<textarea class="form-control" rows="2" placeholder="Start with a verb: collect, reconcile, hire, install…" t-att-value="r.name" t-on-input="(ev) => this.setCell(r, 'name', ev.target.value)"/></label>
+                            <label>Done when… <span class="text-muted fw-normal">(or just a target number)</span><textarea class="form-control" rows="2" placeholder="e.g. 1,200,000 collected · signed by the GM · 3 clerks trained" t-att-value="r.done_when" t-on-input="(ev) => this.setCell(r, 'done_when', ev.target.value)"/></label>
+                        </div>
+                        <div class="o_pl_task_meta">
+                            <label>Due week<div class="o_pl_weeks"><button t-foreach="M.weeks" t-as="w" t-key="w.from" t-att-class="weekOn(r, w) ? 'on' : ''" t-att-title="w.label" t-on-click="() => this.setWeek(r, w)">W<t t-esc="w_index + 1"/></button></div></label>
+                            <label>Target<div class="d-flex gap-1"><input type="number" class="form-control form-control-sm" placeholder="number" t-att-value="r.target_qty" t-on-change="(ev) => this.setCell(r, 'target_qty', ev.target.value)"/>
+                                <input class="form-control form-control-sm" placeholder="unit" t-att-value="r.unit" t-on-change="(ev) => this.setCell(r, 'unit', ev.target.value)"/></div></label>
+                            <button class="btn btn-link btn-sm align-self-end" t-on-click="() => this.toggleMore(r)"><i t-att-class="'fa me-1 ' + (r.more ? 'fa-chevron-up' : 'fa-chevron-down')"/><t t-esc="r.more ? 'Less' : 'More'"/></button>
+                        </div>
+                        <div t-if="r.more" class="o_pl_task_meta">
+                            <label>Exact days<div class="d-flex gap-1"><input type="date" class="form-control form-control-sm" t-att-min="M.month" t-att-max="M.month_end" t-att-value="r.date_from" t-on-change="(ev) => this.setCell(r, 'date_from', ev.target.value)"/>
+                                <input type="date" class="form-control form-control-sm" t-att-min="M.month" t-att-max="M.month_end" t-att-value="r.date_to" t-on-change="(ev) => this.setCell(r, 'date_to', ev.target.value)"/></div></label>
+                            <label>Evidence<input class="form-control form-control-sm" placeholder="report, signed form, photo…" t-att-value="r.output" t-on-input="(ev) => this.setCell(r, 'output', ev.target.value)"/></label>
+                            <label>Checked by<select class="form-select form-select-sm" t-on-change="(ev) => this.setCell(r, 'indicator_id', ev.target.value)"><option value="">—</option>
+                                <option t-foreach="ctx.indicators" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="c.id == r.indicator_id" t-esc="c.name"/></select></label>
+                            <label>Category<select class="form-select form-select-sm" t-on-change="(ev) => this.setCell(r, 'category_id', ev.target.value)"><option value="">—</option>
+                                <option t-foreach="ctx.categories" t-as="c" t-key="c.id" t-att-value="c.id" t-att-selected="c.id == r.category_id" t-esc="c.name"/></select></label>
+                            <label>Goal<select class="form-select form-select-sm" t-on-change="(ev) => this.setCell(r, 'goal_id', ev.target.value)"><option value="">—</option>
+                                <option t-foreach="ctx.goals" t-as="g" t-key="g.id" t-att-value="g.id" t-att-selected="g.id == r.goal_id" t-esc="g.name"/></select></label>
+                            <label t-if="ctx.role">Role item<select class="form-select form-select-sm" t-on-change="(ev) => this.setCell(r, 'role_item_id', ev.target.value)"><option value="">—</option>
+                                <option t-foreach="ctx.role.items" t-as="it" t-key="it.id" t-att-value="it.id" t-att-selected="it.id == r.role_item_id" t-esc="it.name"/></select></label>
+                            <label class="flex-grow-1">How (steps)<input class="form-control form-control-sm" t-att-value="r.detail" t-on-change="(ev) => this.setCell(r, 'detail', ev.target.value)"/></label>
+                        </div>
+                        <div t-if="findings(r).length or r.review_note" class="o_pl_task_flags">
+                            <span t-if="r.review_note" class="o_pl_flag mgr"><i class="fa fa-reply"/> Manager: <t t-esc="r.review_note"/></span>
+                            <span t-foreach="findings(r)" t-as="f" t-key="f_index" t-att-class="'o_pl_flag ' + f.level"><i t-att-class="'fa ' + (f.level === 'block' ? 'fa-times-circle' : 'fa-exclamation-triangle')"/> <t t-esc="f.msg"/></span>
+                        </div>
+                    </div>
+                    <div class="o_pl_task_act">
+                        <button class="btn btn-link btn-sm p-0" title="Up" t-on-click="() => this.moveRow(r_index, -1)"><i class="fa fa-arrow-up"/></button>
+                        <button class="btn btn-link btn-sm p-0" title="Down" t-on-click="() => this.moveRow(r_index, 1)"><i class="fa fa-arrow-down"/></button>
+                        <button class="btn btn-link btn-sm p-0 text-danger" title="Remove" t-on-click="() => this.removeRow(r_index)"><i class="fa fa-trash-o"/></button>
+                    </div>
+                </div>
+                <div t-if="state.changeMode" class="o_pp_panel_foot">
+                    <button class="btn btn-light border btn-sm" t-on-click="addRow"><i class="fa fa-plus me-1"/>Add a task</button>
+                    <input class="form-control form-control-sm" style="max-width:28rem" placeholder="Why does the plan change? (required)" t-att-value="state.changeReason" t-on-input="(ev) => this.state.changeReason = ev.target.value"/>
+                    <button class="btn btn-light border btn-sm ms-auto" t-on-click="cancelChange">Cancel</button>
+                    <button class="btn btn-primary btn-sm" t-att-disabled="blocking or !rowCount or (state.changeReason || '').trim().length &lt; 5" t-on-click="sendChange"><i class="fa fa-paper-plane me-1"/>Send the change to <t t-esc="M.approver or 'manager'"/></button>
+                </div>
+                <div t-else="" class="o_pp_panel_foot">
+                    <button class="btn btn-light border btn-sm" t-on-click="addRow"><i class="fa fa-plus me-1"/>Add a task</button>
+                    <span class="small text-muted"><t t-esc="rowCount"/> tasks<t t-if="state.dirty"> · not saved</t></span>
+                    <t t-if="M.plan and M.plan.state === 'submitted'">
+                        <button class="btn btn-primary btn-sm ms-auto" t-att-disabled="blocking or !rowCount or !state.dirty" t-on-click="() => this.savePlan(true)"><i class="fa fa-save me-1"/>Save changes</button>
+                    </t>
+                    <t t-else="">
+                        <button class="btn btn-light border btn-sm ms-auto" t-on-click="() => this.savePlan(false)">Save draft</button>
+                        <button class="btn btn-primary btn-sm" t-att-disabled="blocking or !rowCount" t-on-click="() => this.savePlan(true)"><i class="fa fa-paper-plane me-1"/>Send to <t t-esc="M.approver or 'manager'"/></button>
+                    </t>
+                </div>
+            </t>
+            <table t-else="" class="o_pl_ptable">
+                <thead><tr><th style="width:2.2rem"/><th>Task</th><th>Done when</th><th style="width:7rem">Target</th><th style="width:12rem">When</th><th style="width:11rem">Evidence</th><th style="width:10rem">Goal</th><th style="width:7rem">Progress</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.rows" t-as="r" t-key="r.key" t-att-class="'o_pl_row' + (r.review === 'returned' ? ' returned' : '')">
+                        <td class="num" t-esc="r_index + 1"/>
+                        <td><b t-esc="r.name"/><span t-if="r.added_later" class="o_pp_badge ms-1">added</span><div t-if="r.detail" class="small text-muted" t-esc="r.detail"/>
+                            <div t-if="r.review_note" class="o_pl_flag mgr mt-1"><i class="fa fa-reply"/> <t t-esc="r.review_note"/></div><div t-if="r.category" class="small text-muted" t-esc="r.category"/></td>
+                        <td t-esc="r.done_when"/>
+                        <td class="small"><t t-esc="r.target_qty"/> <t t-esc="r.unit"/></td>
+                        <td class="small"><t t-esc="r.from_ec"/> – <t t-esc="r.to_ec"/></td>
+                        <td class="small" t-esc="r.output"/>
+                        <td class="small" t-esc="r.goal"/>
+                        <td><div class="o_pl_bar"><div t-att-style="'width:' + (r.progress || 0) + '%'"/></div><span t-att-class="'o_pl_st ' + r.status" t-esc="statusLabel(r.status)"/>
+                            <span t-att-class="'o_pl_rev ms-1 ' + r.review" t-esc="r.review === 'approved' ? '✓' : (r.review === 'returned' ? '↩' : '')"/></td>
+                    </tr>
+                    <tr t-if="!state.rows.length"><td colspan="8" class="o_pp_empty">No plan for this month.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ year -->
+    <t t-name="sonador_planning.Year">
+        <t t-set="Y" t-value="state.yr"/>
+        <div class="o_pp_toolbar"><b>Fiscal year <t t-esc="Y.fy"/></b>
+            <span class="small text-muted">Your yearly priorities are your goals in Performance; link each monthly task to one.</span>
+            <button class="btn btn-light border btn-sm ms-auto" t-on-click="openPerformance"><i class="fa fa-flag me-1"/>Edit goals in Performance</button></div>
+        <div class="o_pp_grid">
+            <div t-foreach="Y.goals" t-as="g" t-key="g.id" class="o_pp_card p-3">
+                <div class="d-flex align-items-start gap-2"><b class="me-auto" t-esc="g.name"/><span class="o_pp_badge" t-esc="g.level"/></div>
+                <div class="o_pl_bar my-2"><div t-att-style="'width:' + (g.progress || 0) + '%'"/></div>
+                <div class="small text-muted">Goal progress <t t-esc="Math.round(g.progress || 0)"/>% · <t t-esc="g.tasks"/> tasks planned, <t t-esc="g.done"/> done
+                    <t t-if="g.months.length"> · <t t-esc="g.months.join(', ')"/></t></div>
+            </div>
+        </div>
+        <div t-if="!Y.goals.length" class="o_pp_card p-4 text-muted">No goals yet. Set your yearly goals in Performance (or ask your manager), then link your monthly tasks to them.</div>
+        <div t-if="Y.unlinked" class="small text-muted mt-2"><t t-esc="Y.unlinked"/> task(s) this year are not linked to a goal.</div>
+    </t>
+
+    <!-- ============================================================ team -->
+    <t t-name="sonador_planning.Team">
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-users"/>My team · <t t-esc="state.team.month_label"/></div>
+            <table class="o_pp_table">
+                <thead><tr><th>Person</th><th>Month plan</th><th>This week</th><th>Last report</th><th>Owes</th><th/></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.team.rows" t-as="p" t-key="p.id">
+                        <td><div class="d-flex align-items-center gap-2"><img class="o_pp_av xs" t-att-src="p.avatar"/><div><b t-esc="p.name"/><div class="small text-muted"><t t-esc="p.job"/><t t-if="!p.gated"> · not on the planning list</t></div></div></div></td>
+                        <td><t t-if="p.plan"><span t-att-class="'o_pl_state ' + p.plan.state" t-esc="planState(p.plan.state)"/>
+                            <div class="small text-muted"><t t-esc="p.plan.tasks"/> tasks<t t-if="p.plan.score"> · quality <t t-esc="p.plan.score"/></t><t t-if="p.plan.added"> · <t t-esc="p.plan.added"/> added</t><t t-if="p.plan.changes"> · <b><t t-esc="p.plan.changes"/> change(s) to accept</b></t></div></t>
+                            <span t-else="" class="text-muted small">none</span></td>
+                        <td><span t-if="p.grade" t-att-class="'o_pl_grade g' + p.grade"><t t-esc="p.grade"/> <t t-esc="p.week_score"/>%</span>
+                            <div class="small text-muted"><t t-esc="p.done"/>/<t t-esc="p.week_tasks"/> done<t t-if="p.blocked"> · <span class="o_pp_badtxt"><t t-esc="p.blocked"/> blocked</span></t></div></td>
+                        <td><span t-if="p.last_report === 'confirmed'" class="o_pl_st done">Sent <t t-esc="p.last_grade"/></span><span t-else="" class="small text-muted">not sent</span>
+                            <div t-if="p.flags.length" class="small o_pp_badtxt" t-att-title="p.flags.join('; ')"><i class="fa fa-flag me-1"/><t t-esc="p.flags.length"/> signal(s)</div></td>
+                        <td class="small"><div t-foreach="p.missing" t-as="m" t-key="m_index" t-esc="m"/></td>
+                        <td class="text-nowrap text-end">
+                            <button t-if="p.plan" t-att-class="'btn btn-sm me-1 ' + (p.plan.state === 'submitted' or p.plan.added or p.plan.changes ? 'btn-primary' : 'btn-light border')" t-on-click="() => this.openReview(p.plan.id)"><t t-esc="p.plan.state === 'submitted' ? 'Review' : 'Plan'"/></button>
+                            <button class="btn btn-light border btn-sm" t-on-click="() => this.viewPerson(p.id, 'week')">Week</button></td>
+                    </tr>
+                    <tr t-if="!state.team.rows.length"><td colspan="6" class="o_pp_empty">Nobody reports to you in People.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ review drawer -->
+    <t t-name="sonador_planning.Review">
+        <t t-set="R" t-value="state.review"/>
+        <div class="o_pl_shade" t-on-click="() => this.state.review = null"/>
+        <div class="o_pl_drawer">
+            <div class="o_pl_dhead"><div class="me-auto"><h3 class="m-0"><t t-esc="R.employee.name"/> · <t t-esc="R.label"/></h3>
+                <div class="small"><span t-att-class="'o_pl_state ' + R.plan.state" t-esc="planState(R.plan.state)"/> quality <t t-esc="R.check.score"/>/100
+                    <t t-if="R.plan.revisions"> · revision <t t-esc="R.plan.revisions"/></t></div></div>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.state.review = null"><i class="fa fa-times"/></button></div>
+            <div class="o_pl_dbody">
+                <div t-foreach="R.check.plan" t-as="f" t-key="f_index" t-att-class="'o_pl_flag ' + f.level + ' d-block mb-1'"><t t-esc="f.msg"/></div>
+                <div t-if="R.changes.length" class="o_pp_card mb-3">
+                    <div class="o_pp_card_head"><i class="fa fa-pencil"/>Proposed changes<span class="small text-muted ms-2" t-esc="R.changes[0].reason"/></div>
+                    <div t-foreach="R.changes" t-as="ch" t-key="ch.id" class="o_pp_li"><i t-att-class="'fa ' + (ch.kind === 'add' ? 'fa-plus text-success' : ch.kind === 'remove' ? 'fa-minus text-danger' : 'fa-pencil')"/><span t-esc="ch.summary"/></div>
+                    <div class="o_pp_panel_foot">
+                        <button class="btn btn-primary btn-sm text-nowrap" t-on-click="acceptChanges"><i class="fa fa-check me-1"/>Accept the change(s)</button>
+                        <input class="form-control form-control-sm" placeholder="Reason, to refuse" t-att-value="state.refuseNote" t-on-input="(ev) => this.state.refuseNote = ev.target.value"/>
+                        <button class="btn btn-light border btn-sm" t-att-disabled="(state.refuseNote || '').trim().length &lt; 3" t-on-click="refuseChanges">Refuse</button>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 my-2" t-if="R.can_decide"><button class="btn btn-light border btn-sm" t-on-click="approveAllClean"><i class="fa fa-check me-1"/>Approve every task without a red flag</button></div>
+                <div t-foreach="R.tasks" t-as="t" t-key="t.id" t-att-class="'o_pl_rv ' + (state.decisions[t.id] ? state.decisions[t.id].review : '')">
+                    <div class="d-flex gap-2 align-items-start">
+                        <div class="me-auto"><b t-esc="t.name"/><span t-if="t.added_later" class="o_pp_badge ms-1">added</span>
+                            <div class="small"><i class="fa fa-bullseye me-1"/><t t-esc="t.done_when"/><t t-if="t.target_qty"> (<t t-esc="t.target_qty"/> <t t-esc="t.unit"/>)</t></div>
+                            <div t-if="t.detail" class="small text-muted" t-esc="t.detail"/>
+                            <div class="small text-muted"><t t-esc="t.from_ec"/> – <t t-esc="t.to_ec"/><t t-if="t.output"> · evidence: <t t-esc="t.output"/></t><t t-if="t.goal"> · goal: <t t-esc="t.goal"/></t></div>
+                            <div><span t-foreach="reviewFindings(t)" t-as="f" t-key="f_index" t-att-class="'o_pl_flag ' + f.level"><t t-esc="f.msg"/></span></div></div>
+                        <div t-if="R.can_decide" class="btn-group btn-group-sm">
+                            <button t-att-class="'btn border ' + (state.decisions[t.id].review === 'approved' ? 'btn-success' : 'btn-light')" t-on-click="() => this.setDecision(t, 'approved')"><i class="fa fa-check"/></button>
+                            <button t-att-class="'btn border ' + (state.decisions[t.id].review === 'returned' ? 'btn-warning' : 'btn-light')" t-on-click="() => this.setDecision(t, 'returned')"><i class="fa fa-reply"/></button>
+                        </div>
+                        <span t-else="" t-att-class="'o_pl_rev ' + t.review" t-esc="t.review"/>
+                    </div>
+                    <input t-if="R.can_decide and state.decisions[t.id].review === 'returned'" class="form-control form-control-sm mt-1" placeholder="What should change?"
+                           t-att-value="state.decisions[t.id].note" t-on-change="(ev) => this.state.decisions[t.id].note = ev.target.value"/>
+                </div>
+                <t t-if="R.can_decide">
+                    <textarea class="form-control mt-3" rows="2" placeholder="A note for the whole plan (optional)" t-on-change="(ev) => this.state.reviewNote = ev.target.value"/>
+                    <button class="btn btn-primary mt-2" t-on-click="sendDecision"><i class="fa fa-paper-plane me-1"/>Send decision</button>
+                </t>
+                <div t-if="R.can_send_back" class="mt-3">
+                    <button t-if="state.sendBack === null" class="btn btn-link btn-sm p-0" t-on-click="() => this.state.sendBack = ''"><i class="fa fa-reply me-1"/>Send the whole plan back with a reason</button>
+                    <div t-else="" class="d-flex gap-2">
+                        <input class="form-control form-control-sm" placeholder="Why does it go back? (every line is kept)" t-on-input="(ev) => this.state.sendBack = ev.target.value"/>
+                        <button class="btn btn-warning btn-sm" t-att-disabled="(state.sendBack || '').trim().length &lt; 5" t-on-click="doSendBack">Send back</button>
+                        <button class="btn btn-light border btn-sm" t-on-click="() => this.state.sendBack = null">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ overview -->
+    <t t-name="sonador_planning.Overview">
+        <div class="o_pp_card mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-binoculars"/>Everyone on the planning list · week <t t-esc="state.ov.week"/></div>
+            <table class="o_pp_table">
+                <thead><tr><th>Person</th><th>Month plan</th><th>This week</th><th>Last report</th><th>Owes now</th><th/></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.ov.rows" t-as="p" t-key="p.id">
+                        <td><b t-esc="p.name"/><div class="small text-muted" t-esc="p.department"/></td>
+                        <td><t t-if="p.plan"><span t-att-class="'o_pl_state ' + p.plan.state" t-esc="planState(p.plan.state)"/></t><span t-else="" class="text-muted small">none</span></td>
+                        <td><span t-if="p.grade" t-att-class="'o_pl_grade g' + p.grade"><t t-esc="p.grade"/> <t t-esc="p.week_score"/>%</span><t t-if="p.blocked"> <span class="o_pp_badtxt small"><t t-esc="p.blocked"/> blocked</span></t></td>
+                        <td><span t-if="p.last_report === 'confirmed'" class="o_pl_st done">Sent <t t-esc="p.last_grade"/></span><span t-else="" class="small text-muted">not sent</span>
+                            <div t-foreach="p.flags" t-as="f" t-key="f_index" class="small o_pp_badtxt" t-esc="f"/></td>
+                        <td class="small"><div t-foreach="p.missing" t-as="m" t-key="m_index" t-esc="m"/></td>
+                        <td class="text-nowrap text-end"><button t-if="p.plan" class="btn btn-light border btn-sm me-1" t-on-click="() => this.openReview(p.plan.id)">Plan</button>
+                            <button class="btn btn-light border btn-sm" t-on-click="() => this.viewPerson(p.id, 'week')">Week</button></td>
+                    </tr>
+                    <tr t-if="!state.ov.rows.length"><td colspan="6" class="o_pp_empty">Nobody is on the planning list: Settings › People.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-hand-paper-o"/>Blocked right now</div>
+            <div t-foreach="state.ov.blockers" t-as="b" t-key="b_index" class="o_pp_li"><b t-esc="b.who"/><span t-esc="b.task"/><span class="small text-muted ms-auto"><t t-esc="b.note"/> · <t t-esc="b.ec"/></span></div>
+            <div t-if="!state.ov.blockers.length" class="o_pp_empty">Nothing blocked.</div>
+        </div>
+    </t>
+
+    <!-- ============================================================ settings -->
+    <t t-name="sonador_planning.Settings">
+        <t t-set="C" t-value="state.set.config"/>
+        <div class="o_pp_grid mb-3">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-lock"/>Planning gate</div>
+                <div class="o_pp_fields">
+                    <label><span>Mode</span><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setCfg('mode', ev.target.value)">
+                        <option value="off" t-att-selected="C.mode === 'off'">Off</option><option value="watch" t-att-selected="C.mode === 'watch'">Watch only (record, never lock)</option>
+                        <option value="warn" t-att-selected="C.mode === 'warn'">Warn (banner, no lock)</option><option value="lock" t-att-selected="C.mode === 'lock'">Lock until planned</option></select></label>
+                    <label><span>Month plan due by day</span><input type="number" min="1" max="30" class="form-control form-control-sm" style="width:5rem" t-att-value="C.deadline_day" t-on-change="(ev) => this.setCfg('deadline_day', ev.target.value)"/></label>
+                    <label><span>Next month can be planned from day</span><input type="number" min="1" max="30" class="form-control form-control-sm" style="width:5rem" t-att-value="C.next_from_day" t-on-change="(ev) => this.setCfg('next_from_day', ev.target.value)"/></label>
+                    <label><span>Check-ins</span><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setCfg('checkin', ev.target.value)">
+                        <option value="daily" t-att-selected="C.checkin === 'daily'">Every working day</option><option value="two" t-att-selected="C.checkin === 'two'">Every second working day</option>
+                        <option value="weekly" t-att-selected="C.checkin === 'weekly'">Once a week (with the report)</option></select></label>
+                    <label><span>Check-ins asked from <small class="d-block text-muted">Nothing is asked for days before this</small></span><input type="date" class="form-control form-control-sm w-auto" t-att-value="C.checkin_from or ''" t-on-change="(ev) => this.setCfg('checkin_from', ev.target.value)"/></label>
+                    <label><span>Grace hours before a lock</span><input type="number" min="0" class="form-control form-control-sm" style="width:5rem" t-att-value="C.grace" t-on-change="(ev) => this.setCfg('grace', ev.target.value)"/></label>
+                    <label><span>Week starts on</span><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setCfg('week_start', ev.target.value)">
+                        <option t-foreach="[['0','Monday'],['1','Tuesday'],['2','Wednesday'],['3','Thursday'],['4','Friday'],['5','Saturday'],['6','Sunday']]" t-as="d" t-key="d[0]" t-att-value="d[0]" t-att-selected="C.week_start === d[0]" t-esc="d[1]"/></select></label>
+                    <label><span>Weekly report on</span><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setCfg('report_day', ev.target.value)">
+                        <option t-foreach="[['0','Monday'],['1','Tuesday'],['2','Wednesday'],['3','Thursday'],['4','Friday'],['5','Saturday'],['6','Sunday']]" t-as="d" t-key="d[0]" t-att-value="d[0]" t-att-selected="C.report_day === d[0]" t-esc="d[1]"/></select></label>
+                    <div class="pt-2 small"><b>Open while locked:</b>
+                        <t t-foreach="[['discuss','Discuss'],['timeoff','Leave Requests'],['attendance','Attendance'],['people','People profile'],['performance','Performance goals']]" t-as="a" t-key="a[0]">
+                            <label class="d-inline-flex align-items-center gap-1 me-3 border-0 p-0"><input type="checkbox" t-att-checked="C.open_areas.includes(a[0])" t-on-change="() => this.toggleArea(a[0])"/> <t t-esc="a[1]"/></label></t></div>
+                </div>
+            </div>
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-magic"/>Plan checker and plans</div>
+                <div class="o_pp_fields">
+                    <label><span>Strictness (company default)</span><span class="d-flex align-items-center gap-2"><input type="range" min="0" max="100" step="5" t-att-value="C.strictness" t-on-input="(ev) => this.setCfg('strictness', ev.target.value)"/><b t-esc="C.strictness"/></span></label>
+                    <label><span>Fewest tasks a month</span><input type="number" min="1" class="form-control form-control-sm" style="width:5rem" t-att-value="C.min_tasks" t-on-change="(ev) => this.setCfg('min_tasks', ev.target.value)"/></label>
+                    <label><span>Most tasks a month</span><input type="number" min="1" class="form-control form-control-sm" style="width:5rem" t-att-value="C.max_tasks" t-on-change="(ev) => this.setCfg('max_tasks', ev.target.value)"/></label>
+                    <label><span>Every task links to a goal</span><input type="checkbox" class="form-check-input" t-att-checked="C.require_goal" t-on-change="(ev) => this.setCfg('require_goal', ev.target.checked)"/></label>
+                </div>
+                <div class="o_pp_empty small">Only nonsense stops a plan: an empty plan, a line with neither a target nor a "done when", a target of 0, placeholder or random text, the same line twice, and a plan with none of the role's must-do items. Everything else is a hint the manager sees. Strictness only makes the hints more or less picky.</div>
+            </div>
+        </div>
+        <div class="d-flex mb-3"><button class="btn btn-primary btn-sm" t-on-click="saveSettings">Save settings</button></div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-users"/>Who must plan
+                    <input class="form-control form-control-sm ms-auto" style="max-width:14rem" placeholder="Filter…" t-on-input="(ev) => this.state.peopleFilter = ev.target.value"/></div>
+                <table class="o_pp_table"><thead><tr><th>Person</th><th>Approver</th><th>Role</th><th>Must plan</th><th>Strictness</th></tr></thead>
+                    <tbody><tr t-foreach="peopleRows" t-as="p" t-key="p.id">
+                        <td><b t-esc="p.name"/><div class="small text-muted"><t t-esc="p.department"/><t t-if="!p.login"> · no login</t></div></td>
+                        <td class="small" t-esc="p.manager or '— set a manager'"/>
+                        <td><select class="form-select form-select-sm" t-on-change="(ev) => this.setPerson(p, 'role_id', ev.target.value)"><option value="">—</option>
+                            <option t-foreach="state.set.roles" t-as="ro" t-key="ro.id" t-att-value="ro.id" t-att-selected="ro.id == p.role_id" t-esc="ro.name"/></select></td>
+                        <td><input type="checkbox" class="form-check-input" t-att-checked="p.gated" t-on-change="(ev) => this.setPerson(p, 'gated', ev.target.checked)"/></td>
+                        <td><input type="number" min="0" max="100" class="form-control form-control-sm" style="width:5rem" placeholder="default" t-att-value="p.strictness" t-on-change="(ev) => this.setPerson(p, 'strictness', ev.target.value)"/></td>
+                    </tr></tbody></table>
+            </div>
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-id-badge"/>Roles and their must-do items<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.editRole(false)"><i class="fa fa-plus"/> Role</button></div>
+                <div t-if="state.roleEdit" class="p-2 border-bottom">
+                    <input class="form-control form-control-sm mb-2" placeholder="Role name" t-att-value="state.roleEdit.name" t-on-change="(ev) => this.state.roleEdit.name = ev.target.value"/>
+                    <div class="small text-muted mb-1">Must-do items: every plan of a person with this role holds at least one of them (ticked = must be there; the plan screen offers them as ready lines).</div>
+                    <div t-foreach="state.roleEdit.items" t-as="it" t-key="it_index" class="d-flex gap-1 mb-1">
+                        <input type="checkbox" class="form-check-input mt-2" title="Must be in every plan" t-att-checked="it.mandatory" t-on-change="(ev) => it.mandatory = ev.target.checked"/>
+                        <input class="form-control form-control-sm" placeholder="What" t-att-value="it.name" t-on-change="(ev) => it.name = ev.target.value"/>
+                        <input class="form-control form-control-sm" placeholder="Done when" t-att-value="it.done_when" t-on-change="(ev) => it.done_when = ev.target.value"/>
+                        <input type="number" class="form-control form-control-sm" style="width:6rem" placeholder="target" t-att-value="it.target_qty" t-on-change="(ev) => it.target_qty = ev.target.value"/>
+                        <input class="form-control form-control-sm" style="width:6rem" placeholder="unit" t-att-value="it.unit" t-on-change="(ev) => it.unit = ev.target.value"/>
+                        <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => state.roleEdit.items.splice(it_index, 1)"><i class="fa fa-trash-o"/></button>
+                    </div>
+                    <div class="d-flex gap-2 mt-2"><button class="btn btn-light border btn-sm" t-on-click="addRoleItem"><i class="fa fa-plus me-1"/>Item</button>
+                        <button class="btn btn-primary btn-sm ms-auto" t-on-click="saveRole">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.roleEdit = null">Cancel</button></div>
+                </div>
+                <div t-foreach="state.set.roles" t-as="ro" t-key="ro.id" class="o_pp_li"><b t-esc="ro.name"/>
+                    <span class="small text-muted ms-auto"><t t-esc="ro.items.length"/> item(s)</span>
+                    <button class="btn btn-link btn-sm p-0" t-on-click="() => this.editRole(ro)"><i class="fa fa-pencil"/></button>
+                    <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.removeRole(ro)"><i class="fa fa-trash-o"/></button></div>
+                <div t-if="!state.set.roles.length" class="o_pp_empty small">No roles yet.</div>
+            </div>
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-tags"/>Categories<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.state.catEdit = {id: false, name: '', department_id: ''}"><i class="fa fa-plus"/> Category</button></div>
+                <div t-if="state.catEdit" class="p-2 d-flex gap-2 border-bottom">
+                    <input class="form-control form-control-sm" placeholder="Name" t-att-value="state.catEdit.name" t-on-change="(ev) => this.state.catEdit.name = ev.target.value"/>
+                    <select class="form-select form-select-sm" t-on-change="(ev) => this.state.catEdit.department_id = ev.target.value"><option value="">Everyone</option>
+                        <option t-foreach="state.set.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-att-selected="d.id == state.catEdit.department_id" t-esc="d.name"/></select>
+                    <button class="btn btn-primary btn-sm" t-on-click="saveCat">Save</button></div>
+                <div t-foreach="state.set.categories" t-as="c" t-key="c.id" class="o_pp_li"><span t-esc="c.name"/>
+                    <span class="small text-muted ms-auto" t-esc="(state.set.departments.find((d) =&gt; d.id === c.department_id) || {}).name or 'Everyone'"/>
+                    <button class="btn btn-link btn-sm p-0" t-on-click="() => this.editCat(c)"><i class="fa fa-pencil"/></button>
+                    <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.removeCat(c)"><i class="fa fa-trash-o"/></button></div>
+            </div>
+        </div>
+    </t>
+</templates>

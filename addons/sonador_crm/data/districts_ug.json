@@ -1,0 +1,818 @@
+[
+{
+"name": "Kampala",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KAMPALA"
+},
+{
+"name": "Wakiso",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-WAKISO"
+},
+{
+"name": "Mukono",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-MUKONO"
+},
+{
+"name": "Buikwe",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-BUIKWE"
+},
+{
+"name": "Kayunga",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KAYUNGA"
+},
+{
+"name": "Luwero",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-LUWERO"
+},
+{
+"name": "Nakaseke",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-NAKASEKE"
+},
+{
+"name": "Nakasongola",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-NAKASONGOL"
+},
+{
+"name": "Mityana",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-MITYANA"
+},
+{
+"name": "Mubende",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-MUBENDE"
+},
+{
+"name": "Kassanda",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KASSANDA"
+},
+{
+"name": "Mpigi",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-MPIGI"
+},
+{
+"name": "Butambala",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-BUTAMBALA"
+},
+{
+"name": "Gomba",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-GOMBA"
+},
+{
+"name": "Masaka",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-MASAKA"
+},
+{
+"name": "Kalungu",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KALUNGU"
+},
+{
+"name": "Bukomansimbi",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-BUKOMANSIM"
+},
+{
+"name": "Lwengo",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-LWENGO"
+},
+{
+"name": "Lyantonde",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-LYANTONDE"
+},
+{
+"name": "Rakai",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-RAKAI"
+},
+{
+"name": "Kyotera",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KYOTERA"
+},
+{
+"name": "Sembabule",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-SEMBABULE"
+},
+{
+"name": "Kiboga",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KIBOGA"
+},
+{
+"name": "Kyankwanzi",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KYANKWANZI"
+},
+{
+"name": "Kalangala",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-KALANGALA"
+},
+{
+"name": "Buvuma",
+"zone": "Buganda",
+"region": "Central",
+"code": "UG-BUVUMA"
+},
+{
+"name": "Jinja",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-JINJA"
+},
+{
+"name": "Iganga",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-IGANGA"
+},
+{
+"name": "Kamuli",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-KAMULI"
+},
+{
+"name": "Mayuge",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-MAYUGE"
+},
+{
+"name": "Bugiri",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-BUGIRI"
+},
+{
+"name": "Luuka",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-LUUKA"
+},
+{
+"name": "Buyende",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-BUYENDE"
+},
+{
+"name": "Kaliro",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-KALIRO"
+},
+{
+"name": "Namayingo",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-NAMAYINGO"
+},
+{
+"name": "Namutumba",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-NAMUTUMBA"
+},
+{
+"name": "Bugweri",
+"zone": "Busoga",
+"region": "Eastern",
+"code": "UG-BUGWERI"
+},
+{
+"name": "Tororo",
+"zone": "Bukedi",
+"region": "Eastern",
+"code": "UG-TORORO"
+},
+{
+"name": "Busia",
+"zone": "Bukedi",
+"region": "Eastern",
+"code": "UG-BUSIA"
+},
+{
+"name": "Butaleja",
+"zone": "Bukedi",
+"region": "Eastern",
+"code": "UG-BUTALEJA"
+},
+{
+"name": "Pallisa",
+"zone": "Bukedi",
+"region": "Eastern",
+"code": "UG-PALLISA"
+},
+{
+"name": "Kibuku",
+"zone": "Bukedi",
+"region": "Eastern",
+"code": "UG-KIBUKU"
+},
+{
+"name": "Budaka",
+"zone": "Bukedi",
+"region": "Eastern",
+"code": "UG-BUDAKA"
+},
+{
+"name": "Butebo",
+"zone": "Bukedi",
+"region": "Eastern",
+"code": "UG-BUTEBO"
+},
+{
+"name": "Mbale",
+"zone": "Bugisu",
+"region": "Eastern",
+"code": "UG-MBALE"
+},
+{
+"name": "Sironko",
+"zone": "Bugisu",
+"region": "Eastern",
+"code": "UG-SIRONKO"
+},
+{
+"name": "Manafwa",
+"zone": "Bugisu",
+"region": "Eastern",
+"code": "UG-MANAFWA"
+},
+{
+"name": "Bududa",
+"zone": "Bugisu",
+"region": "Eastern",
+"code": "UG-BUDUDA"
+},
+{
+"name": "Namisindwa",
+"zone": "Bugisu",
+"region": "Eastern",
+"code": "UG-NAMISINDWA"
+},
+{
+"name": "Bulambuli",
+"zone": "Bugisu",
+"region": "Eastern",
+"code": "UG-BULAMBULI"
+},
+{
+"name": "Soroti",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-SOROTI"
+},
+{
+"name": "Kumi",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-KUMI"
+},
+{
+"name": "Katakwi",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-KATAKWI"
+},
+{
+"name": "Amuria",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-AMURIA"
+},
+{
+"name": "Serere",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-SERERE"
+},
+{
+"name": "Ngora",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-NGORA"
+},
+{
+"name": "Bukedea",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-BUKEDEA"
+},
+{
+"name": "Kapelebyong",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-KAPELEBYON"
+},
+{
+"name": "Kalaki",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-KALAKI"
+},
+{
+"name": "Kaberamaido",
+"zone": "Teso",
+"region": "Eastern",
+"code": "UG-KABERAMAID"
+},
+{
+"name": "Kapchorwa",
+"zone": "Sebei",
+"region": "Eastern",
+"code": "UG-KAPCHORWA"
+},
+{
+"name": "Kween",
+"zone": "Sebei",
+"region": "Eastern",
+"code": "UG-KWEEN"
+},
+{
+"name": "Bukwo",
+"zone": "Sebei",
+"region": "Eastern",
+"code": "UG-BUKWO"
+},
+{
+"name": "Gulu",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-GULU"
+},
+{
+"name": "Kitgum",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-KITGUM"
+},
+{
+"name": "Pader",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-PADER"
+},
+{
+"name": "Agago",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-AGAGO"
+},
+{
+"name": "Amuru",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-AMURU"
+},
+{
+"name": "Nwoya",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-NWOYA"
+},
+{
+"name": "Lamwo",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-LAMWO"
+},
+{
+"name": "Omoro",
+"zone": "Acholi",
+"region": "Northern",
+"code": "UG-OMORO"
+},
+{
+"name": "Lira",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-LIRA"
+},
+{
+"name": "Apac",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-APAC"
+},
+{
+"name": "Oyam",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-OYAM"
+},
+{
+"name": "Kole",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-KOLE"
+},
+{
+"name": "Dokolo",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-DOKOLO"
+},
+{
+"name": "Alebtong",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-ALEBTONG"
+},
+{
+"name": "Otuke",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-OTUKE"
+},
+{
+"name": "Amolatar",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-AMOLATAR"
+},
+{
+"name": "Kwania",
+"zone": "Lango",
+"region": "Northern",
+"code": "UG-KWANIA"
+},
+{
+"name": "Arua",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-ARUA"
+},
+{
+"name": "Koboko",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-KOBOKO"
+},
+{
+"name": "Yumbe",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-YUMBE"
+},
+{
+"name": "Nebbi",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-NEBBI"
+},
+{
+"name": "Zombo",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-ZOMBO"
+},
+{
+"name": "Moyo",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-MOYO"
+},
+{
+"name": "Adjumani",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-ADJUMANI"
+},
+{
+"name": "Maracha",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-MARACHA"
+},
+{
+"name": "Obongi",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-OBONGI"
+},
+{
+"name": "Madi-Okollo",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-MADIOKOLLO"
+},
+{
+"name": "Terego",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-TEREGO"
+},
+{
+"name": "Pakwach",
+"zone": "West Nile",
+"region": "Northern",
+"code": "UG-PAKWACH"
+},
+{
+"name": "Moroto",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-MOROTO"
+},
+{
+"name": "Kotido",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-KOTIDO"
+},
+{
+"name": "Kaabong",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-KAABONG"
+},
+{
+"name": "Abim",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-ABIM"
+},
+{
+"name": "Napak",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-NAPAK"
+},
+{
+"name": "Nakapiripirit",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-NAKAPIRIPI"
+},
+{
+"name": "Amudat",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-AMUDAT"
+},
+{
+"name": "Nabilatuk",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-NABILATUK"
+},
+{
+"name": "Karenga",
+"zone": "Karamoja",
+"region": "Northern",
+"code": "UG-KARENGA"
+},
+{
+"name": "Mbarara",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-MBARARA"
+},
+{
+"name": "Bushenyi",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-BUSHENYI"
+},
+{
+"name": "Ibanda",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-IBANDA"
+},
+{
+"name": "Isingiro",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-ISINGIRO"
+},
+{
+"name": "Kiruhura",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-KIRUHURA"
+},
+{
+"name": "Ntungamo",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-NTUNGAMO"
+},
+{
+"name": "Sheema",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-SHEEMA"
+},
+{
+"name": "Mitooma",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-MITOOMA"
+},
+{
+"name": "Rubirizi",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-RUBIRIZI"
+},
+{
+"name": "Buhweju",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-BUHWEJU"
+},
+{
+"name": "Kazo",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-KAZO"
+},
+{
+"name": "Rwampara",
+"zone": "Ankole",
+"region": "Western",
+"code": "UG-RWAMPARA"
+},
+{
+"name": "Kabale",
+"zone": "Kigezi",
+"region": "Western",
+"code": "UG-KABALE"
+},
+{
+"name": "Kisoro",
+"zone": "Kigezi",
+"region": "Western",
+"code": "UG-KISORO"
+},
+{
+"name": "Kanungu",
+"zone": "Kigezi",
+"region": "Western",
+"code": "UG-KANUNGU"
+},
+{
+"name": "Rukungiri",
+"zone": "Kigezi",
+"region": "Western",
+"code": "UG-RUKUNGIRI"
+},
+{
+"name": "Rubanda",
+"zone": "Kigezi",
+"region": "Western",
+"code": "UG-RUBANDA"
+},
+{
+"name": "Rukiga",
+"zone": "Kigezi",
+"region": "Western",
+"code": "UG-RUKIGA"
+},
+{
+"name": "Kabarole",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-KABAROLE"
+},
+{
+"name": "Kyenjojo",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-KYENJOJO"
+},
+{
+"name": "Kamwenge",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-KAMWENGE"
+},
+{
+"name": "Kasese",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-KASESE"
+},
+{
+"name": "Bundibugyo",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-BUNDIBUGYO"
+},
+{
+"name": "Ntoroko",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-NTOROKO"
+},
+{
+"name": "Kyegegwa",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-KYEGEGWA"
+},
+{
+"name": "Bunyangabu",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-BUNYANGABU"
+},
+{
+"name": "Kitagwenda",
+"zone": "Tooro",
+"region": "Western",
+"code": "UG-KITAGWENDA"
+},
+{
+"name": "Hoima",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-HOIMA"
+},
+{
+"name": "Masindi",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-MASINDI"
+},
+{
+"name": "Kibaale",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-KIBAALE"
+},
+{
+"name": "Kagadi",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-KAGADI"
+},
+{
+"name": "Kakumiro",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-KAKUMIRO"
+},
+{
+"name": "Kiryandongo",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-KIRYANDONG"
+},
+{
+"name": "Buliisa",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-BULIISA"
+},
+{
+"name": "Kikuube",
+"zone": "Bunyoro",
+"region": "Western",
+"code": "UG-KIKUUBE"
+}
+]

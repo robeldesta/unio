@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- the fixed layouts give way to the designed documents in the Print menu (they stay for code that names them) -->
+    <record id="sonador_books.action_report_sale_document" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+    <record id="sonador_inventory.action_report_stock_voucher" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+    <record id="sonador_sales.action_report_delivery_note" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+</odoo>

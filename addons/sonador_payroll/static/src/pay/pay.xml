@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_payroll.App">
+        <div class="o_pp o_py o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker">People · Income Tax Proclamation 979/2016 (1395/2025) · Pension 715/2011</div>
+                        <h1 class="o_pp_title"><i class="fa fa-money me-2"/>Payroll</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-if="ctx.is_hr" t-att-class="['runs','run'].includes(state.page) ? 'active' : ''" t-on-click="() => this.go('runs')"><i class="fa fa-list"/> Payrolls</button>
+                        <button t-att-class="state.page === 'employee' ? 'active' : ''" t-on-click="() => this.go('employee')"><i class="fa fa-user"/> <t t-esc="ctx.is_hr ? 'Employee pay' : 'My payslips'"/></button>
+                        <button t-att-class="state.page === 'loans' ? 'active' : ''" t-on-click="() => this.go('loans')"><i class="fa fa-handshake-o"/> Loans<span t-if="ctx.loans_waiting" class="o_py_count" t-esc="ctx.loans_waiting"/></button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'settlement' ? 'active' : ''" t-on-click="() => this.go('settlement')"><i class="fa fa-sign-out"/> Final settlement</button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'settings' ? 'active' : ''" t-on-click="() => this.go('settings')"><i class="fa fa-cog"/> Settings</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'runs'" t-call="sonador_payroll.Runs"/>
+                <t t-if="state.page === 'run' and state.run" t-call="sonador_payroll.Run"/>
+                <t t-if="state.page === 'employee'" t-call="sonador_payroll.Employee"/>
+                <t t-if="state.page === 'settlement'" t-call="sonador_payroll.Settlement"/>
+                <t t-if="state.page === 'loans' and state.loans" t-call="sonador_payroll.Loans"/>
+                <t t-if="state.page === 'settings' and state.set" t-call="sonador_payroll.Settings"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_payroll.Runs">
+        <div class="o_pp_toolbar"><span class="small text-muted me-auto">Monthly payrolls by month. Filled from People (pay), Leave Requests (unpaid and half-pay days), loans and recurring items.</span>
+            <button class="btn btn-primary btn-sm" t-on-click="newRun"><i class="fa fa-plus me-1"/>New payroll</button></div>
+        <t t-if="state.create" t-call="sonador_payroll.RunForm"/>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>Payroll</th><th>Month</th><th>Status</th><th class="num">People</th><th class="num">Gross</th><th class="num">Income tax</th><th class="num">Pension</th><th class="num">Net</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.runs" t-as="r" t-key="r.id" class="o_pf_click" t-on-click="() => this.openRun(r.id)">
+                        <td><b t-esc="r.name"/><div t-if="r.departments.length" class="small text-muted" t-esc="r.departments.join(', ')"/><span t-if="r.migrated" class="o_pp_badge ms-1">Odoo 18</span><span t-if="r.kind === 'final'" class="o_pp_badge bad ms-1">final settlement</span></td>
+                        <td t-esc="r.from_ec + ' – ' + r.to_ec"/>
+                        <td><span t-attf-class="o_py_state {{ r.state }}" t-esc="stateLabel(r.state)"/></td>
+                        <td class="num" t-esc="r.people"/><td class="num" t-esc="money(r.gross)"/><td class="num" t-esc="money(r.tax)"/>
+                        <td class="num" t-esc="money(r.pension)"/><td class="num"><b t-esc="money(r.net)"/></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div t-if="!state.runs.length" class="o_pp_empty p-3">No payrolls yet.</div>
+        </div>
+    </t>
+
+    <t t-name="sonador_payroll.RunForm">
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-money"/><t t-esc="state.create.id ? 'Change this payroll' : 'New payroll'"/></div>
+            <div class="o_pp_formgrid">
+                <label>Month<select class="form-select" t-model="state.create.period"><option t-foreach="ctx.periods" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label>Kind<select class="form-select" t-model="state.create.kind"><option value="regular">Monthly salaries</option><option value="special">Other (bonus, arrears ...)</option></select></label>
+                <label class="wide">Name (optional)<input class="form-control" t-model="state.create.label" placeholder="e.g. Tikimt 2019 factory"/></label>
+            </div>
+            <div class="o_py_depts">
+                <div class="small fw-bold mb-1">Departments</div>
+                <div class="d-flex flex-wrap gap-1">
+                    <button t-attf-class="o_py_chip {{ !state.create.depts.length ? 'on' : '' }}" t-on-click="() => state.create.depts.splice(0)">All</button>
+                    <button t-foreach="ctx.departments" t-as="d" t-key="d.id" t-attf-class="o_py_chip {{ state.create.depts.includes(d.id) ? 'on' : '' }}"
+                            t-on-click="() => this.toggleDept(d.id)" t-esc="d.name"/>
+                </div>
+                <div t-if="state.create.kind === 'regular'" class="small text-muted mt-1">People already on another payroll of this month are left out, so the rest can be paid later on a second payroll.</div>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.create = null">Cancel</button>
+                <button t-if="state.create.id" class="btn btn-primary" t-on-click="saveRun">Save</button>
+                <button t-else="" class="btn btn-primary" t-on-click="createRun">Create and load employees</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_payroll.Run">
+        <t t-set="r" t-value="state.run.run"/>
+        <t t-set="t" t-value="state.run.totals"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.go('runs')"><i class="fa fa-arrow-left me-1"/>Payrolls</button>
+            <h4 class="m-0 ms-2" t-esc="r.name"/><span t-attf-class="o_py_state {{ r.state }}" t-esc="stateLabel(r.state)"/>
+            <span t-if="r.migrated" class="o_pp_badge">from Odoo 18 (history, already in the books)</span>
+            <div class="ms-auto d-flex flex-wrap gap-2">
+                <t t-if="r.state === 'draft' and !r.migrated">
+                    <button t-if="r.kind !== 'final'" class="btn btn-light border btn-sm" t-on-click="editRun"><i class="fa fa-pencil me-1"/>Edit</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.act('load')"><i class="fa fa-user-plus me-1"/>Add missing people</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.act('refill')"><i class="fa fa-refresh me-1"/>Recalculate</button>
+                    <button class="btn btn-light border btn-sm text-danger" t-on-click="() => this.act('delete')">Delete</button>
+                    <button class="btn btn-primary btn-sm" t-on-click="() => this.act('post')"><i class="fa fa-check me-1"/>Post to the books</button>
+                </t>
+                <t t-if="r.state === 'posted' and !r.migrated">
+                    <input type="date" class="form-control form-control-sm w-auto" t-model="state.pay.date"/>
+                    <select class="form-select form-select-sm w-auto" t-model="state.pay.account"><option t-foreach="ctx.cash" t-as="a" t-key="a.id" t-att-value="a.id" t-esc="a.name"/></select>
+                    <button class="btn btn-primary btn-sm" t-on-click="() => this.act('pay')"><i class="fa fa-bank me-1"/>Record payment</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.act('reset')">Reset to draft</button>
+                </t>
+            </div>
+        </div>
+        <div t-if="!r.migrated" class="o_py_files">
+            <span class="o_py_files_lbl">Files</span>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.file('finance')" title="Summary, all lines by department with subtotals, a sheet per department"><i class="fa fa-file-excel-o me-1 text-success"/>Finance (by department)</button>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.file('bank')" title="Name, account, amount: the file sent to the bank"><i class="fa fa-file-excel-o me-1 text-success"/>Bank Excel</button>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.file('letter')" title="Transfer letter to sign and stamp"><i class="fa fa-file-pdf-o me-1 text-danger"/>Bank letter</button>
+            <button class="btn btn-light border btn-sm" t-on-click="payslips"><i class="fa fa-file-pdf-o me-1 text-danger"/>Payslips</button>
+            <span class="o_py_files_sep"/>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.file('ot')" title="This month's overtime hours as approved on Attendance › Days worked › OT sheet"><i class="fa fa-clock-o me-1"/>Overtime sheet</button>
+            <!-- the overtime sheet is uploaded and approved on Attendance > Days worked > OT sheet, before the payroll -->
+        </div>
+        <t t-if="state.create" t-call="sonador_payroll.RunForm"/>
+        <div t-if="r.departments.length or state.run.elsewhere" class="small text-muted mb-2">
+            <t t-if="r.departments.length">Departments: <b t-esc="r.departments.join(', ')"/>. </t>
+            <t t-if="state.run.elsewhere"><t t-esc="state.run.elsewhere"/> people of this month are on another payroll.</t>
+        </div>
+        <div t-if="state.imported" class="o_pp_card o_pp_panel o_py_imp">
+            <div class="d-flex"><b class="me-auto">Overtime imported for <t t-esc="state.imported.done"/> people</b>
+                <button class="btn btn-link btn-sm p-0" t-on-click="() => state.imported = null">Close</button></div>
+            <div t-if="state.imported.added.length" class="small">Added to this payroll: <t t-esc="state.imported.added.join(', ')"/></div>
+            <div t-if="state.imported.capped.length" class="small text-warning">Holiday hours cut to 8 a holiday: <t t-esc="state.imported.capped.join('; ')"/></div>
+            <div t-if="state.imported.unknown.length" class="small text-danger">Not found, left out: <t t-esc="state.imported.unknown.join(', ')"/></div>
+        </div>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>Gross pay</span><b t-esc="money(t.gross)"/><small><t t-esc="state.run.lines.length"/> people · <t t-esc="r.from_ec"/> – <t t-esc="r.to_ec"/></small></div>
+            <div class="o_pp_kpi"><span>Income tax (PAYE)</span><b t-esc="money(t.income_tax)"/><small>to the tax authority</small></div>
+            <div class="o_pp_kpi"><span>Pension (employee + employer)</span><b t-esc="money(t.pension_ee + t.pension_er)"/><small>to the pension fund</small></div>
+            <div class="o_pp_kpi"><span>Net pay</span><b class="o_pp_good" t-esc="money(t.net)"/><small t-if="r.voucher">entry <t t-esc="r.voucher"/><t t-if="r.payment"> · paid <t t-esc="r.payment"/></t></small></div>
+        </div>
+        <div class="o_py_filter">
+            <div class="o_py_search"><i class="fa fa-search"/><input type="search" placeholder="Find a name" t-model="state.f.q"/></div>
+            <select class="form-select form-select-sm w-auto" t-model="state.f.dept"><option value="">All departments</option>
+                <option t-foreach="depts" t-as="d" t-key="d" t-att-value="d" t-esc="d"/></select>
+            <button t-foreach="shows" t-as="x" t-key="x[0]" t-attf-class="o_py_chip {{ state.f.show === x[0] ? 'on' : '' }}" t-on-click="() => state.f.show = x[0]">
+                <t t-esc="x[1]"/> <small t-esc="x[2]"/></button>
+            <span t-if="filtered" class="ms-auto small text-muted"><t t-esc="lines.length"/> of <t t-esc="state.run.lines.length"/>
+                <button class="btn btn-link btn-sm p-0 ms-1" t-on-click="clearFilter">Show all</button></span>
+        </div>
+        <div class="o_pp_card o_py_gridwrap">
+            <table class="o_pp_table o_py_grid">
+                <thead><tr>
+                    <th class="sticky">Employee</th><th class="num">Days</th><th class="num">Basic</th><th class="num">House</th><th class="num">Position</th><th class="num">Cash indem.</th><th class="num">Other taxable</th>
+                    <th class="num">OT h <t t-esc="ctx.ot.rates.ot_day"/>×</th><th class="num">night <t t-esc="ctx.ot.rates.ot_night"/>×</th><th class="num">rest <t t-esc="ctx.ot.rates.ot_rest"/>×</th><th class="num">holiday <t t-esc="ctx.ot.rates.ot_holiday"/>×</th><th class="num">Overtime</th>
+                    <th class="num">Commission</th><th class="num">Bonus</th><th class="num">Settlement</th><th class="num">Transport</th><th class="num">Gross</th>
+                    <th class="num">Taxable</th><th class="num">Income tax</th><th class="num">Pension (employee)</th><th class="num">Other ded.</th><th class="num">Net</th><th class="num">Pension (employer)</th><th/>
+                </tr></thead>
+                <tbody>
+                    <tr t-foreach="lines" t-as="l" t-key="l.id" t-attf-class="{{ state.edit[l.id] ? 'dirty' : '' }}">
+                        <td class="sticky"><b t-esc="l.employee.name"/>
+                            <span t-if="l.status" t-attf-class="badge ms-1 {{ l.status === 'joining' ? 'text-bg-info' : 'text-bg-warning' }}" t-att-title="'Pension on the basic paid for the days worked'" t-esc="l.status === 'joining' ? 'Joining' : 'Leaving'"/>
+                            <!-- marking someone as leaving is done in Leaving (People), not here -->
+                            <div class="small text-muted" t-esc="l.employee.department"/>
+                            <div t-if="l.warn.length" class="small text-danger"><i class="fa fa-exclamation-triangle me-1"/><t t-esc="l.warn.join(', ')"/></div></td>
+                        <td class="num"><input t-if="r.state === 'draft' and !r.migrated" type="number" class="o_py_in" t-att-value="l.pay_days" t-on-change="(ev) => this.setEdit(l, 'pay_days', ev.target.value)"/>
+                            <t t-else="" t-esc="l.pay_days"/><div t-if="l.half_days" class="small text-muted"><t t-esc="l.half_days"/> half</div></td>
+                        <td class="num" t-esc="money(l.basic)"/><td class="num" t-esc="money(l.house)"/><td class="num" t-esc="money(l.position)"/><td class="num" t-esc="money(l.cash_indemnity)"/><td class="num" t-esc="money(l.taxable_allowance)"/>
+                        <t t-foreach="['ot_day','ot_night','ot_rest','ot_holiday']" t-as="k" t-key="k">
+                            <td t-attf-class="num {{ l.ot_hand ? 'o_py_hand' : '' }}" t-att-title="l.ot_hand ? 'Entered by HR (typed or imported)' : ''"><input t-if="r.state === 'draft' and !r.migrated" type="number" class="o_py_in" t-att-value="l[k] || ''" t-on-change="(ev) => this.setEdit(l, k, ev.target.value)"/>
+                                <t t-else="" t-esc="l[k] || ''"/></td>
+                        </t>
+                        <td class="num" t-esc="money(l.overtime)"/>
+                        <td class="num"><input t-if="r.state === 'draft' and !r.migrated" type="number" class="o_py_in w" t-att-value="l.commission || ''" t-on-change="(ev) => this.setEdit(l, 'commission', ev.target.value)"/><t t-else="" t-esc="money(l.commission)"/></td>
+                        <td class="num"><input t-if="r.state === 'draft' and !r.migrated" type="number" class="o_py_in w" t-att-value="l.bonus || ''" t-on-change="(ev) => this.setEdit(l, 'bonus', ev.target.value)"/><t t-else="" t-esc="money(l.bonus)"/></td>
+                        <td class="num" t-esc="money(l.leave_payout + l.severance + l.compensation + l.notice_pay)"/>
+                        <td class="num" t-esc="money(l.nontaxable_allowance)"/>
+                        <td class="num"><b t-esc="money(l.gross)"/></td><td class="num" t-esc="money(l.taxable)"/><td class="num" t-esc="money(l.income_tax)"/><td class="num" t-esc="money(l.pension_ee)"/>
+                        <td class="num"><input t-if="r.state === 'draft' and !r.migrated" type="number" class="o_py_in w" t-att-value="l.other_deduction || ''" t-on-change="(ev) => this.setEdit(l, 'other_deduction', ev.target.value)" title="Typed deductions (penalties etc.)"/><t t-else="" t-esc="money(l.other_deduction)"/>
+                            <div t-if="l.loan_deduction" class="small text-muted" title="Loan / advance, from Loans">+ loan <t t-esc="money(l.loan_deduction)"/></div>
+                            <div t-if="l.benefit_deduction" class="small text-muted">+ <t t-esc="money(l.benefit_deduction)"/> recurring</div></td>
+                        <td class="num"><b t-esc="money(l.net)"/></td><td class="num" t-esc="money(l.pension_er)"/>
+                        <td><button t-if="state.edit[l.id]" class="btn btn-primary btn-sm" t-on-click="() => this.saveLine(l)">Save</button>
+                            <t t-else=""><button class="btn btn-link btn-sm p-0" t-on-click="() => this.payslip(l.id)" title="Payslip"><i class="fa fa-file-pdf-o"/></button>
+                                <button t-if="r.state === 'draft' and !r.migrated" t-attf-class="btn btn-link btn-sm p-0 ms-2 {{ state.confirmDrop === l.id ? 'text-danger fw-bold' : 'text-muted' }}"
+                                        t-on-click="() => this.removeLine(l)" t-att-title="'Take ' + l.employee.name + ' off this payroll'"><t t-if="state.confirmDrop === l.id">Remove?</t><i t-else="" class="fa fa-times"/></button></t></td>
+                    </tr>
+                    <tr t-if="!lines.length"><td class="sticky text-muted" colspan="24">No one matches. <button class="btn btn-link btn-sm p-0" t-on-click="clearFilter">Show all</button></td></tr>
+                </tbody>
+                <t t-set="t" t-value="tot"/>
+                <tfoot><tr class="o_py_tot"><td class="sticky"><t t-esc="filtered ? 'Total (' + lines.length + ')' : 'Total'"/></td><td/><td class="num" t-esc="money(t.basic)"/><td class="num" t-esc="money(t.house)"/><td class="num" t-esc="money(t.position)"/><td class="num" t-esc="money(t.cash_indemnity)"/>
+                    <td class="num" t-esc="money(t.taxable_allowance)"/><td/><td/><td/><td/><td class="num" t-esc="money(t.overtime)"/><td class="num" t-esc="money(t.commission)"/><td class="num" t-esc="money(t.bonus)"/>
+                    <td class="num" t-esc="money(t.leave_payout + t.severance + t.compensation + t.notice_pay)"/><td class="num" t-esc="money(t.nontaxable_allowance)"/>
+                    <td class="num" t-esc="money(t.gross)"/><td class="num" t-esc="money(t.taxable)"/><td class="num" t-esc="money(t.income_tax)"/><td class="num" t-esc="money(t.pension_ee)"/>
+                    <td class="num" t-esc="money(t.loan_deduction + t.benefit_deduction + t.other_deduction)"/><td class="num" t-esc="money(t.net)"/><td class="num" t-esc="money(t.pension_er)"/><td/></tr></tfoot>
+            </table>
+        </div>
+        <div class="small text-muted mt-2">Overtime = hours × rate × basic ÷ monthly hours (<t t-esc="ctx.ot.note"/>). Paid days come from start and leaving dates and unpaid leave; half-pay sick days are deducted at half the daily wage.</div>
+    </t>
+
+    <t t-name="sonador_payroll.Employee">
+        <div class="o_pp_toolbar" t-if="ctx.is_hr and state.people">
+            <select class="form-select w-auto" t-model="state.who" t-on-change="pickWho">
+                <option t-foreach="state.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name + (p.active ? '' : ' (left)')"/>
+            </select>
+            <button t-if="state.emp and state.emp.employee and !state.empEdit" class="btn btn-light border btn-sm ms-auto" t-on-click="editEmp"><i class="fa fa-pencil me-1"/>Cost centre, recurring items, loans</button>
+        </div>
+        <t t-set="e" t-value="state.emp"/>
+        <div t-if="!e or !e.employee" class="o_pp_card o_pp_empty p-4">Your login is not linked to an employee.</div>
+        <t t-else="">
+            <div t-if="state.empEdit" class="o_pp_card o_pp_panel">
+                <t t-set="x" t-value="state.empEdit"/>
+                <div class="o_pp_card_head"><i class="fa fa-sliders"/><t t-esc="e.employee.name"/>: payroll set-up</div>
+                <div class="o_pp_formgrid">
+                    <label>Cost centre<select class="form-select" t-model="x.profile_id"><option value="">Company default</option><option t-foreach="ctx.profiles" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                    <label class="wide">Staff debtor account (loans and advances)<select class="form-select" t-model="x.staff_account_id"><option value="">Company default</option><option t-foreach="ctx.accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-esc="a.name"/></select></label>
+                </div>
+                <div class="px-3 pb-2">
+                    <div class="o_pp_kicker mb-1">Recurring pay items</div>
+                    <div t-foreach="x.benefits" t-as="b" t-key="b_index" class="d-flex gap-2 mb-1 flex-wrap">
+                        <input class="form-control form-control-sm" style="max-width: 14rem" t-model="b.name" placeholder="Name"/>
+                        <select class="form-select form-select-sm" style="max-width: 15rem" t-model="b.kind"><option value="house">House allowance (taxable)</option><option value="position">Position allowance (taxable)</option><option value="allowance">Other taxable allowance</option><option value="transport">Transport / non-taxable</option><option value="deduction">Deduction from pay</option><option value="employer">Employer-paid benefit</option></select>
+                        <input type="number" class="form-control form-control-sm" style="max-width: 8rem" t-model="b.amount"/>
+                        <input type="date" class="form-control form-control-sm" style="max-width: 10rem" t-model="b.date_from" title="From"/>
+                        <input type="date" class="form-control form-control-sm" style="max-width: 10rem" t-model="b.date_to" title="Until"/>
+                        <select class="form-select form-select-sm" style="max-width: 16rem" t-model="b.account_id"><option value="">Account (deductions, employer)</option><option t-foreach="ctx.accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-esc="a.name"/></select>
+                        <button class="btn btn-link text-danger p-0" t-on-click="() => this.removeBenefit(b_index)"><i class="fa fa-trash"/></button>
+                    </div>
+                    <button class="btn btn-link btn-sm px-0" t-on-click="addBenefit"><i class="fa fa-plus me-1"/>Pay item</button>
+                    <div class="o_pp_kicker mt-2 mb-1">Loans and salary advances</div>
+                    <div t-foreach="x.loans" t-as="lo" t-key="lo_index" class="d-flex gap-2 mb-1 flex-wrap align-items-center">
+                        <select class="form-select form-select-sm" style="max-width: 9rem" t-model="lo.kind"><option value="loan">Loan</option><option value="advance">Salary advance</option></select>
+                        <input type="date" class="form-control form-control-sm" style="max-width: 10rem" t-model="lo.date" title="Given on"/>
+                        <input type="number" class="form-control form-control-sm" style="max-width: 9rem" t-model="lo.amount" title="Amount"/>
+                        <input type="number" class="form-control form-control-sm" style="max-width: 9rem" t-model="lo.installment" title="Monthly deduction"/>
+                        <input type="date" class="form-control form-control-sm" style="max-width: 10rem" t-model="lo.start" title="First deduction"/>
+                        <select class="form-select form-select-sm" style="max-width: 9rem" t-model="lo.state"><option value="open">Recovering</option><option value="hold">On hold</option><option value="done">Recovered</option></select>
+                        <span t-if="lo.id" class="small text-muted">left <t t-esc="money(lo.remaining)"/></span>
+                    </div>
+                    <button class="btn btn-link btn-sm px-0" t-on-click="() => this.go('loans')"><i class="fa fa-plus me-1"/>New loan or advance (Loans: HR sets the terms, the general manager approves)</button>
+                </div>
+                <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.empEdit = null">Cancel</button>
+                    <button class="btn btn-primary" t-on-click="saveEmp">Save</button></div>
+            </div>
+            <div class="o_pp_kpis">
+                <div class="o_pp_kpi"><span>Gross, this year</span><b t-esc="money(e.ytd.gross)"/><small t-esc="e.fy"/></div>
+                <div class="o_pp_kpi"><span>Income tax, this year</span><b t-esc="money(e.ytd.income_tax)"/><small>taxable <t t-esc="money(e.ytd.taxable)"/></small></div>
+                <div class="o_pp_kpi"><span>Pension, this year</span><b t-esc="money(e.ytd.pension_ee)"/><small>+ employer <t t-esc="money(e.ytd.pension_er)"/></small></div>
+                <div class="o_pp_kpi"><span>Net pay, this year</span><b class="o_pp_good" t-esc="money(e.ytd.net)"/></div>
+            </div>
+            <div class="o_pp_grid">
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-file-text-o"/>Payslips</div>
+                    <table class="o_pp_table">
+                        <thead><tr><th>Payroll</th><th class="num">Gross</th><th class="num">Tax</th><th class="num">Pension</th><th class="num">Net</th><th/></tr></thead>
+                        <tbody>
+                            <tr t-foreach="e.slips" t-as="s" t-key="s.id"><td><b t-esc="s.run"/><span t-if="s.migrated" class="o_pp_badge ms-1">Odoo 18</span><div class="small text-muted" t-esc="s.period"/></td>
+                                <td class="num" t-esc="money(s.gross)"/><td class="num" t-esc="money(s.tax)"/><td class="num" t-esc="money(s.pension)"/><td class="num"><b t-esc="money(s.net)"/></td>
+                                <td><button class="btn btn-link btn-sm p-0" t-on-click="() => this.payslip(s.id)"><i class="fa fa-file-pdf-o"/></button></td></tr>
+                        </tbody>
+                    </table>
+                    <div t-if="!e.slips.length" class="o_pp_empty">No payslips yet.</div>
+                </div>
+                <div t-if="e.is_hr" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-list-alt"/>Pay set-up</div>
+                    <div class="o_pp_fields">
+                        <label><span>Basic salary (People)</span><b t-esc="money(e.wage)"/></label>
+                        <label><span>House allowance (People)</span><b t-esc="money(e.house)"/></label>
+                        <label><span>Position allowance (People)</span><b t-esc="money(e.position)"/></label>
+                        <label><span>Cash indemnity (People)</span><b t-esc="money(e.cash)"/></label>
+                        <label><span>Other taxable allowances (People)</span><b t-esc="money(e.taxable)"/></label>
+                        <label><span>Non-taxable allowances (People)</span><b t-esc="money(e.nontaxable)"/></label>
+                        <label><span>Cost centre</span><b t-esc="(ctx.profiles.find((p) =&gt; p.id === e.profile_id) || {}).name || 'Company default'"/></label>
+                        <label t-foreach="e.benefits" t-as="b" t-key="b.id"><span t-esc="b.name"/><b t-esc="money(b.amount)"/></label>
+                        <label t-foreach="e.loans" t-as="lo" t-key="lo.id"><span><t t-esc="lo.kind === 'loan' ? 'Loan' : 'Advance'"/> of <t t-esc="money(lo.amount)"/></span><b>left <t t-esc="money(lo.remaining)"/></b></label>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </t>
+
+    <t t-name="sonador_payroll.Settlement">
+        <t t-set="t" t-value="state.st"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-sign-out"/>Final settlement (Labour Proclamation 1156/2019)</div>
+            <div class="o_pp_formgrid">
+                <label>Employee<select class="form-select" t-model="t.employee_id" t-on-change="previewSettlement"><option value="">—</option>
+                    <option t-foreach="state.people or []" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name + (p.active ? '' : ' (left)')"/></select></label>
+                <label>Last working day<input type="date" class="form-control" t-model="t.last_day" t-on-change="previewSettlement"/></label>
+                <label class="wide">Ground<select class="form-select" t-model="t.code" t-on-change="previewSettlement"><option t-foreach="ctx.reasons" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="t.notice_given" t-on-change="previewSettlement"/> Notice given by the employer</label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="t.pension_eligible" t-on-change="previewSettlement"/> Eligible for pension (no severance)</label>
+            </div>
+            <div t-if="t.res" class="px-3 pb-2">
+                <div class="small text-muted mb-1"><t t-esc="t.res.years"/> years of service · monthly wage <t t-esc="money(t.res.wage)"/> · daily wage <t t-esc="money(t.res.daily)"/>. <t t-esc="t.res.notice"/></div>
+                <table class="o_pp_table">
+                    <thead><tr><th>Item</th><th>Article</th><th class="num">Days</th><th class="num">Amount</th></tr></thead>
+                    <tbody>
+                        <tr t-foreach="t.res.lines" t-as="x" t-key="x_index"><td t-esc="x.label"/><td t-esc="x.ref"/><td class="num" t-esc="x.days"/><td class="num" t-esc="money(x.amount)"/></tr>
+                        <tr class="o_py_tot"><td>Total before tax</td><td/><td/><td class="num" t-esc="money(t.res.total)"/></tr>
+                    </tbody>
+                </table>
+                <div t-if="!t.res.lines.length" class="o_pp_empty">Nothing beyond the last salary on this ground.</div>
+            </div>
+            <div class="o_pp_panel_foot"><span class="small text-muted me-auto">Creates the leaving in People and a draft final-settlement payroll (tax and pension computed there). The last month's salary comes with the regular payroll.</span>
+                <button class="btn btn-primary" t-att-disabled="!t.res" t-on-click="makeSettlement">Record leaving and prepare payment</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_payroll.Loans">
+        <t t-set="L" t-value="state.loans"/>
+        <div class="o_pp_toolbar">
+            <div class="o_py_filter mb-0">
+                <button t-foreach="loanTabs" t-as="x" t-key="x[0]" t-attf-class="o_py_chip {{ state.loanTab === x[0] ? 'on' : '' }}" t-on-click="() => state.loanTab = x[0]">
+                    <t t-esc="x[1]"/> <small t-esc="x[2]"/></button>
+            </div>
+            <button t-if="!state.lr" class="btn btn-primary btn-sm ms-auto" t-on-click="newLoan"><i class="fa fa-plus me-1"/>Ask for a loan or advance</button>
+        </div>
+        <div t-if="state.lr" class="o_pp_card o_pp_panel">
+            <t t-set="q" t-value="state.lr"/>
+            <div class="o_pp_card_head"><i class="fa fa-handshake-o"/>Loan or salary advance request</div>
+            <div class="o_pp_formgrid">
+                <label t-if="ctx.is_hr">Employee<select class="form-select" t-model="q.employee_id"><option value="">Choose</option>
+                    <option t-foreach="state.people or []" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label>Kind<select class="form-select" t-model="q.kind"><option value="loan">Loan</option><option value="advance">Salary advance</option></select></label>
+                <label>Amount<input type="number" class="form-control" t-model="q.amount"/></label>
+                <label>Months to repay<input type="number" min="1" class="form-control" t-model="q.months"/></label>
+                <label class="wide">What it is for<input class="form-control" t-model="q.note" placeholder="e.g. medical expenses"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><span class="small text-muted me-auto">No interest. HR sets the monthly deduction and the first month, then <t t-esc="L.gm or 'the general manager'"/> approves. Payroll deducts it every month until it is paid off.</span>
+                <button class="btn btn-light border" t-on-click="() => state.lr = null">Cancel</button>
+                <button class="btn btn-primary" t-on-click="sendLoan">Send to HR</button></div>
+        </div>
+        <div class="o_py_loans">
+            <div t-foreach="loanRows" t-as="x" t-key="x.id" t-attf-class="o_pp_card o_py_loan st-{{ x.state }}">
+                <div class="o_py_loan_head">
+                    <div class="me-auto"><b t-esc="x.employee"/><span class="small text-muted ms-2" t-esc="x.department"/>
+                        <div class="small text-muted"><t t-esc="x.kind === 'loan' ? 'Loan' : 'Salary advance'"/> · asked <t t-esc="x.date_ec"/><t t-if="x.note"> · <t t-esc="x.note"/></t></div></div>
+                    <span t-attf-class="o_py_lstate st-{{ x.state }}" t-esc="x.state_label"/>
+                </div>
+                <div class="o_py_loan_body">
+                    <div class="o_py_fig"><span>Amount</span><b t-esc="money(x.amount)"/></div>
+                    <t t-if="x.can_hr">
+                        <t t-set="tm" t-value="terms(x)"/>
+                        <div class="o_py_fig"><span>Monthly deduction</span><input type="number" class="form-control form-control-sm" t-model="tm.installment"/></div>
+                        <div class="o_py_fig"><span>First deduction</span><input type="date" class="form-control form-control-sm" t-model="tm.start"/></div>
+                        <div class="o_py_fig"><span>Months</span><b t-esc="termMonths(x) || '–'"/></div>
+                    </t>
+                    <t t-else="">
+                        <div class="o_py_fig"><span>Monthly deduction</span><b t-esc="money(x.installment)"/></div>
+                        <div class="o_py_fig"><span>From</span><b t-esc="x.start_ec || '–'"/></div>
+                        <div class="o_py_fig"><span>Months</span><b t-esc="x.months || '–'"/></div>
+                    </t>
+                    <div t-if="['open','hold','done'].includes(x.state)" class="o_py_fig"><span>Paid back</span><b t-esc="money(x.recovered + x.deposited)"/>
+                        <small t-if="x.deposited" class="text-muted"><t t-esc="money(x.recovered)"/> payroll · <t t-esc="money(x.deposited)"/> paid in</small>
+                        <div class="o_py_bar"><i t-att-style="'width:' + paidPct(x) + '%'"/></div></div>
+                    <div t-if="['open','hold'].includes(x.state)" class="o_py_fig"><span>Left</span><b t-esc="money(x.remaining)"/></div>
+                </div>
+                <div t-if="x.can_hr or x.can_gm" class="o_py_rule">
+                    <t t-set="inst" t-value="instOf(x)"/>
+                    <i t-attf-class="fa {{ inst + x.others &lt;= x.third + 0.005 ? 'fa-check-circle text-success' : 'fa-exclamation-circle text-danger' }} me-1"/>
+                    One third of the monthly wage (<t t-esc="money(x.pay)"/>) is <b t-esc="money(x.third)"/>.
+                    <t t-if="x.others">Other loans already take <t t-esc="money(x.others)"/>.</t>
+                    This one takes <b t-esc="money(inst)"/>.
+                    <span class="text-muted">Labour Proclamation 1156/2019, art. 59.</span>
+                </div>
+                <div t-if="x.state === 'refused'" class="o_py_rule text-danger">Refused: <t t-esc="x.refuse_reason"/></div>
+                <div class="o_py_loan_foot">
+                    <button t-if="x.cpv" class="btn btn-light border btn-sm" t-on-click="() => this.openCpv(x)" title="The payment voucher that paid the money out"><i class="fa fa-file-text-o me-1"/>Paid out: <t t-esc="x.cpv"/> · <t t-esc="x.cpv_date"/></button>
+                    <span t-elif="['open','hold'].includes(x.state)" class="small text-warning"><i class="fa fa-exclamation-triangle me-1"/>No payment voucher (CPV) found on the staff debtor account</span>
+                    <span class="small text-muted me-auto">
+                        <t t-if="x.requested_by">Asked by <t t-esc="x.requested_by"/></t><t t-if="x.hr_by"> · terms by <t t-esc="x.hr_by"/></t><t t-if="x.gm_by"> · approved by <t t-esc="x.gm_by"/></t>
+                    </span>
+                    <t t-if="x.can_hr or x.can_gm">
+                        <t t-if="state.refusing === x.id">
+                            <input class="form-control form-control-sm w-auto" t-model="state.refuseNote" placeholder="Why (they will see it)"/>
+                            <button class="btn btn-light border btn-sm" t-on-click="() => state.refusing = null">Cancel</button>
+                            <button class="btn btn-danger btn-sm" t-on-click="() => this.decideLoan(x, false)">Refuse</button>
+                        </t>
+                        <t t-else="">
+                            <button class="btn btn-light border btn-sm" t-on-click="() => this.askRefuse(x)">Refuse</button>
+                            <button class="btn btn-primary btn-sm" t-on-click="() => this.decideLoan(x, true)"><t t-esc="x.can_hr ? 'Approve terms, send to ' + (L.gm || 'the general manager') : 'Approve'"/></button>
+                        </t>
+                    </t>
+                </div>
+            </div>
+            <div t-if="!loanRows.length" class="o_pp_card o_pp_empty p-4">Nothing here.</div>
+        </div>
+    </t>
+
+    <t t-name="sonador_payroll.Settings">
+        <t t-set="s" t-value="state.set"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-cog"/>Company</div>
+            <div class="o_pp_formgrid">
+                <t t-foreach="[['net','Net salaries payable'],['paye','Income tax payable'],['pension','Pension payable (employee + employer)'],['loan','Staff loans (default)']]" t-as="f" t-key="f[0]">
+                    <label><t t-esc="f[1]"/><select class="form-select" t-on-change="(ev) => this.setKey(s.company, f[0], ev.target.value)"><option value="">—</option><option t-foreach="ctx.accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == s.company[f[0]]" t-esc="a.name"/></select></label>
+                </t>
+                <label>Approves loans and advances (general manager)<select class="form-select" t-model="s.company.loan_gm"><option value="">General managers (Requests)</option><option t-foreach="s.users" t-as="u" t-key="u.id" t-att-value="u.id" t-esc="u.name"/></select></label>
+                <label>Default cost centre<select class="form-select" t-model="s.company.profile"><option value="">—</option><option t-foreach="s.profiles" t-as="p" t-key="p_index" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label>Hours a month (hourly rate)<input type="number" class="form-control" t-model="s.company.hours"/></label>
+                <label>Days a month (daily rate)<input type="number" class="form-control" t-model="s.company.days"/></label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="s.company.settlement_taxable"/> Tax severance and compensation</label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="s.company.cash_taxable"/> Tax cash indemnity</label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="s.company.allow_full"/> House and position allowances in full when any day is paid</label>
+                <label class="o_pf_check"><input type="checkbox" class="form-check-input" t-model="s.company.pension_full"/> Pension on the full monthly basic (first and last month: on the basic paid)</label>
+            </div>
+        </div>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-bank"/>Bank letter: the salary transfer letter</div>
+            <div class="o_pp_formgrid">
+                <label>Bank<input class="form-control" t-model="s.company.bank_name" placeholder="Commercial Bank of Ethiopia"/></label>
+                <label>Branch<input class="form-control" t-model="s.company.bank_branch"/></label>
+                <label>City<input class="form-control" t-model="s.company.bank_city"/></label>
+                <label>Our account number<input class="form-control" t-model="s.company.bank_account"/></label>
+            </div>
+        </div>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-sitemap"/>Cost centres: where each part of pay is booked</div>
+            <div class="o_py_gridwrap">
+                <table class="o_pp_table">
+                    <thead><tr><th>Cost centre</th><th t-foreach="s.keys" t-as="k" t-key="k" t-esc="keyLabel(k)"/></tr></thead>
+                    <tbody>
+                        <tr t-foreach="s.profiles" t-as="p" t-key="p_index">
+                            <td><input class="form-control form-control-sm" t-model="p.name"/></td>
+                            <td t-foreach="s.keys" t-as="k" t-key="k"><select class="form-select form-select-sm" t-on-change="(ev) => this.setKey(p, k, ev.target.value)"><option value="">—</option><option t-foreach="ctx.accounts" t-as="a" t-key="a.id" t-att-value="a.id" t-att-selected="a.id == p[k]" t-esc="a.name"/></select></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-link btn-sm me-auto" t-on-click="addProfile"><i class="fa fa-plus me-1"/>Cost centre</button>
+                <button class="btn btn-primary" t-on-click="saveSettings">Save settings</button></div>
+        </div>
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-percent"/>Employment income tax (Proclamation 1395/2025, monthly)</div>
+            <table class="o_pp_table"><thead><tr><th class="num">Over</th><th class="num">Up to</th><th class="num">Rate</th><th class="num">Deduction</th></tr></thead>
+                <tbody><tr t-foreach="s.brackets" t-as="b" t-key="b_index"><td class="num" t-esc="money(b.lower)"/><td class="num" t-esc="b.upper ? money(b.upper) : 'and above'"/><td class="num" t-esc="b.rate + '%'"/><td class="num" t-esc="money(b.deduction)"/></tr></tbody></table>
+            <div class="small text-muted p-2">Pension: <t t-esc="s.company.pension_ee"/>% employee + <t t-esc="s.company.pension_er"/>% employer on basic salary (Proclamation 715/2011).</div>
+        </div>
+    </t>
+</templates>

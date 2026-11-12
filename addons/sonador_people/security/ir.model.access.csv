@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_contact_hr,contact hr,model_sb_people_contact,sonador_books.group_sb_hr,1,1,1,1
+access_document_hr,document hr,model_sb_people_document,sonador_books.group_sb_hr,1,1,1,1
+access_asset_hr,asset hr,model_sb_people_asset,sonador_books.group_sb_hr,1,1,1,1

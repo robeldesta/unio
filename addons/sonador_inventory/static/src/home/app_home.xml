@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_inventory.AppHome">
+        <div class="o_sb_home o_action h-100 overflow-auto">
+            <div t-if="state.data" class="o_sb_home_inner">
+                <t t-set="d" t-value="state.data"/>
+                <div class="d-flex align-items-end gap-3 mb-3">
+                    <div class="me-auto">
+                        <h1 class="o_sb_home_title"><i t-attf-class="fa {{ d.icon }} me-2"/><t t-esc="d.title"/></h1>
+                        <div class="text-muted" t-esc="d.subtitle"/>
+                    </div>
+                    <div t-if="d.kpis" class="d-flex gap-3">
+                        <div t-foreach="d.kpis" t-as="k" t-key="k.label" class="o_sb_home_kpi">
+                            <span t-esc="k.label"/><b t-esc="k.value"/>
+                        </div>
+                    </div>
+                    <button class="btn btn-light border" t-on-click="refresh" title="Refresh"><i class="fa fa-refresh"/></button>
+                </div>
+
+                <div class="o_sb_home_card mb-3">
+                    <div class="o_sb_home_flows">
+                        <t t-foreach="d.flows" t-as="flow" t-key="flow_index">
+                            <div class="o_sb_home_step">
+                                <t t-foreach="flow" t-as="t" t-key="t.label">
+                                    <button class="o_sb_home_tile" t-on-click="() => this.openTile(t)">
+                                        <i t-attf-class="fa {{ t.icon }}"/>
+                                        <span class="lbl" t-esc="t.label"/>
+                                        <span t-if="t.hint" class="hint" t-esc="t.hint"/>
+                                        <span t-if="t.create" class="plus" title="New"><i class="fa fa-plus"/></span>
+                                    </button>
+                                </t>
+                            </div>
+                            <span t-if="!flow_last" class="o_sb_home_arrow"><i class="fa fa-long-arrow-right"/></span>
+                        </t>
+                    </div>
+                    <div t-if="d.more and d.more.length" class="o_sb_home_more">
+                        <a t-foreach="d.more" t-as="t" t-key="t.label" href="#" t-on-click.prevent="() => this.openTile(t)">
+                            <i t-attf-class="fa {{ t.icon }} me-1"/><t t-esc="t.label"/>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="o_sb_home_queues">
+                    <div t-foreach="d.queues" t-as="q" t-key="q.key" t-attf-class="o_sb_home_card o_sb_home_queue {{ q.tone or '' }}">
+                        <a href="#" class="o_sb_home_qhead" t-on-click.prevent="() => this.openQueue(q)">
+                            <i t-attf-class="fa {{ q.icon }} me-2"/><span class="me-auto" t-esc="q.title"/>
+                            <span class="o_sb_home_count" t-esc="q.count"/>
+                        </a>
+                        <div t-if="!q.rows.length" class="o_sb_home_empty">Nothing waiting.</div>
+                        <a t-foreach="q.rows" t-as="r" t-key="r.id" href="#" class="o_sb_home_row" t-on-click.prevent="() => this.openRow(q, r)">
+                            <span class="l"><t t-esc="r.label"/><small t-if="r.sub" t-esc="r.sub"/></span>
+                            <span class="v" t-esc="r.value"/>
+                        </a>
+                        <a t-if="q.count &gt; q.rows.length" href="#" class="o_sb_home_all" t-on-click.prevent="() => this.openQueue(q)">
+                            All <t t-esc="q.count"/> <i class="fa fa-angle-right"/>
+                        </a>
+                    </div>
+                </div>
+
+                <div t-if="reports.length" class="o_sb_home_card mt-3 p-3">
+                    <div class="o_sb_home_label mb-2">Reports</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button t-foreach="reports" t-as="e" t-key="e.key" class="btn btn-sm btn-light border" t-on-click="() => this.openReport(e)">
+                            <i class="fa fa-bar-chart me-1 text-muted"/><t t-esc="e.name"/>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

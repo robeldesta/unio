@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- the email in Unio's name: no tips, no Odoo, no mobile-app advert -->
+    <template id="digest_mail_main_unio" inherit_id="digest.digest_mail_main">
+        <xpath expr="//span[@id='button_connect']" position="replace">
+            <span class="button" id="button_connect">Open Unio</span>
+        </xpath>
+        <xpath expr="//tr[@t-foreach='tips']" position="replace"/>
+        <xpath expr="//div[hasclass('by_odoo')]" position="replace">
+            <div class="by_odoo" style="margin-bottom: 15px;">
+                Sent by Unio
+                <t t-if="unsubscribe_token">
+                    –
+                    <a t-attf-href="/digest/#{object.id}/unsubscribe?token=#{unsubscribe_token}&amp;user_id=#{user.id}" target="_blank"
+                       style="text-decoration: none;"><span style="color: #878d97;">Unsubscribe</span></a>
+                </t>
+            </div>
+        </xpath>
+        <xpath expr="//tr[@t-if='display_mobile_banner']" position="replace"/>
+        <xpath expr="//p[@id='powered']" position="replace"/>
+    </template>
+</odoo>

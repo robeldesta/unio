@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.Maintenance">
+        <div class="o_sb_setup o_action h-100 overflow-auto">
+            <div class="o_sb_setup_inner">
+                <div class="text-muted small text-uppercase">Accounting</div>
+                <h1 class="o_sb_setup_title mb-1">Data Maintenance</h1>
+                <div class="text-muted mb-4">Database size <t t-esc="size(state.db_size)"/>. Backups include the database and attached files.</div>
+                <div class="o_sb_card p-3 mb-3 d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="fw-semibold">Back up now</div>
+                        <div class="small text-muted">Takes a minute for a typical company. You can download it afterwards.</div>
+                    </div>
+                    <button class="btn btn-primary" t-on-click="backupNow" t-att-disabled="state.busy">
+                        <i t-attf-class="fa {{ state.busy ? 'fa-spinner fa-spin' : 'fa-database' }} me-1"/>Back up now
+                    </button>
+                </div>
+                <div class="o_sb_card p-3 mb-3 d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="fw-semibold">Automatic nightly backup</div>
+                        <div class="small text-muted">Keeps the last <t t-esc="state.keep"/> backups. Next run: <t t-esc="state.next || '-'"/></div>
+                    </div>
+                    <label class="mb-0"><input type="checkbox" class="me-2" t-att-checked="state.auto" t-on-change="toggleAuto"/>On</label>
+                </div>
+                <div class="o_sb_card p-3 mb-3 d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="fw-semibold">Verify the books</div>
+                        <div class="small text-muted">Checks that every posted entry balances and every line has an account.</div>
+                        <div t-if="state.verify" t-attf-class="mt-2 small {{ state.verify.ok ? 'text-success' : 'text-danger' }}">
+                            <t t-if="state.verify.ok"><i class="fa fa-check-circle me-1"/>All posted entries balance.</t>
+                            <t t-else="">Problems: <t t-esc="state.verify.unbalanced.join(', ')"/> <t t-if="state.verify.no_account"> · <t t-esc="state.verify.no_account"/> lines without account</t></t>
+                        </div>
+                    </div>
+                    <button class="btn btn-light border" t-on-click="verify"><i class="fa fa-stethoscope me-1"/>Verify</button>
+                </div>
+                <div class="o_sb_card">
+                    <div class="o_sb_card_head"><i class="fa fa-archive text-muted"/>Backups</div>
+                    <table class="table table-sm mb-0">
+                        <tr t-foreach="state.files" t-as="f" t-key="f.name">
+                            <td class="ps-3" t-esc="f.when"/><td t-esc="f.name"/><td class="text-end" t-esc="size(f.size)"/>
+                            <td class="text-end pe-3"><a t-attf-href="/sonador_books/backup/{{ f.name }}"><i class="fa fa-download me-1"/>Download</a></td>
+                        </tr>
+                    </table>
+                    <div t-if="!state.files.length" class="p-3 text-muted small">No backups yet.</div>
+                    <div class="p-3 small text-muted border-top">To restore a backup, use Odoo's database manager (/web/database/manager) with the master password kept in CREDENTIALS.txt.</div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

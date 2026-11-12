@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.PartnerHistory">
+        <div class="o_sb_hist w-100">
+            <div t-if="!state.data" class="text-muted">Save the contact to see its history.</div>
+            <t t-else="">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <button class="btn btn-sm btn-light border" t-on-click="() => this.shift(-1)"><i class="fa fa-chevron-left"/></button>
+                    <b class="o_sb_hist_fy">Fiscal year <t t-esc="state.data.fy_label"/></b>
+                    <button class="btn btn-sm btn-light border" t-att-disabled="!state.data.can_next" t-on-click="() => this.shift(1)"><i class="fa fa-chevron-right"/></button>
+                </div>
+                <div t-if="!state.data.sides.length" class="text-muted">No sales or purchases yet. Mark the contact as a customer or vendor to enter beginning balances.</div>
+                <div t-foreach="state.data.sides" t-as="side" t-key="side.kind" class="o_sb_hist_side">
+                    <div class="o_sb_hist_facts">
+                        <div class="o_sb_hist_kind"><t t-esc="side.kind === 'customer' ? 'As a customer' : 'As a vendor'"/></div>
+                        <dl>
+                            <dt><t t-esc="side.kind === 'customer' ? 'Customer' : 'Vendor'"/> since</dt><dd t-esc="side.since_label"/>
+                            <dt>Last invoice date</dt><dd t-esc="side.last_invoice ? side.last_invoice.date : '—'"/>
+                            <dt>Last invoice amount</dt><dd t-esc="side.last_invoice ? fmt(side.last_invoice.amount) : '—'"/>
+                            <dt>Last payment date</dt><dd t-esc="side.last_payment ? side.last_payment.date : '—'"/>
+                            <dt>Last payment amount</dt><dd t-esc="side.last_payment ? fmt(side.last_payment.amount) : '—'"/>
+                            <dt>Average days to <t t-esc="side.kind === 'customer' ? 'pay' : 'pay them'"/></dt>
+                            <dd t-esc="side.avg_days === null ? '—' : side.avg_days + ' days'"/>
+                            <dt>Balance now</dt><dd t-esc="fmt(side.balance)"/>
+                            <dt>Beginning balance</dt>
+                            <dd><t t-esc="fmt(side.beginning)"/> <span class="text-muted small">(<t t-esc="side.beginning_count"/> items)</span></dd>
+                        </dl>
+                        <button class="btn btn-primary btn-sm mt-1" t-on-click="() => this.openBeginning(side)">
+                            <i class="fa fa-flag-o me-1"/><t t-esc="side.kind === 'customer' ? 'Customer' : 'Vendor'"/> Beginning Balances
+                        </button>
+                    </div>
+                    <table class="o_sb_hist_table">
+                        <thead><tr><th>Period</th><th class="num" t-esc="side.labels[0]"/><th class="num" t-esc="side.labels[1]"/></tr></thead>
+                        <tbody>
+                            <tr t-foreach="side.rows" t-as="r" t-key="r.label" t-att-class="r.current ? 'current' : ''">
+                                <td><t t-esc="r.label"/> <span class="text-muted small" t-esc="r.ec"/></td>
+                                <td class="num" t-esc="fmt(r.in, true)"/>
+                                <td class="num" t-esc="fmt(r.out, true)"/>
+                            </tr>
+                        </tbody>
+                        <tfoot><tr><td>Total</td><td class="num" t-esc="fmt(side.total_in)"/><td class="num" t-esc="fmt(side.total_out)"/></tr></tfoot>
+                    </table>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

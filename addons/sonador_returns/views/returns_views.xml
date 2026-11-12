@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_returns_form" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.returns</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="priority">40</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="sb_finance_posts" invisible="1"/>
+                    <field name="sb_sent_finance_at" invisible="1"/>
+                    <field name="sb_needs_return_approval" invisible="1"/>
+                    <field name="sb_appr_state" invisible="1"/>
+                    <field name="sb_appr_can" invisible="1"/>
+                    <button name="action_sb_send_return_approval" type="object" string="Send for approval" class="btn-primary"
+                            invisible="state != 'draft' or not sb_needs_return_approval or sb_appr_state in ('waiting', 'approved')"
+                            help="Saves it and sends it to the commercial approver; approved, it goes to finance, who post it."/>
+                    <button name="action_sb_return_approve" type="object" string="Approve" class="btn-primary"
+                            invisible="state != 'draft' or not sb_appr_can"/>
+                    <button name="action_sb_return_send_back_form" type="object" string="Send back"
+                            invisible="state != 'draft' or not sb_appr_can" help="Write the reason first (Reason to send back)."/>
+                    <button name="action_sb_send_finance" type="object" string="Send to finance" class="btn-primary"
+                            invisible="state != 'draft' or sb_sent_finance_at or (sb_needs_return_approval and sb_appr_state != 'approved')"
+                            groups="!sonador_books.group_sb_clerk" data-hotkey="p"
+                            help="Saves it and sends it to finance, who check it and post it."/>
+                    <button name="action_post_close" type="object" string="Post &amp; Close" class="btn-primary"
+                            invisible="state != 'draft' or (sb_needs_return_approval and sb_appr_state != 'approved')"
+                            groups="sonador_books.group_sb_clerk" data-hotkey="p"/>
+                    <button name="action_post_new" type="object" string="Post &amp; New"
+                            invisible="state != 'draft' or (sb_needs_return_approval and sb_appr_state != 'approved')"
+                            groups="sonador_books.group_sb_clerk" data-hotkey="n"/>
+                    <button name="action_sb_give_replacement" type="object" string="Give replacement" class="btn-primary"
+                            invisible="voucher_type != 'customer_return' or state != 'posted' or sb_remaining &lt;= 0"
+                            groups="sonador_books.group_sb_clerk"
+                            help="A sales invoice for the replacement goods at the returned value, settled against what the customer is owed (no cash)."/>
+                    <button name="action_sb_refund" type="object" string="Refund in cash"
+                            invisible="voucher_type != 'customer_return' or state != 'posted'" groups="sonador_books.group_sb_clerk"
+                            help="The customer is paid back: a payment applying the credit note."/>
+                    <button name="action_sb_view_credit_note" type="object" string="Credit Note"
+                            invisible="not sb_credit_note_id"/>
+                    <button name="action_void" type="object" string="Void" invisible="state != 'posted'"
+                            groups="sonador_books.group_sb_accountant"
+                            help="The goods go back at exactly the value they were posted at, the entries are reversed and later documents re-costed."/>
+                    <button name="action_view_move" type="object" string="Journal Entry" invisible="not move_id"
+                            groups="account.group_account_invoice"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,posted"/>
+                </header>
+                <div class="alert alert-info mb-0" role="status" invisible="state != 'draft' or sb_appr_state != 'waiting'">
+                    Waiting for approval (sent by <field name="sb_appr_submitted_by" readonly="1" class="d-inline"/> on
+                    <field name="sb_appr_submitted_at" readonly="1" class="d-inline"/>).
+                    <span invisible="not sb_appr_can"> Reason to send back: <field name="sb_appr_note" class="d-inline w-50"/></span>
+                </div>
+                <div class="alert alert-info mb-0" role="status" invisible="state != 'draft' or not sb_sent_finance_at">
+                    Sent to finance by <field name="sb_sent_finance_by" readonly="1" class="d-inline"/> on
+                    <field name="sb_sent_finance_at" readonly="1" class="d-inline"/>: they check it, then post it.
+                </div>
+                <div class="alert alert-warning mb-0" role="alert" invisible="state != 'draft' or sb_sent_finance_at or not sb_sent_back_reason">
+                    Sent back by finance: <field name="sb_sent_back_reason" readonly="1" class="d-inline"/>. Correct it and send it again.
+                </div>
+                <sheet>
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="move_id" invisible="1"/>
+                    <field name="sb_credit_note_id" invisible="1"/>
+                    <field name="sb_needs_note_number" invisible="1"/>
+                    <field name="sb_always_damaged" invisible="1"/>
+                    <widget name="web_ribbon" title="Void" bg_color="text-bg-danger" invisible="state != 'void'"/>
+                    <div class="oe_title">
+                        <span class="o_form_label"><field name="voucher_type" readonly="1" nolabel="1"/></span>
+                        <h1><field name="sb_number" readonly="1"/></h1>
+                    </div>
+                    <div invisible="state != 'posted' and not sb_void_reason" class="mb-2" groups="sonador_books.group_sb_accountant">
+                        <label for="sb_void_reason" class="me-2"/>
+                        <field name="sb_void_reason" readonly="state == 'void'" class="w-50" placeholder="Needed to void"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id" string="Customer" invisible="voucher_type != 'customer_return'"
+                                   required="voucher_type == 'customer_return'" readonly="state != 'draft'"
+                                   context="{'res_partner_search_mode': 'customer'}"/>
+                            <field name="sb_origin_voucher_id" invisible="voucher_type != 'customer_return'"
+                                   readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="warehouse_id" string="Warehouse" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="sb_return_reason" invisible="voucher_type == 'rprv'" readonly="state != 'draft'"/>
+                            <field name="sb_found_by" invisible="voucher_type == 'rprv'" readonly="state != 'draft'"/>
+                            <field name="reference" readonly="state != 'draft'"/>
+                            <field name="memo" string="Description" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="date_ec"/>
+                            <field name="sb_credit_note_number" invisible="not sb_needs_note_number"
+                                   readonly="state != 'draft'" groups="sonador_books.group_sb_clerk"
+                                   placeholder="CN number from the fiscal register"/>
+                            <field name="amount_total" string="Value (at cost)" invisible="state == 'draft'"/>
+                            <field name="sb_appr_by" invisible="not sb_appr_by"/>
+                            <field name="sb_owed" invisible="voucher_type != 'customer_return' or state == 'draft'"/>
+                            <field name="sb_replaced" invisible="voucher_type != 'customer_return' or state == 'draft'"/>
+                            <field name="sb_refunded" invisible="voucher_type != 'customer_return' or state == 'draft'"/>
+                            <field name="sb_remaining" invisible="voucher_type != 'customer_return' or state == 'draft'"/>
+                            <field name="sb_photo" widget="image" class="oe_avatar" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Items" name="items">
+                            <field name="line_ids" readonly="state != 'draft'" context="{'default_sb_side': 'out'}">
+                                <list editable="bottom">
+                                    <field name="voucher_type" column_invisible="1"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="sb_side" column_invisible="parent.voucher_type != 'rprv'"/>
+                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="name" optional="hide"/>
+                                    <field name="sb_condition" column_invisible="parent.voucher_type != 'customer_return' or parent.sb_always_damaged"/>
+                                    <field name="sb_damaged_product_id" column_invisible="parent.voucher_type == 'rprv'"
+                                           optional="show" options="{'no_create': True}"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id" optional="show"/>
+                                    <field name="sb_price" column_invisible="parent.voucher_type != 'customer_return'"/>
+                                    <field name="unit_cost" readonly="1" string="Unit cost" optional="show"/>
+                                    <field name="value" readonly="1" string="Value (at cost)" sum="Total"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Replacements" name="replacements" invisible="voucher_type != 'customer_return' or not sb_replacement_ids">
+                            <field name="sb_replacement_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="amount_total" sum="Total"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sb_store_damage" model="ir.actions.act_window">
+        <field name="name">Store Damage Vouchers (SDV)</field>
+        <field name="res_model">sb.stock.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'damage')]</field>
+        <field name="context">{'default_voucher_type': 'damage'}</field>
+        <field name="view_ids" eval="[Command.clear(), Command.create({'view_mode': 'list', 'view_id': ref('sonador_inventory.sb_stock_voucher_list')}),
+                                      Command.create({'view_mode': 'form', 'view_id': ref('sb_returns_form')})]"/>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Record goods damaged in the store</p>
+            <p>They move to their damaged counterpart (the Damaged location, the damaged inventory account) at cost. The store prepares, finance posts.</p></field>
+    </record>
+    <record id="action_sb_customer_return" model="ir.actions.act_window">
+        <field name="name">Sales Returns (RET)</field>
+        <field name="res_model">sb.stock.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'customer_return')]</field>
+        <field name="context">{'default_voucher_type': 'customer_return'}</field>
+        <field name="view_ids" eval="[Command.clear(), Command.create({'view_mode': 'list', 'view_id': ref('sonador_inventory.sb_stock_voucher_list')}),
+                                      Command.create({'view_mode': 'form', 'view_id': ref('sb_returns_form')})]"/>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Goods a customer brings back</p>
+            <p>Against the invoice or cash sale: the credit note is posted with it, damaged goods go to the damaged stock at the cost they were sold at.</p></field>
+    </record>
+    <record id="action_sb_rprv" model="ir.actions.act_window">
+        <field name="name">Recycled Product Receiving (RPRV)</field>
+        <field name="res_model">sb.stock.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'rprv')]</field>
+        <field name="context">{'default_voucher_type': 'rprv'}</field>
+        <field name="view_ids" eval="[Command.clear(), Command.create({'view_mode': 'list', 'view_id': ref('sonador_inventory.sb_stock_voucher_list')}),
+                                      Command.create({'view_mode': 'form', 'view_id': ref('sb_returns_form')})]"/>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Recycle damaged goods</p>
+            <p>Damaged goods taken out of the damaged stock and received as a recycled item, at the damaged stock's cost.</p></field>
+    </record>
+
+    <menuitem id="menu_sb_returns" name="Returns and Damage" parent="sonador_inventory.menu_sb_inv_docs" sequence="40"/>
+    <menuitem id="menu_sb_sdv" name="Store Damage (SDV)" parent="menu_sb_returns" action="action_sb_store_damage" sequence="1"/>
+    <menuitem id="menu_sb_ret" name="Sales Returns (RET)" parent="menu_sb_returns" action="action_sb_customer_return" sequence="2"/>
+    <menuitem id="menu_sb_rprv" name="Recycled Product Receiving (RPRV)" parent="menu_sb_returns" action="action_sb_rprv" sequence="3"/>
+
+    <menuitem id="menu_store_returns" name="Returns and Damage" parent="sonador_inventory.menu_store_root" sequence="35"/>
+    <menuitem id="menu_store_sdv" name="Store Damage (SDV)" parent="menu_store_returns" action="action_sb_store_damage" sequence="1"/>
+    <menuitem id="menu_store_ret" name="Sales Returns (RET)" parent="menu_store_returns" action="action_sb_customer_return" sequence="2"/>
+    <menuitem id="menu_store_rprv" name="Recycled Product Receiving (RPRV)" parent="menu_store_returns" action="action_sb_rprv" sequence="3"/>
+</odoo>

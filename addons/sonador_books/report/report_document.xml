@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_sb_landscape" model="report.paperformat">
+        <field name="name">A4 landscape</field>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">22</field>
+        <field name="margin_bottom">14</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_spacing">16</field>
+        <field name="dpi">96</field>
+    </record>
+    <record id="action_report_document" model="ir.actions.report">
+        <field name="name">Report</field>
+        <field name="model">sb.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_books.report_document</field>
+        <field name="paperformat_id" ref="paperformat_sb_landscape"/>
+    </record>
+    <template id="report_document">
+        <t t-call="web.html_container">
+            <div class="header" t-attf-style="font-family: {{ doc.get('font_face') and &quot;'Noto Sans Ethiopic', &quot; or '' }}sans-serif; font-size: 10px; border-bottom: 1px solid #999; padding-bottom: 4px;">
+                <style t-if="doc.get('font_face')" t-out="doc['font_face']"/>
+                <table style="width:100%;"><tr>
+                    <td><strong t-esc="doc['company']"/> · <span t-esc="doc['title']"/></td>
+                    <td style="text-align:right;" t-esc="doc['subtitle']"/>
+                </tr></table>
+            </div>
+            <div class="article" t-attf-style="font-family: {{ doc.get('font_face') and &quot;'Noto Sans Ethiopic', &quot; or '' }}sans-serif; font-size: 10px;">
+                <style t-if="doc.get('font_face')" t-out="doc['font_face']"/>
+                <style>
+                    .sbr td { padding: 2px 4px; }
+                    .sbr td.n { text-align: right; white-space: nowrap; }
+                    .sbr tr.b { font-weight: bold; }
+                    .sbr tr.w { color: #b00; }
+                    .sbr tr.pb { page-break-before: always; }
+                    .sbr tr.t td, .sbr tr.t2 td { border-top: 1px solid #333; }
+                    .sbr tr.t2 td { border-bottom: 3px double #333; }
+                </style>
+                <table style="width:100%; margin-bottom: 10px;"><tr>
+                    <td style="vertical-align: top;">
+                        <div style="font-size: 10px; color: #6B7A85; text-transform: uppercase; letter-spacing: 1px;">
+                            <t t-esc="doc['company']"/><t t-if="doc.get('company_vat')"> · TIN <t t-esc="doc['company_vat']"/></t>
+                        </div>
+                        <div style="font-size: 20px; font-weight: bold; color: #243742; margin: 2px 0;" t-esc="doc['title']"/>
+                        <div style="font-size: 11px; color: #1F2D36;" t-esc="doc['subtitle']"/>
+                        <div t-foreach="doc.get('basis') or []" t-as="line"
+                             t-attf-style="font-size: 10px; margin-top: 2px; {{ 'color: #b00; font-weight: bold;' if line.startswith('Basis') else 'color: #333;' }}"
+                             t-esc="line"/>
+                    </td>
+                    <td t-if="doc.get('logo')" style="text-align: right; vertical-align: top; width: 160px;">
+                        <img t-att-src="'data:image/png;base64,%s' % doc['logo']" style="max-height: 52px; max-width: 150px;"/>
+                    </td>
+                </tr></table>
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead style="display: table-header-group;">
+                        <tr style="background:#F5F8FA;">
+                            <th t-foreach="doc['columns']" t-as="col"
+                                t-att-style="'padding:4px; border-bottom:1px solid #666; vertical-align:bottom; ' + ('text-align:right;' if col['type'] in ('monetary', 'number', 'percent', 'number_int') else 'text-align:left;')">
+                                <t t-esc="col['label']"/>
+                                <div t-if="col.get('sub')" style="font-weight:normal; color:#555; font-size:9px;" t-esc="col['sub']"/>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="sbr"><t t-out="body"/></tbody>
+                </table>
+                <table t-if="doc.get('signatures')" style="width:100%; margin-top: 46px; page-break-inside: avoid; font-size: 10px; color: #1F2D36;">
+                    <tr>
+                        <td t-foreach="['Prepared by', 'Checked by', 'Approved by']" t-as="sig" style="width: 33%; padding-right: 24px;">
+                            <div style="border-top: 1px solid #1F2D36; padding-top: 4px;"><t t-esc="sig"/></div>
+                            <div style="color: #6B7A85; margin-top: 2px;">Name, signature and date</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="footer" style="font-family: sans-serif; font-size: 9px; color:#555; border-top: 1px solid #ccc; padding-top: 3px;">
+                <table style="width:100%;"><tr>
+                    <td>Printed <t t-esc="doc['printed'][:16]"/> (<t t-esc="doc['printed_ec']"/>)<t t-if="doc.get('basis')"> | <t t-esc="' | '.join(doc['basis'])"/></t></td>
+                    <td style="text-align:right;">Page <span class="page"/> of <span class="topage"/></td>
+                </tr></table>
+            </div>
+        </t>
+    </template>
+</odoo>

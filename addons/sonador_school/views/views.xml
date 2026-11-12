@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_school" model="ir.actions.client">
+        <field name="name">School</field>
+        <field name="tag">sonador_school.app</field>
+    </record>
+    <menuitem id="menu_school_root" name="School" sequence="12" action="action_school"
+              web_icon="sonador_school,static/description/icon.png"
+              groups="sonador_school.group_teacher"/>
+</odoo>

@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="sonador_me.App">
+    <div class="o_me" t-if="state.d">
+        <t t-set="d" t-value="state.d"/>
+        <!-- hello -->
+        <header class="o_me_hello">
+            <img t-att-src="d.employee ? d.employee.avatar : d.user.avatar" alt=""/>
+            <div class="o_me_hello_text">
+                <h1 t-esc="greeting"/>
+                <div t-if="d.employee" class="o_me_sub"><t t-esc="d.employee.job"/><t t-if="d.employee.department"> · <t t-esc="d.employee.department"/></t><t t-if="d.employee.manager"> · reports to <t t-esc="d.employee.manager"/></t></div>
+                <div t-else="" class="o_me_sub">Your login is not linked to an employee yet: ask HR.</div>
+            </div>
+            <div t-if="d.clock and !d.clock.none" class="o_me_clock">
+                <div class="o_me_clock_state"><span t-attf-class="o_me_dot {{ d.clock.is_in ? 'in' : '' }}"/><t t-if="d.clock.is_in">At work</t><t t-else="">Not clocked in</t></div>
+                <div class="small text-muted">Today <t t-esc="hours((d.clock.worked_today || 0) / 60)"/><t t-if="d.clock.late_today"> · <span class="text-danger"><t t-esc="d.clock.late_today"/> min late</span></t></div>
+                <button t-attf-class="btn {{ d.clock.is_in ? 'btn-light border' : 'btn-primary' }} mt-1" t-on-click="clock">
+                    <i class="fa fa-clock-o me-1"/><t t-if="d.clock.is_in">Clock out</t><t t-else="">Clock in</t></button>
+            </div>
+        </header>
+
+        <!-- pages: Home, Approvals, then each big card (Daybook, System usage, Scorecard) on its own page -->
+        <nav class="o_me_pages" role="tablist">
+            <button role="tab" t-att-aria-selected="page === 'home'" t-attf-class="o_me_page {{ page === 'home' ? 'active' : '' }}" t-on-click="() => this.setPage('home')">
+                <i class="fa fa-home"/> Home</button>
+            <button role="tab" t-att-aria-selected="page === 'approvals'" t-attf-class="o_me_page {{ page === 'approvals' ? 'active' : '' }}" t-on-click="() => this.setPage('approvals')">
+                <i class="fa fa-inbox"/> Approvals<span t-if="d.approvals.length" class="o_me_count" t-esc="d.approvals.length"/></button>
+            <t t-foreach="pageSections" t-as="sec" t-key="sec.key">
+                <button role="tab" t-att-aria-selected="page === sec.key" t-attf-class="o_me_page {{ page === sec.key ? 'active' : '' }}" t-on-click="() => this.setPage(sec.key)">
+                    <i t-attf-class="fa {{ sec.icon or 'fa-th-large' }}"/> <t t-esc="sec.title"/></button>
+            </t>
+        </nav>
+
+        <!-- a big card on its own page -->
+        <t t-foreach="pageSections" t-as="sec" t-key="sec.key">
+            <section t-if="page === sec.key" class="o_me_card o_me_pagebody">
+                <t t-component="sectionComponent(sec.key)" data="sec.data" reload.bind="load"/>
+            </section>
+        </t>
+
+        <div class="o_me_grid" t-if="page === 'home' or page === 'approvals'">
+            <!-- home: a one-line pointer to the approvals waiting -->
+            <section t-if="page === 'home' and d.approvals.length" class="o_me_card o_me_wide o_me_click o_me_waiting" t-on-click="() => this.setPage('approvals')">
+                <i class="fa fa-inbox"/> <b t-esc="d.approvals.length"/> waiting for your decision <span class="ms-auto">Open <i class="fa fa-arrow-right"/></span>
+            </section>
+            <!-- approval center: waiting for me, what I submitted, what I decided -->
+            <section t-if="page === 'approvals'" class="o_me_card o_me_wide o_me_inbox">
+                <div class="o_me_head">
+                    <h2><i class="fa fa-inbox"/> Approvals <span t-if="d.approvals.length" class="o_me_count" t-esc="d.approvals.length"/></h2>
+                    <div class="o_me_tabs" role="tablist">
+                        <button role="tab" t-att-aria-selected="state.tab === 'waiting'" t-attf-class="o_me_tab {{ state.tab === 'waiting' ? 'active' : '' }}" t-on-click="() => this.setTab('waiting')">Waiting for me<t t-if="d.approvals.length"> (<t t-esc="d.approvals.length"/>)</t></button>
+                        <button role="tab" t-att-aria-selected="state.tab === 'mine'" t-attf-class="o_me_tab {{ state.tab === 'mine' ? 'active' : '' }}" t-on-click="() => this.setTab('mine')">I submitted<t t-if="state.center and state.center.submitted.length"> (<t t-esc="state.center.submitted.length"/>)</t></button>
+                        <button role="tab" t-att-aria-selected="state.tab === 'history'" t-attf-class="o_me_tab {{ state.tab === 'history' ? 'active' : '' }}" t-on-click="() => this.setTab('history')">History</button>
+                    </div>
+                </div>
+
+                <t t-if="state.tab === 'waiting'">
+                    <div t-if="appsOf(d.approvals).length > 1" class="o_me_chips">
+                        <button t-attf-class="o_me_chip {{ !state.app ? 'active' : '' }}" t-on-click="() => this.state.app = null">All</button>
+                        <button t-foreach="appsOf(d.approvals)" t-as="ap" t-key="ap.app" t-attf-class="o_me_chip {{ state.app === ap.app ? 'active' : '' }}" t-on-click="() => this.state.app = ap.app"><t t-esc="ap.app"/> <b t-esc="ap.n"/></button>
+                    </div>
+                    <p t-if="!d.approvals.length" class="o_me_empty"><i class="fa fa-check-circle"/> Nothing waits for your approval.</p>
+                    <div t-foreach="filtered(d.approvals)" t-as="a" t-key="a.key" class="o_me_item">
+                        <div class="o_me_item_main">
+                            <img t-if="a.avatar" t-att-src="a.avatar" class="o_me_av" alt=""/>
+                            <span t-else="" class="o_me_av o_me_av_icon"><i t-attf-class="fa {{ a.icon }}"/></span>
+                            <div class="o_me_item_body" t-on-click="() => this.open(a.key)">
+                                <div><span class="o_me_app" t-esc="a.app"/> <b t-esc="a.title"/>
+                                    <span t-if="a.since_day" class="o_me_date text-muted small"> · <t t-esc="a.since_day"/></span>
+                                    <span t-if="a.days" t-attf-class="o_me_age {{ a.days > 2 ? 'late' : '' }}"><t t-esc="a.days"/> d waiting</span></div>
+                                <div t-foreach="a.details" t-as="x" t-key="x_index" class="o_me_detail" t-esc="x"/>
+                            </div>
+                            <div t-if="a.amount" class="o_me_amount"><t t-esc="money(a.amount)"/> <small t-esc="a.currency"/></div>
+                        </div>
+                        <t t-if="state.confirm and state.confirm.key === a.key" t-call="sonador_me.ConfirmInline"/>
+                        <div t-elif="state.refusing === a.key" class="o_me_refuse">
+                            <label class="visually-hidden" t-attf-for="why_{{ a.key }}">Reason for sending back</label>
+                            <input t-attf-id="why_{{ a.key }}" class="form-control form-control-sm" placeholder="Why does it go back? They will see this." t-model="state.note"/>
+                            <button class="btn btn-sm btn-danger" t-att-disabled="state.busy or !state.note.trim()" t-on-click="() => this.decide(a, false)"><t t-esc="a.refuse_label or 'Send back'"/></button>
+                            <button class="btn btn-sm btn-link" t-on-click="() => this.state.refusing = null">Keep</button>
+                        </div>
+                        <div t-else="" class="o_me_actions">
+                            <button class="btn btn-sm btn-success" t-att-disabled="state.busy" t-on-click="() => this.decide(a, true)"><i t-attf-class="fa {{ state.d.sign ? 'fa-pencil' : 'fa-check' }} me-1"/><t t-esc="(state.d.sign ? 'Sign and ' + (a.approve_label or 'Approve').toLowerCase() : (a.approve_label or 'Approve'))"/></button>
+                            <button class="btn btn-sm btn-light border" t-att-disabled="state.busy" t-on-click="() => this.decide(a, false)"><i class="fa fa-reply me-1"/><t t-esc="a.refuse_label or 'Send back'"/></button>
+                            <button class="btn btn-sm btn-link o_me_open" title="Open" t-on-click="() => this.open(a.key)"><i class="fa fa-external-link me-1"/><span class="o_me_open_text">Open</span></button>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-if="state.tab === 'mine'">
+                    <p t-if="!state.center" class="o_me_empty">Loading…</p>
+                    <t t-else="">
+                        <p t-if="!state.center.submitted.length" class="o_me_empty"><i class="fa fa-check-circle"/> Nothing you sent is waiting.</p>
+                        <div t-foreach="state.center.submitted" t-as="m" t-key="m.key" class="o_me_row o_me_click" t-on-click="() => this.open(m.key)">
+                            <span><span class="o_me_app" t-esc="m.app"/> <b t-esc="m.title"/>
+                                <span class="text-muted small"> · <t t-esc="m.since_day"/> · with <t t-esc="m.waiting_for"/></span></span>
+                            <span t-attf-class="o_me_age {{ m.days > 2 ? 'late' : '' }}"><t t-if="m.days"><t t-esc="m.days"/> d</t><t t-else="">today</t></span>
+                        </div>
+                        <h3 t-if="state.center.history.mine.length" class="o_me_h3">Decided on what you sent</h3>
+                        <div t-foreach="state.center.history.mine" t-as="h" t-key="h.id" class="o_me_row">
+                            <span><span class="o_me_app" t-esc="h.app"/> <t t-esc="h.title"/><span t-if="h.note" class="text-muted small"> · “<t t-esc="h.note"/>”</span></span>
+                            <span><span t-attf-class="o_me_pill o_me_{{ h.decision === 'approved' ? 'approved' : 'refused' }}" t-esc="h.decision === 'approved' ? 'Approved' : 'Sent back'"/> <small class="text-muted"><t t-esc="h.by"/></small></span>
+                        </div>
+                    </t>
+                </t>
+
+                <t t-if="state.tab === 'history'">
+                    <p t-if="!state.center" class="o_me_empty">Loading…</p>
+                    <t t-else="">
+                        <p t-if="!state.center.history.decided.length" class="o_me_empty">You have not decided anything here yet.</p>
+                        <div t-foreach="state.center.history.decided" t-as="h" t-key="h.id" class="o_me_row o_me_click" t-on-click="() => this.open(h.key)">
+                            <span><span class="o_me_app" t-esc="h.app"/> <t t-esc="h.title"/><span t-if="h.note" class="text-muted small"> · “<t t-esc="h.note"/>”</span></span>
+                            <span><span t-attf-class="o_me_pill o_me_{{ h.decision === 'approved' ? 'approved' : 'refused' }}" t-esc="h.decision === 'approved' ? 'Approved' : 'Sent back'"/>
+                                <small class="text-muted ms-1" t-esc="when(h.date)"/><i t-if="h.channel === 'telegram'" class="fa fa-paper-plane ms-1 text-muted" title="Decided in Telegram"/></span>
+                        </div>
+                    </t>
+                </t>
+            </section>
+
+            <!-- notices -->
+            <section t-if="page === 'home' and d.notices and d.notices.length" class="o_me_card o_me_wide">
+                <div class="o_me_head"><h2><i class="fa fa-bell-o"/> Updates <span t-if="unread" class="o_me_count" t-esc="unread"/></h2>
+                    <button t-if="unread" class="btn btn-sm btn-link" t-on-click="readAll">Mark all read</button></div>
+                <div t-foreach="d.notices" t-as="n" t-key="n.id" t-attf-class="o_me_notice {{ n.read ? '' : 'unread' }}" t-on-click="() => this.openNotice(n)">
+                    <b t-esc="n.title"/> <small class="text-muted" t-esc="when(n.date)"/>
+                    <div class="o_me_detail o_me_pre" t-esc="n.body"/>
+                </div>
+            </section>
+
+            <!-- cards other apps add to Me -->
+            <t t-foreach="d.sections" t-as="sec" t-key="sec.key">
+                <section t-if="page === 'home' and !sec.wide and sectionComponent(sec.key)" class="o_me_card">
+                    <div class="o_me_head"><h2><i t-attf-class="fa {{ sec.icon or 'fa-th-large' }}"/> <t t-esc="sec.title"/></h2></div>
+                    <t t-component="sectionComponent(sec.key)" data="sec.data" reload.bind="load"/>
+                </section>
+            </t>
+
+            <!-- to do -->
+            <section t-if="page === 'home' and d.todo.length" class="o_me_card o_me_wide">
+                <div class="o_me_head"><h2><i class="fa fa-list-ul"/> To do</h2></div>
+                <div t-foreach="d.todo" t-as="t" t-key="t.key" class="o_me_todo">
+                    <i t-attf-class="fa {{ t.icon }}"/>
+                    <div class="o_me_item_body" t-on-click="() => this.openTodo(t)">
+                        <b t-esc="t.title"/><div class="small text-muted"><t t-esc="t.sub"/><t t-if="t.body"> · click to read</t><t t-if="t.due"> · due <span t-att-class="t.overdue ? 'text-danger' : ''" t-esc="t.due"/></t></div>
+                    </div>
+                    <button t-if="t.done" class="btn btn-sm btn-light border" t-on-click="() => this.done(t)"><t t-if="t.done === 'policy'">I accept</t><t t-else="">Done</t></button>
+                    <div t-if="state.reading === t.key" class="o_me_policy" t-out="markup(t.body)"/>
+                </div>
+            </section>
+
+            <!-- time off -->
+            <section t-if="page === 'home' and d.timeoff" class="o_me_card">
+                <div class="o_me_head"><h2><i class="fa fa-plane"/> Leave requests</h2>
+                    <button t-if="!state.leave" class="btn btn-sm btn-primary" t-on-click="newLeave">Request leave</button></div>
+                <div class="o_me_stats">
+                    <div><b t-esc="d.timeoff.annual.available"/><span>annual days left</span></div>
+                    <div><b t-esc="d.timeoff.sick.used"/><span>sick days used</span></div>
+                </div>
+                <div t-if="state.leave" class="o_me_form">
+                    <select class="form-select form-select-sm" t-on-change="(ev) => this.setLeave('type_id', ev.target.value)">
+                        <option t-foreach="d.timeoff.types" t-as="ty" t-key="ty.id" t-att-value="ty.id" t-att-selected="state.leave.type_id === ty.id" t-esc="ty.name"/>
+                    </select>
+                    <div class="o_me_two">
+                        <label>From<input type="date" class="form-control form-control-sm" t-att-value="state.leave.date_from" t-on-change="(ev) => this.setLeave('date_from', ev.target.value)"/></label>
+                        <label>To<input type="date" class="form-control form-control-sm" t-att-value="state.leave.date_to" t-on-change="(ev) => this.setLeave('date_to', ev.target.value)"/></label>
+                    </div>
+                    <input class="form-control form-control-sm" placeholder="Reason (optional)" t-model="state.leave.reason"/>
+                    <div t-if="state.preview" class="small">
+                        <b><t t-esc="state.preview.days"/> working <t t-esc="state.preview.days === 1 ? 'day' : 'days'"/></b>
+                        <div t-foreach="state.preview.warnings" t-as="w" t-key="w_index" class="text-warning" t-esc="w"/>
+                        <div t-if="state.preview.error" class="text-danger" t-esc="state.preview.error"/>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-primary" t-att-disabled="state.busy or (state.preview and state.preview.error)" t-on-click="sendLeave">Send to my manager</button>
+                        <button class="btn btn-sm btn-link" t-on-click="() => this.state.leave = null">Cancel</button>
+                    </div>
+                </div>
+                <div t-foreach="d.timeoff.leaves" t-as="l" t-key="l.id" class="o_me_row">
+                    <span><b t-esc="l.type"/> <span class="text-muted small"><t t-esc="l.from_ec"/> → <t t-esc="l.to_ec"/> · <t t-esc="l.days"/> d</span></span>
+                    <span><span t-attf-class="o_me_pill o_me_{{ l.state }}" t-esc="stateLabel(l.state)"/>
+                        <button t-if="l.can_cancel" class="btn btn-sm btn-link px-1" t-on-click="() => this.cancelLeave(l)">Cancel</button></span>
+                </div>
+            </section>
+
+            <!-- attendance -->
+            <section t-if="page === 'home' and d.clock and !d.clock.none" class="o_me_card">
+                <div class="o_me_head"><h2><i class="fa fa-clock-o"/> Attendance</h2></div>
+                <div class="o_me_week">
+                    <div t-foreach="d.clock.week" t-as="w" t-key="w.date" t-attf-class="o_me_day {{ w.status }} {{ w.today ? 'today' : '' }}">
+                        <span t-esc="w.label"/><b t-esc="w.hours ? hours(w.hours) : '–'"/>
+                    </div>
+                </div>
+                <div class="o_me_stats">
+                    <div><b t-esc="d.clock.month.present"/><span>days at work</span></div>
+                    <div><b t-esc="d.clock.month.late"/><span>late (<t t-esc="d.clock.month.late_min"/> min)</span></div>
+                    <div><b t-esc="d.clock.month.absent"/><span>absent</span></div>
+                    <div><b t-esc="hours(d.clock.month.hours)"/><span>this month</span></div>
+                </div>
+            </section>
+
+            <!-- pay -->
+            <section t-if="page === 'home' and d.payslips" class="o_me_card">
+                <div class="o_me_head"><h2><i class="fa fa-money"/> My pay</h2></div>
+                <p t-if="!d.payslips.lines.length" class="o_me_empty">No payslips yet.</p>
+                <t t-else="">
+                    <div class="o_me_stats">
+                        <div><b t-esc="money(d.payslips.lines[0].net)"/><span>last net pay (<t t-esc="d.payslips.lines[0].run"/>)</span></div>
+                        <div><b t-esc="money(d.payslips.ytd.net)"/><span>net this year</span></div>
+                    </div>
+                    <a t-foreach="state.allSlips ? d.payslips.lines : d.payslips.lines.slice(0, 3)" t-as="p" t-key="p.id" class="o_me_row o_me_link" t-att-href="p.url" target="_blank">
+                        <span><i class="fa fa-file-pdf-o me-1"/><t t-esc="p.run"/></span><span><t t-esc="money(p.net)"/></span>
+                    </a>
+                    <button t-if="d.payslips.lines.length > 3" class="btn btn-sm btn-link px-0" t-on-click="() => this.state.allSlips = !this.state.allSlips"><t t-if="state.allSlips">Show fewer</t><t t-else="">All payslips (<t t-esc="d.payslips.lines.length"/>)</t></button>
+                </t>
+            </section>
+
+            <!-- goals -->
+            <section t-if="page === 'home' and d.goals and d.goals.length" class="o_me_card">
+                <div class="o_me_head"><h2><i class="fa fa-bullseye"/> My goals</h2>
+                    <button class="btn btn-sm btn-link" t-on-click="() => this.openApp('sonador_performance.action_perf')">All</button></div>
+                <div t-foreach="d.goals" t-as="g" t-key="g.id" class="o_me_goal">
+                    <div class="d-flex justify-content-between"><span t-esc="g.name"/><b><t t-esc="g.progress or 0"/>%</b></div>
+                    <div class="o_me_bar"><i t-attf-style="width: {{ g.progress or 0 }}%"/></div>
+                </div>
+            </section>
+
+            <!-- this week -->
+            <section t-if="page === 'home' and d.week" class="o_me_card">
+                <div class="o_me_head"><h2><i class="fa fa-calendar-check-o"/> This week</h2>
+                    <button class="btn btn-sm btn-link" t-on-click="() => this.openApp('sonador_planning.action_planning')">Open</button></div>
+                <p t-if="d.week.plan_missing" class="text-warning small">Your month's plan is not approved yet.</p>
+                <p t-if="!d.week.strip.length" class="o_me_empty">Nothing planned for <t t-esc="d.week.selected_ec"/>.</p>
+                <div t-foreach="d.week.strip" t-as="t" t-key="t.id" class="o_me_row">
+                    <span t-esc="t.name"/><span t-attf-class="o_me_pill {{ t.checkin ? 'o_me_approved' : '' }}"><t t-if="t.checkin">Checked in</t><t t-else="">To check in</t></span>
+                </div>
+            </section>
+
+            <!-- profile -->
+            <section t-if="page === 'home' and d.profile" class="o_me_card">
+                <div class="o_me_head"><h2><i class="fa fa-user"/> About me</h2>
+                    <button class="btn btn-sm btn-link" t-on-click="() => this.openApp('sonador_people.action_people_me')">Full profile</button></div>
+                <div class="o_me_row"><span class="text-muted">Work email</span><span t-esc="d.profile.work_email or '–'"/></div>
+                <div class="o_me_row"><span class="text-muted">Phone</span><span t-esc="d.profile.phone or '–'"/></div>
+                <div class="o_me_row"><span class="text-muted">Started</span><span t-esc="d.profile.start or '–'"/></div>
+                <div class="o_me_row"><span class="text-muted">Employee no.</span><span t-esc="d.employee.code or '–'"/></div>
+                <div class="o_me_row"><span class="text-muted">Emergency contacts</span><span t-esc="d.profile.contacts"/></div>
+                <div class="o_me_row"><span class="text-muted">Documents</span><span t-esc="d.profile.documents"/></div>
+            </section>
+        </div>
+    </div>
+</t>
+<t t-name="sonador_me.ConfirmInline">
+    <div class="o_me_confirm" t-if="state.confirm">
+        <t t-set="c" t-value="state.confirm.payload"/>
+        <div class="o_me_confirm_title"><i class="fa fa-pencil-square-o"/> <b t-esc="c.title"/> <small class="text-muted">version <t t-esc="c.version"/></small></div>
+        <div class="o_me_confirm_text" t-esc="c.text"/>
+        <label class="o_me_confirm_tick"><input type="checkbox" t-model="state.confirm.ticked"/> <span>I have read this and I confirm it.</span></label>
+        <div class="o_me_sign">
+            <label class="o_me_sign_label">Sign here with your mouse, touchpad or finger</label>
+            <label t-if="c.reuse_signature" class="o_me_confirm_reuse"><input type="checkbox" t-model="state.confirm.reuse"/> Use the signature I drew earlier in this session</label>
+            <t t-if="!state.confirm.reuse"><NameAndSignature signature="state.confirm.sig" noInputName="true" mode="'draw'" displaySignatureRatio="1.8"/>
+                <button class="btn btn-link btn-sm p-0" t-on-click="() => state.confirm.sig.resetSignature and state.confirm.sig.resetSignature()">Clear</button></t>
+        </div>
+        <div t-if="c.needs_phrase" class="o_me_confirm_field">
+            <label t-attf-for="phrase_{{ state.confirm.key }}">Type <b t-esc="c.phrase"/> (the amount is above <t t-esc="money(c.phrase_amount)"/>)</label>
+            <input t-attf-id="phrase_{{ state.confirm.key }}" class="form-control form-control-sm" autocomplete="off" t-model="state.confirm.phrase"/>
+        </div>
+        <div t-if="c.needs_password" class="o_me_confirm_field">
+            <label t-attf-for="pw_{{ state.confirm.key }}">Your password</label>
+            <input t-attf-id="pw_{{ state.confirm.key }}" type="password" class="form-control form-control-sm" autocomplete="current-password" t-model="state.confirm.password"/>
+        </div>
+        <div class="o_me_actions">
+            <button class="btn btn-sm btn-success" t-att-disabled="state.busy or !confirmReady" t-on-click="acceptConfirm"><i class="fa fa-check me-1"/>Confirm and continue</button>
+            <button class="btn btn-sm btn-link" t-on-click="() => this.state.confirm = null">Cancel</button>
+        </div>
+    </div>
+</t>
+</templates>

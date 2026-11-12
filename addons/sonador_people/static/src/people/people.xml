@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="sonador_people.App">
+        <div class="o_pp o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.company"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-users me-2"/>People</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="state.page === 'home' ? 'active' : ''" t-on-click="() => this.go('home')"><i class="fa fa-home"/> Home</button>
+                        <button t-att-class="state.page === 'directory' ? 'active' : ''" t-on-click="() => this.go('directory')"><i class="fa fa-address-book-o"/> Directory</button>
+                        <button t-att-class="state.page === 'org' ? 'active' : ''" t-on-click="() => this.go('org')"><i class="fa fa-sitemap"/> Org chart</button>
+                        <button t-att-class="state.page === 'profile' and state.employeeId === ctx.me ? 'active' : ''" t-on-click="myProfile"><i class="fa fa-user-circle-o"/> My profile</button>
+                    </nav>
+                    <button t-if="ctx.is_hr" class="btn btn-primary" t-on-click="() => this.go('hire')"><i class="fa fa-user-plus me-1"/>Hire</button>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'home' and state.home" t-call="sonador_people.Home"/>
+                <t t-if="state.page === 'directory'" t-call="sonador_people.Directory"/>
+                <t t-if="state.page === 'org'" t-call="sonador_people.Org"/>
+                <t t-if="state.page === 'profile' and prof" t-call="sonador_people.Profile"/>
+                <t t-if="state.page === 'hire'" t-call="sonador_people.Hire"/>
+                <div t-if="state.page === 'noprofile'" class="o_pp_card p-4 text-center text-muted">
+                    <i class="fa fa-user-times fa-2x mb-2 d-block"/>Your login is not linked to an employee record yet. Ask HR to link it.
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================================================================ home -->
+    <t t-name="sonador_people.Home">
+        <t t-set="h" t-value="state.home"/>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi" t-on-click="() => this.go('directory')"><span>Headcount</span><b t-esc="h.kpis.headcount"/><small>active employees</small></div>
+            <div class="o_pp_kpi"><span>Joined this year</span><b class="o_pp_good" t-esc="h.kpis.joined"/><small t-esc="h.kpis.fy"/></div>
+            <div class="o_pp_kpi"><span>Left this year</span><b t-attf-class="{{ h.kpis.left ? 'o_pp_badtxt' : '' }}" t-esc="h.kpis.left"/><small>turnover <t t-esc="h.kpis.turnover"/>%</small></div>
+            <div class="o_pp_kpi"><span>Average tenure</span><b t-if="h.kpis.avg_tenure !== null"><t t-esc="h.kpis.avg_tenure"/> <small>yrs</small></b><b t-else="">—</b><small t-esc="h.kpis.avg_tenure !== null ? 'of those with a start date' : 'no start dates recorded yet'"/></div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-building-o"/>Headcount by department</div>
+                <div class="p-3"><SbChart type="'bar'" labels="deptChart.labels" series="deptChart.series" height="230" horizontal="true"/></div>
+            </div>
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-calendar"/>Coming up (30 days)</div>
+                <div class="o_pp_list">
+                    <div t-foreach="h.events" t-as="ev" t-key="ev_index" class="o_pp_li" t-on-click="() => this.openProfile(ev.employee.id)">
+                        <img class="o_pp_av sm" t-att-src="ev.employee.avatar"/>
+                        <div class="flex-grow-1"><b t-esc="ev.employee.name"/><div class="small text-muted"><i t-attf-class="fa {{ eventIcon(ev.kind) }} me-1"/><t t-esc="ev.text"/></div></div>
+                        <div class="text-end small"><b t-esc="dayLabel(ev.date)"/><div class="text-muted" t-esc="ev.ec"/></div>
+                    </div>
+                    <div t-if="!h.events.length" class="o_pp_empty">No birthdays or work anniversaries in the next 30 days.</div>
+                </div>
+            </div>
+            <div t-if="h.is_hr" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-bell-o"/>Needs attention</div>
+                <div class="o_pp_list">
+                    <div t-foreach="h.alerts" t-as="ev" t-key="ev_index" class="o_pp_li" t-on-click="() => this.openProfile(ev.employee.id)">
+                        <i t-attf-class="fa {{ eventIcon(ev.kind) }} o_pp_ico"/>
+                        <div class="flex-grow-1"><b t-esc="ev.employee.name"/><div class="small text-muted" t-esc="ev.text"/></div>
+                        <div class="text-end small"><b t-esc="dayLabel(ev.date)"/><div class="text-muted" t-esc="ev.ec"/></div>
+                    </div>
+                    <div t-if="!h.alerts.length" class="o_pp_empty"><i class="fa fa-check text-success me-1"/>Nothing due: probations, contracts, permits and documents are fine.</div>
+                </div>
+            </div>
+            <div t-if="h.is_hr" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-tasks"/>Records to complete</div>
+                <div class="o_pp_list">
+                    <div t-foreach="h.missing" t-as="m" t-key="m.label" class="o_pp_li" t-on-click="() => this.showMissing(m)">
+                        <div class="flex-grow-1" t-esc="m.label"/>
+                        <span class="o_pp_badge" t-esc="m.count + ' missing'"/>
+                    </div>
+                    <div t-if="!h.missing.length" class="o_pp_empty"><i class="fa fa-check text-success me-1"/>Every record is complete.</div>
+                </div>
+            </div>
+            <div t-if="h.by_type.length &gt; 1" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-id-badge"/>By employment type</div>
+                <div class="p-3"><SbChart type="'doughnut'" labels="typeChart.labels" series="typeChart.series" height="200"/></div>
+            </div>
+            <div t-if="h.is_hr" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-user-plus"/>Recently joined</div>
+                <div class="o_pp_list">
+                    <div t-foreach="h.recent" t-as="r" t-key="r.id" class="o_pp_li" t-on-click="() => this.openProfile(r.id)">
+                        <img class="o_pp_av sm" t-att-src="r.avatar"/>
+                        <div class="flex-grow-1"><b t-esc="r.name"/><div class="small text-muted" t-esc="joinTxt(r.job, r.department)"/></div>
+                        <div class="small text-muted" t-esc="r.ec"/>
+                    </div>
+                    <div t-if="!h.recent.length" class="o_pp_empty">No one joined this fiscal year yet.</div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ================================================================ directory -->
+    <t t-name="sonador_people.Directory">
+        <t t-set="d" t-value="state.dir"/>
+        <div class="o_pp_toolbar">
+            <input class="form-control o_pp_search" placeholder="Search name, position, department, email…" t-model="d.search" t-on-input="onDirFilter"/>
+            <select class="form-select w-auto" t-model="d.department" t-on-change="onDirFilter">
+                <option value="">All departments</option>
+                <option t-foreach="ctx.departments" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/>
+            </select>
+            <select class="form-select w-auto" t-model="d.type" t-on-change="onDirFilter">
+                <option value="">All types</option>
+                <option t-foreach="ctx.types" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/>
+            </select>
+            <select t-if="ctx.is_hr" class="form-select w-auto" t-model="d.status" t-on-change="onDirFilter">
+                <option value="active">Current staff</option><option value="left">Left</option><option value="all">Everyone</option>
+            </select>
+            <div class="btn-group btn-group-sm ms-auto">
+                <button t-attf-class="btn {{ d.view === 'cards' ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => d.view = 'cards'" title="Cards"><i class="fa fa-th-large"/></button>
+                <button t-attf-class="btn {{ d.view === 'list' ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => d.view = 'list'" title="List"><i class="fa fa-list"/></button>
+            </div>
+        </div>
+        <div t-if="d.label" class="o_pp_filterchip"><i class="fa fa-filter me-1"/><t t-esc="d.label"/> <a href="#" t-on-click.prevent="clearIds" class="ms-2">clear</a></div>
+        <div class="small text-muted mb-2"><t t-esc="d.rows.length"/> people</div>
+        <div t-if="d.view === 'cards'" class="o_pp_cards">
+            <div t-foreach="d.rows" t-as="r" t-key="r.id" t-attf-class="o_pp_person {{ r.active ? '' : 'left' }}" t-on-click="() => this.openProfile(r.id)">
+                <img class="o_pp_av lg" t-att-src="r.avatar"/>
+                <b t-esc="r.name"/>
+                <div class="o_pp_job" t-esc="r.job || '—'"/>
+                <div class="small text-muted" t-esc="r.department"/>
+                <div class="o_pp_contact">
+                    <a t-if="r.phone" t-att-href="'tel:' + r.phone" t-on-click.stop=""><i class="fa fa-phone"/></a>
+                    <a t-if="r.email" t-att-href="'mailto:' + r.email" t-on-click.stop=""><i class="fa fa-envelope-o"/></a>
+                    <span t-if="!r.active" class="o_pp_badge">Left</span>
+                </div>
+            </div>
+        </div>
+        <div t-else="" class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th/><th>Name</th><th>ID</th><th>Position</th><th>Department</th><th>Manager</th><th>Phone</th><th>Email</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="d.rows" t-as="r" t-key="r.id" t-on-click="() => this.openProfile(r.id)" t-attf-class="{{ r.active ? '' : 'left' }}">
+                        <td><img class="o_pp_av xs" t-att-src="r.avatar"/></td>
+                        <td><b t-esc="r.name"/></td><td class="text-muted" t-esc="r.code"/><td t-esc="r.job"/><td t-esc="r.department"/>
+                        <td t-esc="r.manager"/><td t-esc="r.phone"/><td t-esc="r.email"/>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div t-if="!d.rows.length" class="o_pp_card o_pp_empty p-4">No one matches.</div>
+    </t>
+
+    <!-- ================================================================ org chart -->
+    <t t-name="sonador_people.Org">
+        <div class="o_pp_toolbar">
+            <div class="small text-muted me-auto"><t t-esc="state.org.nodes.length"/> people · click a name to open, the arrow to open or close a team</div>
+            <button class="btn btn-sm btn-light border" t-on-click="() => this.expandAll(true)"><i class="fa fa-expand me-1"/>Open all</button>
+            <button class="btn btn-sm btn-light border" t-on-click="() => this.expandAll(false)"><i class="fa fa-compress me-1"/>Close all</button>
+        </div>
+        <div class="o_pp_card o_pp_orgwrap">
+            <ul class="o_pp_tree">
+                <t t-foreach="orgRoots" t-as="n" t-key="n.id">
+                    <OrgNode node="n" children="orgChildren" open="state.org.open" toggle.bind="toggleOrg" openProfile.bind="openProfile" depth="0"/>
+                </t>
+            </ul>
+            <div t-if="!orgRoots.length" class="o_pp_empty">No reporting lines yet: set each person's manager (profile, Change job or pay).</div>
+        </div>
+        <div t-if="orgUnplaced.length" class="o_pp_card mt-3">
+            <div class="o_pp_card_head"><i class="fa fa-question-circle-o"/>Not in the org chart yet: no manager set (<t t-esc="orgUnplaced.length"/>)</div>
+            <div class="o_pp_chips">
+                <div t-foreach="orgUnplaced" t-as="n" t-key="n.id" class="o_pp_pchip" t-on-click="() => this.openProfile(n.id)">
+                    <img class="o_pp_av xs" t-att-src="n.avatar"/><span><b t-esc="n.name"/><small t-esc="n.department"/></span>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_people.OrgNode">
+        <li>
+            <div class="o_pp_onode">
+                <img class="o_pp_av sm" t-att-src="props.node.avatar"/>
+                <div class="o_pp_onode_txt" t-on-click="() => props.openProfile(props.node.id)">
+                    <b t-esc="props.node.name"/>
+                    <div class="small text-muted"><t t-esc="joinTxt(props.node.job, props.node.department)"/></div>
+                </div>
+                <button t-if="kids.length" class="o_pp_otoggle" t-on-click="() => props.toggle(props.node.id, isOpen)">
+                    <i t-attf-class="fa {{ isOpen ? 'fa-chevron-up' : 'fa-chevron-down' }}"/> <t t-esc="count(props.node.id)"/>
+                </button>
+            </div>
+            <ul t-if="kids.length and isOpen">
+                <t t-foreach="kids" t-as="k" t-key="k.id">
+                    <OrgNode node="k" children="props.children" open="props.open" toggle="props.toggle" openProfile="props.openProfile" depth="props.depth + 1"/>
+                </t>
+            </ul>
+        </li>
+    </t>
+
+    <!-- ================================================================ profile -->
+    <t t-name="sonador_people.Profile">
+        <t t-set="c" t-value="prof.card"/>
+        <div class="o_pp_hero">
+            <img class="o_pp_av xl" t-att-src="c.avatar"/>
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h2 class="m-0" t-esc="c.name"/>
+                    <span t-if="c.code" class="o_pp_chip" t-esc="c.code"/>
+                    <span t-if="!c.active" class="o_pp_chip bad">Left <t t-esc="prof.header.left_ec"/></span>
+                    <span t-if="prof.job and prof.job.on_probation" class="o_pp_chip warn"><i class="fa fa-hourglass-half me-1"/>On probation until <t t-esc="prof.job.trial_end_ec"/></span>
+                </div>
+                <div class="o_pp_hero_job"><t t-esc="c.job || 'No position'"/><t t-if="c.department"> · <t t-esc="c.department"/></t></div>
+                <div class="o_pp_hero_meta">
+                    <span t-if="c.manager"><i class="fa fa-level-up"/> Reports to <a href="#" t-on-click.prevent="() => this.openProfile(c.manager_id)" t-esc="c.manager"/></span>
+                    <span t-if="prof.header.tenure"><i class="fa fa-clock-o"/> <t t-esc="prof.header.tenure.label"/> (since <t t-esc="prof.header.start_ec"/>)</span>
+                    <span t-if="isHR and !prof.header.start" class="o_pp_chip warn d-inline-flex align-items-center gap-2"><i class="fa fa-calendar"/>Start date missing: <input type="date" class="form-control form-control-sm" style="width:auto" t-on-change="(ev) => this.setStart(ev.target.value)"/></span>
+                    <span t-if="prof.header.type_label"><i class="fa fa-id-badge"/> <t t-esc="prof.header.type_label"/></span>
+                    <span t-if="c.phone"><i class="fa fa-phone"/> <a t-att-href="'tel:' + c.phone" t-esc="c.phone"/></span>
+                    <span t-if="c.email"><i class="fa fa-envelope-o"/> <a t-att-href="'mailto:' + c.email" t-esc="c.email"/></span>
+                </div>
+            </div>
+            <div t-if="isHR" class="d-flex flex-column gap-2">
+                <button class="btn btn-primary btn-sm" t-on-click="changeJob"><i class="fa fa-exchange me-1"/>Change job or pay</button>
+                <button t-if="prof.job and prof.job.on_probation" class="btn btn-light border btn-sm" t-on-click="confirmProbation"><i class="fa fa-check me-1"/>Confirm after probation</button>
+                <button t-if="c.active" class="btn btn-light border btn-sm text-danger" t-on-click="() => this.openPanel('leave')"><i class="fa fa-sign-out me-1"/>Record leaving</button>
+                <button class="btn btn-light border btn-sm" t-on-click="openFullRecord"><i class="fa fa-id-card-o me-1"/>Full record</button>
+            </div>
+        </div>
+
+        <div t-if="state.panel === 'leave'" class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-sign-out"/>Record leaving (<t t-esc="ctx.loc.labour_law"/>)</div>
+            <div class="o_pp_formgrid">
+                <label>Last day<input type="date" class="form-control" t-model="state.form.date"/></label>
+                <label>Reason<select class="form-select" t-model="state.form.reason_id"><option value="">—</option>
+                    <option t-foreach="state.reasons" t-as="r" t-key="r.id" t-att-value="r.id" t-esc="r.name"/></select></label>
+                <label class="wide">Note<input class="form-control" t-model="state.form.note" placeholder="Notice given, clearance, handover…"/></label>
+            </div>
+            <div class="o_pp_panel_foot">
+                <span class="small text-muted me-auto">Severance, notice pay and leave pay-out come with Payroll (phase 3).</span>
+                <button class="btn btn-light border" t-on-click="() => state.panel = null">Cancel</button>
+                <button class="btn btn-danger" t-on-click="saveLeave">Record leaving</button>
+            </div>
+        </div>
+
+        <div class="o_pp_tabs">
+            <button t-foreach="tabs" t-as="t" t-key="t[0]" t-att-class="state.tab === t[0] ? 'active' : ''" t-on-click="() => this.setTab(t[0])">
+                <i t-attf-class="fa {{ t[2] }}"/> <t t-esc="t[1]"/>
+            </button>
+        </div>
+
+        <t t-if="state.tab === 'overview'" t-call="sonador_people.TabOverview"/>
+        <t t-if="state.tab === 'job'" t-call="sonador_people.TabJob"/>
+        <t t-if="['contacts', 'documents', 'assets'].includes(state.tab)" t-call="sonador_people.TabRows"/>
+        <t t-if="state.tab === 'timeline'">
+            <div class="o_pp_card p-3">
+                <div class="o_pp_timeline">
+                    <div t-foreach="prof.timeline" t-as="i" t-key="i_index" class="o_pp_tl">
+                        <div class="o_pp_tl_dot"><i t-attf-class="fa {{ i.icon }}"/></div>
+                        <div><b t-esc="i.text"/><div class="small text-muted"><t t-esc="i.ec"/> · <t t-esc="i.date"/></div></div>
+                    </div>
+                    <div t-if="!prof.timeline.length" class="o_pp_empty">Nothing recorded yet.</div>
+                </div>
+            </div>
+        </t>
+        <t t-if="state.tab === 'team'">
+            <div class="o_pp_cards">
+                <div t-foreach="prof.reports" t-as="r" t-key="r.id" class="o_pp_person" t-on-click="() => this.openProfile(r.id)">
+                    <img class="o_pp_av lg" t-att-src="r.avatar"/><b t-esc="r.name"/><div class="o_pp_job" t-esc="r.job"/>
+                </div>
+            </div>
+        </t>
+    </t>
+
+    <t t-name="sonador_people.TabOverview">
+        <t t-if="!prof.personal">
+            <div class="o_pp_card p-4 text-muted">Contact details are shown above. Personal details are visible to HR and the employee.</div>
+        </t>
+        <t t-else="">
+            <t t-set="p" t-value="state.edit or prof.personal"/>
+            <t t-set="ed" t-value="!!state.edit"/>
+            <div class="d-flex justify-content-end gap-2 mb-2" t-if="canEdit">
+                <button t-if="!ed" class="btn btn-light border btn-sm" t-on-click="startEdit"><i class="fa fa-pencil me-1"/>Edit</button>
+                <t t-else="">
+                    <button class="btn btn-light border btn-sm" t-on-click="() => state.edit = null">Cancel</button>
+                    <button class="btn btn-primary btn-sm" t-on-click="saveEdit"><i class="fa fa-check me-1"/>Save</button>
+                </t>
+            </div>
+            <div class="o_pp_grid">
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-id-card-o"/>Registration (Ethiopia)</div>
+                    <div class="o_pp_fields">
+                        <t t-foreach="[['sb_code','Employee ID'],['sb_tin','TIN'],['sb_pension_no',ctx.loc.pension_no],['sb_fayda',ctx.loc.national_id],['passport_id','Passport no.'],['permit_no','Work permit no.']]" t-as="f" t-key="f[0]">
+                            <label><span t-esc="f[1]"/>
+                                <input t-if="ed and isHR" class="form-control form-control-sm" t-att-value="state.edit[f[0]] || ''" t-on-input="(ev) => this.setEdit(f[0], ev.target.value)"/>
+                                <b t-else="" t-esc="p[f[0]] || '—'"/>
+                            </label>
+                        </t>
+                        <label><span>In the pension scheme</span>
+                            <input t-if="ed and isHR" type="checkbox" class="form-check-input" t-model="state.edit.sb_pension"/>
+                            <b t-else="" t-esc="p.sb_pension ? 'Yes' : 'No'"/></label>
+                        <label><span>Work permit expires</span>
+                            <input t-if="ed and isHR" type="date" class="form-control form-control-sm" t-model="state.edit.work_permit_expiration_date"/>
+                            <b t-else="" t-esc="p.work_permit_expiration_date || '—'"/></label>
+                    </div>
+                </div>
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-user"/>Personal</div>
+                    <div class="o_pp_fields">
+                        <label><span>Date of birth</span>
+                            <input t-if="ed and isHR" type="date" class="form-control form-control-sm" t-model="state.edit.birthday"/>
+                            <b t-else=""><t t-esc="p.birthday_ec || '—'"/><t t-if="p.age !== null and p.age !== undefined"> (<t t-esc="p.age"/>)</t></b></label>
+                        <label><span>Sex</span>
+                            <select t-if="ed and isHR" class="form-select form-select-sm" t-model="state.edit.sex"><option value="">—</option><option value="male">Male</option><option value="female">Female</option></select>
+                            <b t-else="" t-esc="p.sex === 'male' ? 'Male' : p.sex === 'female' ? 'Female' : '—'"/></label>
+                        <label><span>Marital status</span>
+                            <select t-if="ed" class="form-select form-select-sm" t-model="state.edit.marital"><option value="single">Single</option><option value="married">Married</option><option value="widower">Widowed</option><option value="divorced">Divorced</option></select>
+                            <b t-else="" t-esc="p.marital || '—'"/></label>
+                        <label><span>Children</span>
+                            <input t-if="ed" type="number" min="0" class="form-control form-control-sm" t-model="state.edit.children"/>
+                            <b t-else="" t-esc="p.children || 0"/></label>
+                        <label><span>Private phone</span>
+                            <input t-if="ed" class="form-control form-control-sm" t-model="state.edit.private_phone"/>
+                            <b t-else="" t-esc="p.private_phone || '—'"/></label>
+                        <label><span>Private email</span>
+                            <input t-if="ed" class="form-control form-control-sm" t-model="state.edit.private_email"/>
+                            <b t-else="" t-esc="p.private_email || '—'"/></label>
+                        <label><span>Education</span>
+                            <input t-if="ed and isHR" class="form-control form-control-sm" t-model="state.edit.study_field" placeholder="Field of study"/>
+                            <b t-else=""><t t-esc="p.study_field || '—'"/><t t-if="p.study_school">, <t t-esc="p.study_school"/></t></b></label>
+                    </div>
+                </div>
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-map-marker"/>Address</div>
+                    <div class="o_pp_fields">
+                        <label><span>Region</span>
+                            <select t-if="ed" class="form-select form-select-sm" t-model="state.edit.sb_region"><option value="">—</option>
+                                <option t-foreach="ctx.regions" t-as="r" t-key="r.id" t-att-value="r.id" t-esc="r.name"/></select>
+                            <b t-else="" t-esc="regionLabel(p.sb_region) || '—'"/></label>
+                        <t t-foreach="[['sb_subcity',ctx.loc.addr[0]],['sb_woreda',ctx.loc.addr[1]],['sb_kebele',ctx.loc.addr[2]],['sb_house_no',ctx.loc.addr[3]]]" t-as="f" t-key="f[0]">
+                            <label><span t-esc="f[1]"/>
+                                <input t-if="ed" class="form-control form-control-sm" t-att-value="state.edit[f[0]] || ''" t-on-input="(ev) => this.setEdit(f[0], ev.target.value)"/>
+                                <b t-else="" t-esc="p[f[0]] || '—'"/></label>
+                        </t>
+                    </div>
+                </div>
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-bank"/>Salary bank account</div>
+                    <div class="o_pp_fields">
+                        <label><span>Bank</span>
+                            <input t-if="ed and isHR" class="form-control form-control-sm" t-model="state.edit.bank_name" placeholder="e.g. Commercial Bank of Ethiopia"/>
+                            <b t-else="" t-esc="(prof.personal.bank and prof.personal.bank.bank) || '—'"/></label>
+                        <label><span>Account no.</span>
+                            <input t-if="ed and isHR" class="form-control form-control-sm" t-model="state.edit.bank_acc"/>
+                            <b t-else="" t-esc="(prof.personal.bank and prof.personal.bank.acc) || '—'"/></label>
+                        <label t-if="ed and isHR"><span>Work email</span><input class="form-control form-control-sm" t-model="state.edit.work_email"/></label>
+                        <label t-if="ed"><span>Mobile</span><input class="form-control form-control-sm" t-model="state.edit.mobile_phone"/></label>
+                    </div>
+                </div>
+                <div t-if="state.login" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-key"/>Login</div>
+                    <div class="o_pp_fields">
+                        <label><span>Signs in as</span>
+                            <b t-if="state.login.user" t-esc="state.login.user.login"/><b t-else="" class="o_pp_badtxt">No login</b></label>
+                        <label><span>Link a login</span>
+                            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setLogin(ev.target.value)">
+                                <option value="" t-att-selected="!state.login.user">— none —</option>
+                                <option t-if="state.login.user" t-att-value="state.login.user.id" selected="selected"><t t-esc="state.login.user.name"/> (<t t-esc="state.login.user.login"/>)</option>
+                                <t t-foreach="state.login.choices" t-as="u" t-key="u.id"><option t-if="!state.login.user or u.id !== state.login.user.id" t-att-value="u.id" t-esc="u.label"/></t>
+                            </select></label>
+                        <label t-if="!state.login.user"><span>Or</span><button class="btn btn-light border btn-sm" t-on-click="newLogin"><i class="fa fa-plus me-1"/>Create a login</button></label>
+                    </div>
+                    <div class="o_pp_empty small pt-0">The login is how this person clocks in, asks for leave and sees their payslips.</div>
+                </div>
+            </div>
+        </t>
+    </t>
+
+    <t t-name="sonador_people.TabJob">
+        <t t-set="j" t-value="prof.job"/>
+        <div t-if="state.panel === 'change'" class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-exchange"/>Change job or pay: a new record from the date, the history stays</div>
+            <div class="o_pp_formgrid">
+                <label>From<input type="date" class="form-control" t-model="state.form.date"/></label>
+                <label>Reason<select class="form-select" t-model="state.form.reason">
+                    <option t-foreach="ctx.reasons" t-as="r" t-key="r.id" t-att-value="r.id" t-esc="r.name"/></select></label>
+                <label>Position<input class="form-control" list="pp_jobs" t-model="state.form.job"/>
+                    <datalist id="pp_jobs"><option t-foreach="ctx.jobs" t-as="x" t-key="x.id" t-att-value="x.name"/></datalist></label>
+                <label>Department<select class="form-select" t-model="state.form.department_id"><option value="">—</option>
+                    <option t-foreach="ctx.departments" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></label>
+                <label>Manager<select class="form-select" t-model="state.form.parent_id"><option value="">—</option>
+                    <option t-foreach="state.org.nodes" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></label>
+                <label>Grade<input class="form-control" t-model="state.form.grade"/></label>
+                <label>Basic salary<input type="number" class="form-control" t-model="state.form.wage"/></label>
+                <label>House allowance<input type="number" class="form-control" t-model="state.form.house"/></label>
+                <label>Position allowance<input type="number" class="form-control" t-model="state.form.position"/></label>
+                <label>Cash indemnity<input type="number" class="form-control" t-model="state.form.cash"/></label>
+                <label>Other taxable allowances<input type="number" class="form-control" t-model="state.form.taxable"/></label>
+                <label>Non-taxable allowances<input type="number" class="form-control" t-model="state.form.nontaxable"/></label>
+                <label>Contract ends (fixed term)<input type="date" class="form-control" t-model="state.form.contract_end"/></label>
+            </div>
+            <div class="o_pp_panel_foot">
+                <button class="btn btn-light border" t-on-click="() => state.panel = null">Cancel</button>
+                <button class="btn btn-primary" t-on-click="saveChange"><i class="fa fa-check me-1"/>Record change</button>
+            </div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-briefcase"/>Current job</div>
+                <div class="o_pp_fields">
+                    <label><span>Start date</span>
+                        <t t-if="isHR"><span class="d-flex gap-1"><input type="date" class="form-control form-control-sm" t-att-value="j.contract_start or ''" t-on-change="(ev) => this.setStart(ev.target.value)"/></span></t>
+                        <b t-else="" t-esc="prof.header.start_ec or '—'"/></label>
+                    <label><span>Position</span><b t-esc="j.job || '—'"/></label>
+                    <label><span>Department</span><b t-esc="prof.card.department || '—'"/></label>
+                    <label><span>Manager</span><b t-esc="prof.card.manager || '—'"/></label>
+                    <label><span>Grade</span><b t-esc="j.grade || '—'"/></label>
+                    <label><span>Employment type</span><b t-esc="prof.header.type_label || '—'"/></label>
+                    <label><span>Contract</span><b><t t-esc="j.contract_end ? 'Fixed term until ' + j.contract_end : 'Indefinite'"/></b></label>
+                    <label><span>Probation ends</span><b><t t-esc="j.trial_end_ec || '—'"/><t t-if="j.on_probation"> (on probation)</t></b></label>
+                    <label><span>Working time</span><b t-esc="j.calendar || '—'"/></label>
+                </div>
+            </div>
+            <div t-if="prof.history" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-money"/>Current pay (monthly)</div>
+                <t t-set="cur" t-value="prof.history.find((h) => h.current) or {}"/>
+                <div class="o_pp_fields">
+                    <label><span>Basic salary</span><b t-esc="money(cur.wage)"/></label>
+                    <label><span>House allowance</span><b t-esc="money(cur.house)"/></label>
+                    <label><span>Position allowance</span><b t-esc="money(cur.position)"/></label>
+                    <label><span>Cash indemnity</span><b t-esc="money(cur.cash)"/></label>
+                    <label><span>Other taxable allowances</span><b t-esc="money(cur.taxable)"/></label>
+                    <label><span>Non-taxable allowances</span><b t-esc="money(cur.nontaxable)"/></label>
+                    <label><span>Gross</span><b class="o_pp_big" t-esc="money(gross(cur))"/></label>
+                </div>
+            </div>
+        </div>
+        <div t-if="prof.history" class="o_pp_card mt-3">
+            <div class="o_pp_card_head"><i class="fa fa-history"/>Job and pay history</div>
+            <table class="o_pp_table">
+                <thead><tr><th>From</th><th>Reason</th><th>Position</th><th>Department</th><th>Grade</th><th class="num">Basic</th><th class="num">House</th><th class="num">Position</th><th class="num">Cash indem.</th><th class="num">Other taxable</th><th class="num">Non-taxable</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="prof.history" t-as="h" t-key="h.id" t-attf-class="{{ h.current ? 'cur' : '' }}">
+                        <td><b t-esc="h.ec"/><div class="small text-muted" t-esc="h.date"/></td>
+                        <td t-esc="h.reason"/><td t-esc="h.job"/><td t-esc="h.department"/><td t-esc="h.grade"/>
+                        <td class="num" t-esc="money(h.wage)"/><td class="num" t-esc="money(h.house)"/><td class="num" t-esc="money(h.position)"/><td class="num" t-esc="money(h.cash)"/>
+                        <td class="num" t-esc="money(h.taxable)"/><td class="num" t-esc="money(h.nontaxable)"/>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <t t-name="sonador_people.TabRows">
+        <t t-set="kind" t-value="state.tab"/>
+        <t t-set="editing" t-value="state.rows and state.rows.kind === kind"/>
+        <t t-set="items" t-value="editing ? state.rows.items : prof[kind]"/>
+        <div class="d-flex justify-content-end gap-2 mb-2" t-if="canEdit and (kind !== 'assets' or isHR)">
+            <button t-if="!editing" class="btn btn-light border btn-sm" t-on-click="() => this.editRows(kind)"><i class="fa fa-pencil me-1"/>Edit</button>
+            <t t-else="">
+                <button class="btn btn-light border btn-sm" t-on-click="addRow"><i class="fa fa-plus me-1"/>Add</button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => state.rows = null">Cancel</button>
+                <button class="btn btn-primary btn-sm" t-on-click="saveRows"><i class="fa fa-check me-1"/>Save</button>
+            </t>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <t t-if="kind === 'contacts'">
+                    <thead><tr><th>Name</th><th>Relationship</th><th>Phone</th><th>Other phone</th><th>Address</th><th>Primary</th><th t-if="editing"/></tr></thead>
+                    <tbody>
+                        <tr t-foreach="items" t-as="r" t-key="r_index">
+                            <t t-if="editing">
+                                <td><input class="form-control form-control-sm" t-model="r.name"/></td>
+                                <td><select class="form-select form-select-sm" t-model="r.relationship">
+                                    <t t-foreach="[['spouse','Spouse'],['parent','Parent'],['child','Child'],['sibling','Sibling'],['relative','Relative'],['friend','Friend'],['guarantor','Guarantor'],['other','Other']]" t-as="o" t-key="o[0]"><option t-att-value="o[0]" t-esc="o[1]"/></t></select></td>
+                                <td><input class="form-control form-control-sm" t-model="r.phone"/></td>
+                                <td><input class="form-control form-control-sm" t-model="r.phone2"/></td>
+                                <td><input class="form-control form-control-sm" t-model="r.address"/></td>
+                                <td><input type="checkbox" class="form-check-input" t-model="r.primary"/></td>
+                                <td><button class="btn btn-link text-danger p-0" t-on-click="() => this.removeRow(r_index)"><i class="fa fa-trash"/></button></td>
+                            </t>
+                            <t t-else="">
+                                <td><b t-esc="r.name"/></td><td t-esc="r.relationship"/><td t-esc="r.phone"/><td t-esc="r.phone2"/><td t-esc="r.address"/>
+                                <td><i t-if="r.primary" class="fa fa-star text-warning"/></td>
+                            </t>
+                        </tr>
+                    </tbody>
+                </t>
+                <t t-if="kind === 'documents'">
+                    <thead><tr><th>Type</th><th>Number / title</th><th>Issued</th><th>Expires</th><th>File</th><th>Note</th><th t-if="editing"/></tr></thead>
+                    <tbody>
+                        <tr t-foreach="items" t-as="r" t-key="r_index" t-att-class="editing ? '' : docClass(r.state)">
+                            <t t-if="editing">
+                                <td><select class="form-select form-select-sm" t-model="r.doc_type"><option t-foreach="ctx.doc_types" t-as="o" t-key="o.id" t-att-value="o.id" t-esc="o.name"/></select></td>
+                                <td><input class="form-control form-control-sm" t-model="r.name"/></td>
+                                <td><input type="date" class="form-control form-control-sm" t-model="r.issue_date"/></td>
+                                <td><input type="date" class="form-control form-control-sm" t-model="r.expiry_date"/></td>
+                                <td><input type="file" class="form-control form-control-sm" t-on-change="(ev) => this.onFile(r, ev)"/><small t-if="r.file" class="text-muted" t-esc="r.file.name"/></td>
+                                <td><input class="form-control form-control-sm" t-model="r.note"/></td>
+                                <td><button class="btn btn-link text-danger p-0" t-on-click="() => this.removeRow(r_index)"><i class="fa fa-trash"/></button></td>
+                            </t>
+                            <t t-else="">
+                                <td><b t-esc="r.type_label"/></td><td t-esc="r.name"/><td t-esc="r.issue_date"/>
+                                <td><t t-esc="r.expiry_date"/> <span t-if="r.state === 'expired'" class="o_pp_badge bad">expired</span><span t-if="r.state === 'expiring'" class="o_pp_badge warn">expiring</span></td>
+                                <td><a t-if="r.file" t-att-href="'/web/content/' + r.file.id + '?download=true'"><i class="fa fa-download me-1"/><t t-esc="r.file.name"/></a></td>
+                                <td t-esc="r.note"/>
+                            </t>
+                        </tr>
+                    </tbody>
+                </t>
+                <t t-if="kind === 'assets'">
+                    <thead><tr><th>Item</th><th>Category</th><th>Serial / plate</th><th>Issued</th><th>Returned</th><th class="num">Value</th><th>Note</th><th t-if="editing"/></tr></thead>
+                    <tbody>
+                        <tr t-foreach="items" t-as="r" t-key="r_index">
+                            <t t-if="editing">
+                                <td><input class="form-control form-control-sm" t-model="r.name"/></td>
+                                <td><select class="form-select form-select-sm" t-model="r.category">
+                                    <t t-foreach="[['laptop','Laptop / computer'],['phone','Phone / SIM'],['vehicle','Vehicle'],['keys','Keys / access card'],['uniform','Uniform / PPE'],['tools','Tools'],['other','Other']]" t-as="o" t-key="o[0]"><option t-att-value="o[0]" t-esc="o[1]"/></t></select></td>
+                                <td><input class="form-control form-control-sm" t-model="r.serial"/></td>
+                                <td><input type="date" class="form-control form-control-sm" t-model="r.issued_on"/></td>
+                                <td><input type="date" class="form-control form-control-sm" t-model="r.returned_on"/></td>
+                                <td><input type="number" class="form-control form-control-sm" t-model="r.value"/></td>
+                                <td><input class="form-control form-control-sm" t-model="r.note"/></td>
+                                <td><button class="btn btn-link text-danger p-0" t-on-click="() => this.removeRow(r_index)"><i class="fa fa-trash"/></button></td>
+                            </t>
+                            <t t-else="">
+                                <td><b t-esc="r.name"/></td><td t-esc="r.category"/><td t-esc="r.serial"/><td t-esc="r.issued_on"/>
+                                <td><t t-esc="r.returned_on"/><span t-if="!r.returned_on" class="o_pp_badge warn">with employee</span></td>
+                                <td class="num" t-esc="money(r.value)"/><td t-esc="r.note"/>
+                            </t>
+                        </tr>
+                    </tbody>
+                </t>
+            </table>
+            <div t-if="!items.length" class="o_pp_empty p-3">Nothing recorded yet<t t-if="canEdit">: click Edit, then Add</t>.</div>
+        </div>
+    </t>
+
+    <!-- ================================================================ hire -->
+    <t t-name="sonador_people.Hire">
+        <t t-set="h" t-value="state.hire"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-user-plus"/>Hire someone</div>
+            <div class="o_pp_formgrid">
+                <label class="wide">Full name<input class="form-control" t-model="h.name" placeholder="e.g. Abebe Kebede Tesfaye"/></label>
+                <label>Start date<input type="date" class="form-control" t-model="h.start"/></label>
+                <label>Employment type<select class="form-select" t-model="h.type"><option t-foreach="ctx.types" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></label>
+                <label>Position<input class="form-control" list="pp_jobs2" t-model="h.job"/>
+                    <datalist id="pp_jobs2"><option t-foreach="ctx.jobs" t-as="x" t-key="x.id" t-att-value="x.name"/></datalist></label>
+                <label>Department<select class="form-select" t-model="h.department_id"><option value="">—</option>
+                    <option t-foreach="ctx.departments" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></label>
+                <label>Manager<select class="form-select" t-model="h.parent_id"><option value="">—</option>
+                    <option t-foreach="state.org.nodes" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></label>
+                <label>Contract ends (fixed term only)<input type="date" class="form-control" t-model="h.contract_end"/></label>
+                <label>Basic salary<input type="number" class="form-control" t-model="h.wage"/></label>
+                <label>House allowance<input type="number" class="form-control" t-model="h.house"/></label>
+                <label>Position allowance<input type="number" class="form-control" t-model="h.position"/></label>
+                <label>Cash indemnity<input type="number" class="form-control" t-model="h.cash"/></label>
+                <label>Other taxable allowances<input type="number" class="form-control" t-model="h.taxable"/></label>
+                <label>Non-taxable allowances<input type="number" class="form-control" t-model="h.nontaxable"/></label>
+                <label>Work email<input class="form-control" t-model="h.email"/></label>
+                <label>Mobile<input class="form-control" t-model="h.phone"/></label>
+            </div>
+            <div class="o_pp_panel_foot">
+                <span class="small text-muted me-auto"><i class="fa fa-info-circle me-1"/><t t-esc="ctx.loc.probation_note"/></span>
+                <button class="btn btn-light border" t-on-click="() => this.go('home')">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="!h.name" t-on-click="saveHire"><i class="fa fa-check me-1"/>Hire</button>
+            </div>
+        </div>
+    </t>
+</templates>

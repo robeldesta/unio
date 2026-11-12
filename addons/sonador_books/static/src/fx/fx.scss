@@ -1,0 +1,10 @@
+.o_fx {
+    .o_fx_rates { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .o_fx_card { padding: 14px 16px; }
+    .o_fx_in { min-width: 9rem; }
+    .o_fx_card input[type=date] { min-width: 8.5rem; }
+    .o_fx_big { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .o_fx_h2 { font-size: 1.15rem; font-weight: 700; margin: 8px 0 4px; }
+    .o_fx_wrap { overflow-x: auto; }
+    table { font-variant-numeric: tabular-nums; }
+}

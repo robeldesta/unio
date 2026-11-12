@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_site_mgr,unio.site manager,model_unio_site,sales_team.group_sale_manager,1,1,1,0
+access_site_user,unio.site user,model_unio_site,base.group_user,1,0,0,0
+access_page_mgr,unio.site.page manager,model_unio_site_page,sales_team.group_sale_manager,1,1,1,1
+access_page_user,unio.site.page user,model_unio_site_page,base.group_user,1,0,0,0
+access_cat_mgr,unio.site.category manager,model_unio_site_category,sales_team.group_sale_manager,1,1,1,1
+access_cat_user,unio.site.category user,model_unio_site_category,base.group_user,1,0,0,0
+access_img_mgr,unio.site.image manager,model_unio_site_image,sales_team.group_sale_salesman,1,1,1,1
+access_msg_user,unio.site.message user,model_unio_site_message,sales_team.group_sale_salesman,1,1,0,0
+access_msg_mgr,unio.site.message manager,model_unio_site_message,sales_team.group_sale_manager,1,1,1,1
+access_hit_user,unio.site.hit user,model_unio_site_hit,base.group_user,1,0,0,0

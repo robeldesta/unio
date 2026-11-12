@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_designer" model="ir.actions.client">
+        <field name="name">Reports</field>
+        <field name="tag">sonador_report_designer.app</field>
+    </record>
+    <menuitem id="menu_report_designer" name="My reports" parent="sonador_planning.menu_planning_root" action="action_report_designer" sequence="15"/>
+
+    <record id="view_rep_template_form" model="ir.ui.view">
+        <field name="name">sb.rep.template.form</field>
+        <field name="model">sb.rep.template</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" placeholder="e.g. Commercial manager weekly report"/></h1></div>
+                    <group>
+                        <group><field name="department_ids" widget="many2many_tags"/></group>
+                        <group><field name="employee_ids" widget="many2many_tags"/><field name="group_ids" widget="many2many_tags"/><field name="active"/></group>
+                    </group>
+                    <field name="section_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="title"/>
+                            <field name="prompt"/>
+                            <field name="block_codes"/>
+                            <field name="required"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_rep_templates" model="ir.actions.act_window">
+        <field name="name">Report templates</field>
+        <field name="res_model">sb.rep.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_rep_templates" name="Report templates" parent="sonador_planning.menu_planning_root" action="action_rep_templates"
+              sequence="90" groups="sonador_books.group_sb_manager"/>
+    <record id="company_settings_reports" model="ir.ui.view">
+        <field name="name">res.company.form.sb.reports</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="sonador_books.sb_company_settings_form"/>
+        <field name="arch" type="xml">
+            <group name="sb_numbering" position="after">
+                <group string="Reports">
+                    <field name="sb_rep_reader_ids" widget="many2many_tags"/>
+                </group>
+            </group>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_bank_rec_list" model="ir.ui.view">
+        <field name="name">sb.bank.rec.list</field>
+        <field name="model">sb.bank.rec</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'done'">
+                <field name="date"/>
+                <field name="date_ec"/>
+                <field name="account_id"/>
+                <field name="statement_balance"/>
+                <field name="difference"/>
+                <field name="unexplained" string="Not explained" decoration-danger="unexplained" optional="show"/>
+                <field name="state" widget="badge" decoration-success="state == 'done'" decoration-info="state == 'draft'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_bank_rec_form" model="ir.ui.view">
+        <field name="name">sb.bank.rec.form</field>
+        <field name="model">sb.bank.rec</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_load" type="object" string="Load items" invisible="state != 'draft'"/>
+                    <button name="action_finish" type="object" string="Finish" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_print" type="object" string="Reconciliation report"/>
+                    <button name="action_reopen" type="object" string="Reopen" invisible="state != 'done'"
+                            confirm="Reopen this reconciliation? Its items become uncleared again until you finish it again." confirm-label="Reopen"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="state != 'done' or not unexplained">
+                        Reconciled, but <field name="unexplained" class="oe_inline fw-bold" readonly="1"/> does not agree with the books.
+                        It is carried into the next reconciliation of this account, where it is cleared with "Clear carried difference".
+                    </div>
+                    <div class="oe_title">
+                        <span class="o_form_label">Account Reconciliation</span>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <p class="text-muted" invisible="state != 'draft'">Enter the statement date and ending balance, then tick every item that
+                        appears on the bank statement. When the unreconciled difference is zero, press Finish. Or import the
+                        statement file (CSV, Excel or the bank's PDF) and the items are matched for you.</p>
+                    <group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="account_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="date_ec"/>
+                        </group>
+                        <group>
+                            <field name="opening_balance"/>
+                            <field name="statement_balance" readonly="state != 'draft'"/>
+                            <field name="difference" decoration-danger="difference != 0" decoration-success="difference == 0" class="fw-bold"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="On the statement">
+                            <field name="cleared_in"/>
+                            <field name="cleared_out"/>
+                            <field name="cleared_balance"/>
+                        </group>
+                        <group string="Not yet on the statement">
+                            <field name="outstanding_in"/>
+                            <field name="outstanding_out"/>
+                        </group>
+                    </group>
+                    <group string="Proof to the books">
+                        <group>
+                            <field name="gl_balance" string="Balance per books"/>
+                            <field name="reconciled_balance"/>
+                        </group>
+                        <group>
+                            <field name="late_amount" invisible="not late_amount"
+                                   decoration-warning="late_amount"/>
+                            <label for="carried_diff" invisible="not carried_diff" string="Carried from the last reconciliation"/>
+                            <div invisible="not carried_diff">
+                                <field name="carried_diff" decoration-warning="carried_open" class="oe_inline" nolabel="1"/>
+                                <div class="text-muted small" invisible="not carried_open">not explained in
+                                    <field name="carry_from_id" class="oe_inline" readonly="1"/></div>
+                                <div class="text-success small" invisible="carried_open">cleared by
+                                    <field name="carry_voucher_ids" widget="many2many_tags" class="oe_inline" readonly="1"/></div>
+                            </div>
+                            <field name="carried_open" invisible="1"/>
+                            <div colspan="2" class="text-end" invisible="not carried_open or state != 'draft'">
+                                <button name="action_clear_carried" type="object" string="Clear carried difference" class="btn-secondary"
+                                        icon="fa-eraser" groups="sonador_books.group_sb_accountant"
+                                        confirm="Book the carried difference to the bank charges account, dated in this statement's period (or the first open day)? The entry is logged here and on the earlier reconciliation." confirm-label="Clear the difference"/>
+                            </div>
+                            <field name="unexplained" decoration-danger="unexplained" decoration-success="not unexplained" class="fw-bold"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Items to tick" name="items">
+                            <div class="mb-2" invisible="state != 'draft'">
+                                <button name="action_clear_all" type="object" string="Tick all" class="btn-link"/>
+                                <button name="action_clear_none" type="object" string="Untick all" class="btn-link"/>
+                                <span class="ms-3 text-muted">Tick everything up to</span>
+                                <field name="tick_until" class="oe_inline ms-1" style="width: 9em"/>
+                                <button name="action_tick_until" type="object" string="Tick" class="btn-link"/>
+                            </div>
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" create="0" decoration-muted="not cleared" limit="500">
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="move_line_id" column_invisible="1"/>
+                                    <field name="cleared" widget="boolean_toggle" options="{'autosave': false}"/>
+                                    <field name="date" readonly="1"/>
+                                    <field name="move_name" readonly="1"/>
+                                    <field name="ref" readonly="1"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="partner_id" readonly="1" optional="show"/>
+                                    <field name="cheque_row_id" readonly="1" optional="show" string="Issued cheque (not yet presented)"/>
+                                    <field name="deposit" readonly="1" sum="Deposits"/>
+                                    <field name="withdrawal" readonly="1" sum="Withdrawals"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Posted after reconciling" name="late" invisible="not late_line_ids">
+                            <p class="text-muted">Entries on this bank account dated inside this reconciliation that are not in it:
+                                posted, or back-dated, after it was reconciled. The next reconciliation loads them as outstanding.
+                                If this statement already shows one, reopen this reconciliation and tick it.</p>
+                            <field name="late_line_ids" readonly="1">
+                                <list>
+                                    <field name="date"/>
+                                    <field name="move_name" string="Voucher"/>
+                                    <field name="ref" string="Reference"/>
+                                    <field name="name"/>
+                                    <field name="partner_id" optional="show"/>
+                                    <field name="balance" string="Amount" sum="Total"/>
+                                    <field name="create_date" string="Entered on" optional="show"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Import statement" name="statement">
+                            <group invisible="state != 'draft'">
+                                <group>
+                                    <field name="statement_file" filename="statement_filename"/>
+                                    <field name="statement_filename" invisible="1"/>
+                                </group>
+                                <group>
+                                    <button name="action_import" type="object" string="Import and match" class="btn-primary"/>
+                                    <button name="action_match" type="object" string="Match again" class="btn-link"/>
+                                </group>
+                            </group>
+                            <p class="text-muted small" invisible="state != 'draft'">A PDF statement works when it shows a running balance (most Ethiopian banks do). Any CSV or Excel export works if it has a date column and either
+                                an amount column or debit and credit columns; description, reference and balance are used when present.</p>
+                            <field name="stmt_ids" readonly="state != 'draft'">
+                                <list editable="bottom" decoration-warning="not matched_line_id" decoration-success="matched_line_id">
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="rec_id" column_invisible="1"/>
+                                    <field name="date"/>
+                                    <field name="description"/>
+                                    <field name="reference"/>
+                                    <field name="amount" sum="Net"/>
+                                    <field name="matched_line_id" options="{'no_create': True}"/>
+                                    <field name="status"/>
+                                    <field name="account_id" options="{'no_create': True}" optional="show"/>
+                                </list>
+                            </field>
+                            <div invisible="state != 'draft'">
+                                <button name="action_create_from_statement" type="object" string="Create vouchers for unmatched lines"
+                                        class="btn-secondary" confirm="Post a receipt or payment for every statement line that is not in the books?" confirm-label="Create vouchers"/>
+                            </div>
+                        </page>
+                        <page string="Charges and interest" name="adjust">
+                            <p class="text-muted">Bank charges and interest that you only learn about from the statement. Posting them
+                                creates the vouchers and ticks them straight away.</p>
+                            <group>
+                                <group>
+                                    <field name="charges" readonly="state != 'draft'"/>
+                                    <field name="charges_account_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                                </group>
+                                <group>
+                                    <field name="interest" readonly="state != 'draft'"/>
+                                    <field name="interest_account_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                                </group>
+                            </group>
+                            <button name="action_post_adjustments" type="object" string="Post charges and interest" class="btn-secondary"
+                                    invisible="state != 'draft'"/>
+                            <field name="adjust_voucher_ids" readonly="1">
+                                <list><field name="name"/><field name="date"/><field name="memo"/><field name="amount_cash"/></list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_bank_rec" model="ir.actions.act_window">
+        <field name="name">Reconcile Accounts</field>
+        <field name="res_model">sb.bank.rec</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Reconcile a bank account</p>
+            <p>One reconciliation per bank statement. Tick what the bank has cleared, or import the statement.</p></field>
+    </record>
+</odoo>

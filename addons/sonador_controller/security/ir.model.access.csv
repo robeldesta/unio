@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ctl_finding_auditor,ctl.finding auditor,model_ctl_finding,sonador_books.group_sb_auditor,1,0,0,0
+access_ctl_finding_accountant,ctl.finding accountant,model_ctl_finding,sonador_books.group_sb_accountant,1,1,0,0
+access_ctl_finding_manager,ctl.finding manager,model_ctl_finding,sonador_books.group_sb_manager,1,1,1,1
+access_ctl_evidence_auditor,ctl.evidence auditor,model_ctl_evidence,sonador_books.group_sb_auditor,1,0,0,0
+access_ctl_evidence_manager,ctl.evidence manager,model_ctl_evidence,sonador_books.group_sb_manager,1,1,1,1
+access_ctl_run_auditor,ctl.run auditor,model_ctl_run,sonador_books.group_sb_auditor,1,0,0,0
+access_ctl_run_manager,ctl.run manager,model_ctl_run,sonador_books.group_sb_manager,1,1,1,1

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_voucher_form_stock_warning" model="ir.ui.view">
+        <field name="name">sb.voucher.form.stock.warning</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <field name="sb_negative_blocked" invisible="1"/>
+                <div class="alert alert-warning mb-2" role="alert" invisible="not sb_below_cost">
+                    <b>Selling below cost.</b> You can still post it.
+                    <field name="sb_below_cost" nolabel="1" class="d-block" style="white-space: pre-line"/>
+                </div>
+                <div class="alert alert-warning mb-2" role="alert" invisible="not sb_cost_warning or state != 'draft'">
+                    <b>Unusual cost.</b> You can still post it.
+                    <field name="sb_cost_warning" nolabel="1" class="d-block" style="white-space: pre-line"/>
+                </div>
+                <div class="alert alert-warning mb-2" role="alert" invisible="not sb_stock_short">
+                    <b>Not enough in stock for this sale.</b>
+                    <field name="sb_stock_short" nolabel="1" class="d-block" style="white-space: pre-line"/>
+                    <div invisible="sb_negative_blocked" class="mt-1">
+                        <field name="sb_sell_anyway" nolabel="1" class="d-inline-block w-auto me-1"/>
+                        <label for="sb_sell_anyway" string="Sell anyway (the cost is trued up when the goods arrive)"/>
+                    </div>
+                    <div invisible="not sb_negative_blocked" class="mt-1">The company does not sell without stock: receive the goods first.</div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_stock_voucher_form_cost_warning" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.cost.warning</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/widget[@name='web_ribbon']" position="after">
+                <div class="alert alert-warning mb-2" role="alert" invisible="not sb_cost_warning">
+                    <b>Unusual cost.</b> <span invisible="state != 'draft'">You can still post it.</span>
+                    <field name="sb_cost_warning" nolabel="1" class="d-block" style="white-space: pre-line"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_company_settings_negative_sales" model="ir.ui.view">
+        <field name="name">res.company.form.sb.negative.sales</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_company_settings_inventory"/>
+        <field name="arch" type="xml">
+            <field name="sb_allow_negative_stock" position="after">
+                <field name="sb_block_negative_sales" invisible="sb_allow_negative_stock"/>
+            </field>
+        </field>
+    </record>
+</odoo>

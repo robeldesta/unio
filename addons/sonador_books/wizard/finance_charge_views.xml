@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_finance_charge_form" model="ir.ui.view">
+        <field name="name">sb.finance.charge.form</field>
+        <field name="model">sb.finance.charge</field>
+        <field name="arch" type="xml">
+            <form string="Finance Charges">
+                <header>
+                    <button name="action_compute" type="object" string="Calculate" class="btn-secondary"/>
+                    <button name="action_invoice" type="object" string="Post the charges" class="btn-primary" invisible="not line_ids"
+                            confirm="Post one finance-charge invoice per ticked customer?" confirm-label="Post the invoices"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1>Finance Charges</h1></div>
+                    <p class="text-muted">Interest on balances overdue beyond the grace days, per customer. Each charge is posted
+                        as a sales invoice (no VAT) to the income account, and shows on the customer's statement.</p>
+                    <group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date"/>
+                            <field name="rate"/>
+                            <field name="grace_days"/>
+                        </group>
+                        <group>
+                            <field name="minimum"/>
+                            <field name="account_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom" create="0">
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="apply" widget="boolean_toggle"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="overdue" readonly="1" sum="Overdue"/>
+                            <field name="days" readonly="1"/>
+                            <field name="charge" sum="Charges"/>
+                        </list>
+                    </field>
+                    <group class="oe_subtotal_footer"><field name="total" string="Total charges"/></group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_finance_charge" model="ir.actions.act_window">
+        <field name="name">Finance Charges</field>
+        <field name="res_model">sb.finance.charge</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

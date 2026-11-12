@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_sb_maintenance" model="ir.actions.client">
+        <field name="name">Data Maintenance</field>
+        <field name="tag">sonador_books.maintenance</field>
+    </record>
+    <record id="action_sb_setup_guide" model="ir.actions.client">
+        <field name="name">Setup Guide</field>
+        <field name="tag">sonador_books.setup_guide</field>
+    </record>
+    <record id="action_sb_report_center" model="ir.actions.client">
+        <field name="name">Report Center</field>
+        <field name="tag">sonador_books.report_center</field>
+    </record>
+    <record id="action_sb_rep_tb" model="ir.actions.client">
+        <field name="name">Trial Balance</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'trial_balance'}</field>
+    </record>
+    <record id="action_sb_rep_gl" model="ir.actions.client">
+        <field name="name">General Ledger</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'general_ledger'}</field>
+    </record>
+    <record id="action_sb_rep_pl" model="ir.actions.client">
+        <field name="name">Income Statement</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'profit_loss'}</field>
+    </record>
+    <record id="action_sb_rep_bs" model="ir.actions.client">
+        <field name="name">Statement of Financial Position</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'balance_sheet'}</field>
+    </record>
+    <record id="action_sb_rep_aged_ar" model="ir.actions.client">
+        <field name="name">Aged Receivables</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'aged', 'options': {'partner_type': 'customer'}}</field>
+    </record>
+    <record id="action_sb_rep_aged_ap" model="ir.actions.client">
+        <field name="name">Aged Payables</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'aged', 'options': {'partner_type': 'vendor'}}</field>
+    </record>
+    <record id="action_sb_rep_cust_ledger" model="ir.actions.client">
+        <field name="name">Customer Ledger</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'partner_ledger', 'options': {'partner_type': 'customer'}}</field>
+    </record>
+    <record id="action_sb_rep_vend_ledger" model="ir.actions.client">
+        <field name="name">Vendor Ledger</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'partner_ledger', 'options': {'partner_type': 'vendor'}}</field>
+    </record>
+    <record id="action_sb_rep_cash_book" model="ir.actions.client">
+        <field name="name">Cash and Bank Book</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'cash_book'}</field>
+    </record>
+</odoo>

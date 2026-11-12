@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_log_user,approval log user,model_sb_approval_log,base.group_user,1,0,0,0
+access_notice_user,notice user,model_sb_me_notice,base.group_user,1,0,0,0
+access_rule_admin,notify rule admin,model_sb_notify_rule,base.group_system,1,1,1,1
+access_sent_admin,notify sent admin,model_sb_notify_sent,base.group_system,1,0,0,1
+access_ctext_admin,confirm text admin,model_sb_confirm_text,base.group_system,1,1,1,1
+access_ctextv_admin,confirm text version admin,model_sb_confirm_text_version,base.group_system,1,0,1,0
+access_cpoint_admin,confirm point admin,model_sb_confirm_point,base.group_system,1,1,1,1
+access_conf_user,confirmation user,model_sb_confirmation,base.group_user,1,0,0,0

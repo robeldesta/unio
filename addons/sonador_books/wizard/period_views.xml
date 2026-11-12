@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_period_wizard_form" model="ir.ui.view">
+        <field name="name">sb.period.wizard.form</field>
+        <field name="model">sb.period.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Accounting Periods">
+                <sheet>
+                    <div class="oe_title"><h1>Accounting Periods</h1></div>
+                    <p class="text-muted">Two open fiscal years, Hamle to Sene. Closing a period stops anyone posting into it
+                        (and every earlier period). Pagume is part of Nehase.</p>
+                    <div class="alert alert-info" role="status" groups="!account.group_account_manager">
+                        A manager closes and reopens months. When the month is ready (bank reconciled, entries posted, trial
+                        balance checked), ask <field name="closer_names" class="d-inline fw-bold" nolabel="1"/> to close it.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" invisible="1"/>
+                            <field name="fiscal_year" invisible="1"/>
+                            <label for="fiscal_year_label"/>
+                            <div class="o_row">
+                                <button name="action_prev_year" type="object" icon="fa-chevron-left" class="btn-link" title="Previous year"/>
+                                <field name="fiscal_year_label" nolabel="1"/>
+                                <button name="action_next_year" type="object" icon="fa-chevron-right" class="btn-link" title="Next year"/>
+                            </div>
+                        </group>
+                        <group>
+                            <field name="lock_date" readonly="1"/>
+                            <field name="lock_date_ec"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list create="0" delete="0" no_open="1" decoration-muted="closed" decoration-bf="current">
+                            <field name="fiscal_year" column_invisible="1"/>
+                            <field name="fy_label"/>
+                            <field name="number"/>
+                            <field name="name"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="current" widget="boolean" string="Today"/>
+                            <field name="closed" widget="boolean" string="Closed"/>
+                            <button name="action_close_through" type="object" string="Close through here"
+                                    icon="fa-lock" invisible="closed" groups="account.group_account_manager"/>
+                            <button name="action_reopen_from" type="object" string="Reopen"
+                                    icon="fa-unlock" invisible="not closed" groups="account.group_account_manager"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_periods" model="ir.actions.act_window">
+        <field name="name">Accounting Periods</field>
+        <field name="res_model">sb.period.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+    </record>
+    <!-- the menu opens a saved screen: on an unsaved one "Close through here" did nothing until the user saved -->
+    <record id="action_sb_periods_open" model="ir.actions.server">
+        <field name="name">Accounting Periods</field>
+        <field name="model_id" ref="model_sb_period_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model._sb_open()</field>
+    </record>
+</odoo>

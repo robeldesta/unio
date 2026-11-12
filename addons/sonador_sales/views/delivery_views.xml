@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_delivery_order_list" model="ir.ui.view">
+        <field name="name">sb.delivery.order.list</field>
+        <field name="model">sb.delivery.order</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ('done', 'cancel')">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="date_ec" optional="show"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id" optional="show"/>
+                <field name="dispatch_ref" optional="hide"/>
+                <field name="batch_count" optional="show"/>
+                <field name="warehouse_id" optional="hide"/>
+                <field name="validation_status" optional="hide" widget="badge"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state in ('ready', 'in_transit')"
+                       decoration-success="state in ('delivered', 'done')"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_delivery_order_form" model="ir.ui.view">
+        <field name="name">sb.delivery.order.form</field>
+        <field name="model">sb.delivery.order</field>
+        <field name="arch" type="xml">
+            <form string="Delivery Order">
+                <header>
+                    <button name="action_new_batch" type="object" string="Add Batch" class="btn-secondary"
+                            invisible="state in ('done', 'cancel') or not sb_to_deliver"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state != 'draft'"/>
+                    <button name="action_draft" type="object" string="Reset to Draft" invisible="state not in ('done', 'cancel')"
+                            groups="sonador_books.group_sb_manager"/>
+                    <button name="action_mark_done" type="object" string="Mark as Done" class="oe_highlight"
+                            invisible="state in ('draft', 'done', 'cancel')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,ready,done"/>
+                </header>
+                <sheet>
+                    <field name="company_id" invisible="1"/>
+                    <field name="voucher_ids" invisible="1"/>
+                    <field name="uses_batches" invisible="1"/>
+                    <field name="sb_to_deliver" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_sb_view_sale_order" type="object" class="oe_stat_button" icon="fa-shopping-cart" invisible="not sale_order_id">
+                            <div class="o_stat_info"><span class="o_stat_text">Sale Order</span><span class="o_stat_value"><field name="sale_order_id" readonly="1" options="{'no_open': True}"/></span></div>
+                        </button>
+                        <button name="action_view_batches" type="object" class="oe_stat_button" icon="fa-truck" invisible="not uses_batches">
+                            <field name="batch_count" widget="statinfo" string="Batches"/>
+                        </button>
+                        <button name="action_sb_view_invoices" type="object" class="oe_stat_button" icon="fa-file-text" invisible="not voucher_ids">
+                            <span class="o_stat_text">Invoices</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <span class="o_form_label">Delivery Order</span>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="date_ec"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="sale_order_id"/>
+                        </group>
+                        <group>
+                            <field name="warehouse_id" readonly="1"/>
+                            <field name="dispatch_ref"/>
+                            <field name="validation_status" widget="badge"/>
+                            <field name="sb_legacy_ref" invisible="not sb_legacy_ref"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="items" string="Delivery Lines">
+                            <field name="line_ids" readonly="1">
+                                <list>
+                                    <field name="product_id"/>
+                                    <field name="qty_invoiced"/>
+                                    <field name="qty_delivered"/>
+                                    <field name="qty_remaining" decoration-warning="qty_remaining &gt; 0"/>
+                                    <field name="uom_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name="batches" string="Batches" invisible="not uses_batches">
+                            <field name="batch_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="total_qty"/>
+                                    <field name="delivery_method" optional="show"/>
+                                    <field name="vehicle" optional="show"/>
+                                    <field name="invoice_id" optional="show"/>
+                                    <field name="print_count" optional="hide"/>
+                                    <field name="can_print_batch" column_invisible="1"/>
+                                    <field name="state" widget="badge"/>
+                                    <button name="action_validate" string="Validate" type="object" class="btn-primary" invisible="state != 'draft'" groups="sonador_inventory.group_sb_store_user"/>
+                                    <button name="action_print" string="Print" type="object" icon="fa-print" invisible="not can_print_batch"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name="logistics" string="Logistics" invisible="uses_batches">
+                            <group>
+                                <field name="invoiced_time"/>
+                                <button name="action_refresh_invoiced_time" string="Refresh Invoiced Time" type="object" class="btn-secondary" icon="fa-refresh"/>
+                                <field name="loaded_time"/>
+                                <field name="gate_time"/>
+                                <field name="unloading_time"/>
+                                <field name="return_time"/>
+                            </group>
+                        </page>
+                        <page name="invoices" string="Invoices">
+                            <field name="voucher_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="voucher_type"/>
+                                    <field name="amount_total"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="amount_currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name="notes" string="Notes">
+                            <field name="notes" placeholder="Site, contact person, unloading instructions"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="sb_delivery_batch_list" model="ir.ui.view">
+        <field name="name">sb.delivery.batch.list</field>
+        <field name="model">sb.delivery.batch</field>
+        <field name="arch" type="xml">
+            <list string="Delivery Batches" decoration-info="state == 'draft'" decoration-success="state == 'done'" decoration-muted="state == 'cancel'">
+                <field name="delivery_id"/>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="delivery_method" optional="show"/>
+                <field name="vehicle" optional="hide"/>
+                <field name="invoice_id" optional="hide"/>
+                <field name="total_qty"/>
+                <field name="print_count" optional="show"/>
+                <field name="can_print_batch" column_invisible="1"/>
+                <field name="state" widget="badge"/>
+                <button name="action_print" string="Print" type="object" icon="fa-print" invisible="not can_print_batch"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_delivery_batch_form" model="ir.ui.view">
+        <field name="name">sb.delivery.batch.form</field>
+        <field name="model">sb.delivery.batch</field>
+        <field name="arch" type="xml">
+            <form string="Delivery Batch">
+                <header>
+                    <button name="action_validate" string="Validate Batch" type="object" class="oe_highlight" invisible="state != 'draft'" groups="sonador_inventory.group_sb_store_user"/>
+                    <button name="action_print" string="Print" type="object" class="btn-primary" icon="fa-print" invisible="not can_print_batch"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state != 'draft'" groups="sonador_inventory.group_sb_store_user"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
+                </header>
+                <sheet>
+                    <field name="can_print_batch" invisible="1"/>
+                    <field name="sb_strict" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="reference" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="delivery_id" readonly="1"/>
+                            <field name="name" readonly="state == 'done'"/>
+                            <field name="date" readonly="state == 'done'"/>
+                            <field name="invoice_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="total_qty" readonly="1"/>
+                            <field name="batch_sequence_display" readonly="1"/>
+                            <field name="print_count" readonly="1"/>
+                            <field name="sb_legacy_ref" invisible="not sb_legacy_ref"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Batch Lines" name="lines">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom">
+                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Logistics" name="batch_logistics">
+                            <group name="logistics">
+                                <field name="delivery_method" widget="radio" readonly="state == 'done'"/>
+                                <field name="vehicle" readonly="state == 'done'" required="sb_strict and delivery_method == 'company'"
+                                       invisible="delivery_method in ('pickup', 'rented')"/>
+                                <field name="driver" readonly="state == 'done'" invisible="delivery_method in ('pickup', 'rented')"/>
+                                <field name="invoiced_time" readonly="state == 'done'" required="sb_strict and delivery_method == 'company'"
+                                       invisible="delivery_method == 'pickup'"/>
+                                <button name="action_refresh_invoiced_time" string="Refresh Invoiced Time" type="object" class="btn-secondary"
+                                        icon="fa-refresh" invisible="state == 'done' or delivery_method == 'pickup'"/>
+                                <field name="loaded_time" readonly="state == 'done'" required="sb_strict"/>
+                                <field name="gate_time" readonly="state == 'done'" required="sb_strict"/>
+                                <field name="unloading_time" readonly="state == 'done'" required="sb_strict and delivery_method == 'company'"
+                                       invisible="delivery_method == 'pickup'"/>
+                                <field name="return_time" readonly="state == 'done'" invisible="delivery_method == 'pickup'"/>
+                                <field name="received_by" invisible="sb_strict"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sb_delivery_orders" model="ir.actions.act_window">
+        <field name="name">Delivery Orders</field>
+        <field name="res_model">sb.delivery.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_to_deliver': 1}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Nothing waiting to be delivered</p>
+            <p>A delivery order opens when an invoice or cash sale is posted with "Deliver later". Each truck load is a batch.</p></field>
+    </record>
+    <record id="sb_delivery_order_search" model="ir.ui.view">
+        <field name="name">sb.delivery.order.search</field>
+        <field name="model">sb.delivery.order</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id"/>
+                <field name="sb_legacy_ref"/>
+                <filter name="to_deliver" string="To deliver" domain="[('sb_to_deliver', '=', True)]"/>
+                <separator/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="ready" string="Ready" domain="[('state', '=', 'ready')]"/>
+                <filter name="in_transit" string="In Transit" domain="[('state', '=', 'in_transit')]"/>
+                <filter name="delivered" string="Delivered" domain="[('state', '=', 'delivered')]"/>
+                <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>
+                <filter name="cancel" string="Cancelled" domain="[('state', '=', 'cancel')]"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_sb_delivery_batches" model="ir.actions.act_window">
+        <field name="name">Delivery Batches</field>
+        <field name="res_model">sb.delivery.batch</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

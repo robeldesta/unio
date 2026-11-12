@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Replacement (REP): laid out as Odoo 18's Inventory Replacement print -->
+    <record id="action_report_replacement" model="ir.actions.report">
+        <field name="name">Replacement</field>
+        <field name="model">sb.voucher</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_returns.report_replacement</field>
+        <field name="print_report_name">'%s' % (object.sb_pad_number or object.name)</field>
+        <field name="binding_type">report</field>
+    </record>
+    <template id="report_replacement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Inventory Replacement</h2>
+                        <div class="row mt32 mb32">
+                            <div class="col-6">
+                                <strong>Reference:</strong>
+                                <span t-esc="o.sb_pad_number or o.name"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Date:</strong>
+                                <span t-esc="o.date.strftime('%d %b %Y')"/> · <span t-esc="o.date_ec"/>
+                            </div>
+                        </div>
+                        <div class="row mb32">
+                            <div class="col-6">
+                                <strong>Customer:</strong>
+                                <span t-esc="o.partner_id.name"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Responsible:</strong>
+                                <span t-esc="o.create_uid.name"/>
+                            </div>
+                        </div>
+                        <div class="row mb32">
+                            <div class="col-6">
+                                <strong>Replacement For:</strong>
+                                <span t-esc="o.sb_replacement_of_id.name"/>
+                            </div>
+                            <div class="col-6" t-if="'sb_delivery_id' in o._fields and o.sb_delivery_id">
+                                <strong>Delivery Order:</strong>
+                                <span t-esc="o.sb_delivery_id.display_name"/>
+                            </div>
+                        </div>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>UoM</th>
+                                    <th>Original Product</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.line_ids.filtered('product_id')" t-as="line">
+                                    <td><span t-esc="line.product_id.display_name"/></td>
+                                    <td><span t-esc="'{:,.2f}'.format(line.quantity)"/></td>
+                                    <td><span t-esc="line.product_id.uom_id.name"/></td>
+                                    <td><span t-esc="line.product_id.display_name"/></td>
+                                    <td><span t-esc="'' if (line.name or '') in (line.product_id.display_name, 'Replacement: %s' % line.product_id.display_name) else line.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mt32" t-if="o.memo">
+                            <div class="col-12">
+                                <strong>Notes:</strong>
+                                <span t-esc="o.memo"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

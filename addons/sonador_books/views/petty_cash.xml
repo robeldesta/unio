@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- The petty cash keeper: the person set as "Kept by" on a cash box writes and posts the payment vouchers paid from
+         that box, and nothing else of Accounting (no Clerk role). -->
+    <record id="group_sb_petty_cash" model="res.groups">
+        <field name="name">Petty cash keeper</field>
+        <field name="comment">Writes and posts payment vouchers paid from the cash box they keep (Kept by on the box), and sees those vouchers. Nothing else of Accounting.</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user')), (4, ref('account.group_account_invoice'))]"/>
+    </record>
+
+    <!-- what a petty cash keeper sees of the vouchers: payments from their own box, and what they wrote -->
+    <record id="rule_sb_voucher_petty_cash" model="ir.rule">
+        <field name="name">Vouchers: petty cash keeper sees payments from their box</field>
+        <field name="model_id" ref="model_sb_voucher"/>
+        <field name="domain_force">[('voucher_type', '=', 'payment'), '|', ('create_uid', '=', user.id), '|', ('cash_account_id.sb_custodian_id', '=', user.id), ('cash_line_ids.account_id.sb_custodian_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_petty_cash'))]"/>
+    </record>
+    <!-- a keeper who also has an Accounting role, or sells, keeps seeing what that role sees -->
+    <record id="rule_sb_voucher_accounting_all" model="ir.rule">
+        <field name="name">Vouchers: Accounting roles see all</field>
+        <field name="model_id" ref="model_sb_voucher"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_sb_auditor'))]"/>
+    </record>
+
+    <record id="action_sb_petty_cash_payments" model="ir.actions.act_window">
+        <field name="name">Petty Cash Payments</field>
+        <field name="res_model">sb.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'payment')]</field>
+        <field name="context">{'default_voucher_type': 'payment', 'default_payment_method': 'cash'}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Write a petty cash payment voucher</p>
+            <p>Paid from the cash box you keep. Choose what it pays for, enter the amount and post it.</p></field>
+    </record>
+    <menuitem id="menu_sb_petty_cash_root" name="Petty Cash" sequence="26" web_icon="sonador_books,static/description/icon.png"
+              groups="group_sb_petty_cash"/>
+    <menuitem id="menu_sb_petty_cash_payments" name="Payments" parent="menu_sb_petty_cash_root"
+              action="action_sb_petty_cash_payments" sequence="1"/>
+</odoo>

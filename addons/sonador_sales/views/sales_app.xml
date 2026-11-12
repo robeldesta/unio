@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_sb_sales_home" model="ir.actions.client">
+        <field name="name">Sales</field>
+        <field name="tag">sonador_inventory.app_home</field>
+        <field name="params">{'app': 'sales'}</field>
+    </record>
+    <record id="action_sb_sales_rep_open_orders" model="ir.actions.client">
+        <field name="name">Open Sales Orders</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'open_orders', 'catalog_key': 'open_orders'}</field>
+    </record>
+    <record id="action_sb_sales_rep_undelivered" model="ir.actions.client">
+        <field name="name">Invoiced, Not Yet Delivered</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'undelivered', 'catalog_key': 'undelivered'}</field>
+    </record>
+    <record id="action_sb_sales_rep_delivery_register" model="ir.actions.client">
+        <field name="name">Delivery Register</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'delivery_register', 'catalog_key': 'delivery_register'}</field>
+    </record>
+    <record id="action_sb_sales_rep_cust_history" model="ir.actions.client">
+        <field name="name">Customer Sales History</field>
+        <field name="tag">sonador_books.report</field>
+        <field name="context">{'report': 'partner_sales', 'catalog_key': 'cust_sales_history', 'options': {'partner_type': 'customer'}}</field>
+    </record>
+
+    <menuitem id="menu_sales_root" name="Sales" sequence="21" web_icon="sonador_sales,static/description/icon.png"
+              groups="group_sb_sales_user"/>
+    <menuitem id="menu_sales_home" name="Home" parent="menu_sales_root" action="action_sb_sales_home" sequence="1"/>
+    <menuitem id="menu_sales_customers" name="Customers" parent="menu_sales_root" sequence="10"/>
+    <menuitem id="menu_sales_customer_list" name="Customers" parent="menu_sales_customers" action="sonador_books.action_sb_customers" sequence="1"/>
+    <menuitem id="menu_sales_prices" name="Prices" parent="menu_sales_customers" action="action_sb_price_rules" sequence="10"/>
+    <menuitem id="menu_sales_price_levels" name="Price Levels" parent="menu_sales_customers" action="action_sb_price_levels" sequence="11"/>
+    <menuitem id="menu_sales_price_groups" name="Equivalent Items" parent="menu_sales_customers" action="action_sb_price_groups" sequence="12"/>
+    <menuitem id="menu_sales_orders" name="Orders" parent="menu_sales_root" sequence="20"/>
+    <menuitem id="menu_sales_quotes" name="Quotations" parent="menu_sales_orders" action="action_sb_quotations" sequence="1"/>
+    <menuitem id="menu_sales_so" name="Sales Orders" parent="menu_sales_orders" action="action_sb_sale_orders" sequence="2"/>
+    <menuitem id="menu_sales_invoicing" name="Invoicing" parent="menu_sales_root" sequence="30"/>
+    <menuitem id="menu_sales_inv" name="Sales Invoices (on account)" parent="menu_sales_invoicing" action="sonador_books.action_sb_sale" sequence="1"/>
+    <menuitem id="menu_sales_cash" name="Cash Sales" parent="menu_sales_invoicing" action="sonador_books.action_sb_cash_sale" sequence="2"/>
+    <menuitem id="menu_sales_returns" name="Returns / Credit Notes" parent="menu_sales_invoicing" action="sonador_books.action_sb_sale_return" sequence="3"/>
+    <menuitem id="menu_sales_delivery" name="Deliveries" parent="menu_sales_root" sequence="40"/>
+    <menuitem id="menu_sales_do" name="Delivery Orders" parent="menu_sales_delivery" action="action_sb_delivery_orders" sequence="1"/>
+    <menuitem id="menu_sales_batches" name="Delivery Batches" parent="menu_sales_delivery" action="action_sb_delivery_batches" sequence="2"/>
+    <menuitem id="menu_sales_reports" name="Reports" parent="menu_sales_root" sequence="60"/>
+    <menuitem id="menu_sales_rep_open" name="Open Sales Orders" parent="menu_sales_reports" action="action_sb_sales_rep_open_orders" sequence="1"/>
+    <menuitem id="menu_sales_rep_undelivered" name="Invoiced, Not Yet Delivered" parent="menu_sales_reports" action="action_sb_sales_rep_undelivered" sequence="2"/>
+    <menuitem id="menu_sales_rep_delivery" name="Delivery Register" parent="menu_sales_reports" action="action_sb_sales_rep_delivery_register" sequence="3"/>
+    <menuitem id="menu_sales_rep_history" name="Customer Sales History" parent="menu_sales_reports" action="action_sb_sales_rep_cust_history" sequence="4"/>
+
+    <!-- the store dispatches: delivery orders and truck loads in the Inventory app too -->
+    <menuitem id="menu_store_do" name="Delivery Orders" parent="sonador_inventory.menu_store_dispatch" action="action_sb_delivery_orders" sequence="1"/>
+    <menuitem id="menu_store_batches" name="Delivery Batches (loading)" parent="sonador_inventory.menu_store_dispatch" action="action_sb_delivery_batches" sequence="2"/>
+    <menuitem id="menu_store_rep_undelivered" name="Invoiced, Not Yet Delivered" parent="sonador_inventory.menu_store_reports" action="action_sb_sales_rep_undelivered" sequence="20"/>
+    <menuitem id="menu_store_rep_delivery" name="Delivery Register" parent="sonador_inventory.menu_store_reports" action="action_sb_sales_rep_delivery_register" sequence="21"/>
+
+    <record id="sb_delivery_batch_form_gate" model="ir.ui.view">
+        <field name="name">sb.delivery.batch.form.gate</field>
+        <field name="model">sb.delivery.batch</field>
+        <field name="inherit_id" ref="sb_delivery_batch_form"/>
+        <field name="arch" type="xml">
+            <button name="action_print" position="after">
+                <button name="action_gate_pass" type="object" string="Gate Pass" icon="fa-ticket" invisible="state == 'cancel'"/>
+            </button>
+            <xpath expr="//field[@name='driver']" position="after">
+                <field name="gate_pass_id" readonly="1" invisible="not gate_pass_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_stock_voucher_form_po" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.purchase</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="sb_purchase_id" invisible="voucher_type != 'grn'" readonly="state != 'draft'"
+                       options="{'no_create': True}" context="{'show_total_amount': True}"/>
+                <field name="sb_po_payment_status" invisible="not sb_purchase_id" widget="badge"
+                       decoration-info="sb_po_payment_status == 'advance'" decoration-success="sb_po_payment_status == 'paid'"/>
+                <field name="sb_po_advance" invisible="not sb_po_advance" groups="account.group_account_invoice"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_sb_view_purchase" type="object" class="oe_stat_button" icon="fa-shopping-basket" invisible="not sb_purchase_id">
+                    <div class="o_stat_info"><span class="o_stat_text">Purchase order</span><span class="o_stat_value"><field name="sb_purchase_id" readonly="1" options="{'no_open': True}"/></span></div>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='product_id']" position="after">
+                <field name="sb_po_line_id" column_invisible="parent.voucher_type != 'grn' or not parent.sb_purchase_id"
+                       options="{'no_create': True}" optional="hide"/>
+                <field name="sb_po_ordered" column_invisible="parent.voucher_type != 'grn' or not parent.sb_purchase_id" optional="show"/>
+                <field name="sb_po_to_receive" column_invisible="parent.voucher_type != 'grn' or not parent.sb_purchase_id"
+                       string="Still to come" optional="show"/>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='unit_cost']" position="attributes">
+                <attribute name="readonly">cost_locked or sb_po_line_id</attribute>
+            </xpath>
+            <xpath expr="//page[@name='bills']" position="inside">
+                <field name="bill_many_ids" readonly="1" invisible="not bill_many_ids">
+                    <list>
+                        <field name="name"/>
+                        <field name="date"/>
+                        <field name="reference"/>
+                        <field name="amount_total"/>
+                        <field name="state" widget="badge"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="amount_currency_id" column_invisible="1"/>
+                    </list>
+                </field>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_voucher_form_po" model="ir.ui.view">
+        <field name="name">sb.voucher.form.purchase</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_voucher_form_stock"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='sb_grn_id']" position="after">
+                <field name="sb_grn_ids" widget="many2many_tags" invisible="voucher_type != 'bill' or not sb_grn_ids" readonly="1"
+                       groups="sonador_books.group_sb_auditor,sonador_inventory.group_sb_store_user,sonador_purchase.group_sb_purchase_user"/>
+                <field name="sb_purchase_id" invisible="voucher_type not in ('bill', 'payment', 'cash_purchase', 'purchase_return')"
+                       readonly="state != 'draft'" options="{'no_create': True}"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_sb_view_purchase" type="object" class="oe_stat_button" icon="fa-shopping-basket" invisible="not sb_purchase_id">
+                    <div class="o_stat_info"><span class="o_stat_text">Purchase order</span><span class="o_stat_value"><field name="sb_purchase_id" readonly="1" options="{'no_open': True}"/></span></div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_company_settings_po" model="ir.ui.view">
+        <field name="name">res.company.form.sb.settings.purchase</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_company_settings_inventory"/>
+        <field name="arch" type="xml">
+            <field name="sb_allow_negative_stock" position="after">
+                <field name="sb_po_over_receipt"/>
+                <field name="sb_po_numbering" widget="radio"/>
+                <field name="sb_po_auto_bill"/>
+            </field>
+        </field>
+    </record>
+
+    <template id="report_stock_voucher_po" inherit_id="sonador_inventory.report_stock_voucher">
+        <xpath expr="//div[@t-if='v.reference']" position="before">
+            <div t-if="v.sb_purchase_id"><b>Purchase order:</b> <span t-esc="v.sb_purchase_id.name"/>
+                <span t-if="v.sb_purchase_id.partner_ref"> (supplier ref. <span t-esc="v.sb_purchase_id.partner_ref"/>)</span></div>
+        </xpath>
+    </template>
+</odoo>

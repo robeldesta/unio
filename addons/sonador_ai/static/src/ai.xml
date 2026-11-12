@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_ai.Chat">
+        <div t-if="state.on" t-att-class="inPage ? 'o_ai_page' : 'o_ai_tray d-flex align-items-center'">
+            <button t-if="!inPage" class="btn btn-link px-2 o_ai_btn" title="Ask Unio AI" t-on-click="toggle"><span class="o_ai_mark"/></button>
+            <div t-if="state.open" t-att-class="inPage ? 'o_ai_panel o_ai_panel_page' : 'o_ai_panel'" t-on-click="onClick">
+                <div class="o_ai_head">
+                    <b><span class="o_ai_mark me-1"/>Unio AI</b>
+                    <span>
+                        <button class="btn btn-sm btn-link" t-on-click="showHistory" title="Earlier conversations"><i class="fa fa-history"/></button>
+                        <button class="btn btn-sm btn-link" t-on-click="newChat" title="New conversation"><i class="fa fa-plus"/></button>
+                        <button t-if="!inPage" class="btn btn-sm btn-link" t-on-click="toggle"><i class="fa fa-times"/></button>
+                    </span>
+                </div>
+                <div t-if="state.meter and state.meter.enabled" class="o_ai_meter" t-att-title="'Renews Monday ' + state.meter.resets">
+                    <span>AI this week<t t-if="state.meter.plan_name"> · <t t-esc="state.meter.plan_name"/></t></span>
+                    <i><b t-attf-style="width: {{ used }}%" t-att-class="used >= 90 ? 'hot' : ''"/></i>
+                    <span><t t-if="state.meter.paused">paused until Monday</t><t t-else=""><t t-esc="used"/>% used</t></span>
+                </div>
+                <div class="o_ai_body" t-ref="scroller">
+                    <t t-if="state.history">
+                        <div t-foreach="state.chats" t-as="c" t-key="c.id" class="o_ai_hist" t-on-click="() => this.openChat(c)">
+                            <div t-esc="c.name"/><small class="text-muted" t-esc="c.date"/>
+                        </div>
+                        <p t-if="!state.chats.length" class="text-muted small">No conversations yet.</p>
+                    </t>
+                    <t t-elif="!state.shown.length">
+                        <div class="o_ai_hello">
+                            <h4>Ask about your business</h4>
+                            <p class="text-muted small">Answers come from your own records and reports, with links to them. I can prepare drafts (quotations, invoices, tasks, contacts) that you create with one click; I never change anything myself.</p>
+                            <div t-foreach="SUGGEST" t-as="s" t-key="s_index" class="o_ai_suggest" t-on-click="() => this.send(s)" t-esc="s"/>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <t t-foreach="state.shown" t-as="m" t-key="m_index">
+                            <div t-if="m.role === 'user'" class="o_ai_msg user"><t t-esc="m.text"/>
+                                <div t-if="m.files and m.files.length" class="o_ai_msg_files"><span t-foreach="m.files" t-as="f" t-key="f.id"><i class="fa fa-paperclip me-1"/><t t-esc="f.name"/></span></div></div>
+                            <div t-else="" class="o_ai_msg ai">
+                                <details t-if="m.steps and m.steps.length" class="o_ai_steps"><summary>How I found it (<t t-esc="m.steps.length"/> steps)</summary>
+                                    <div t-foreach="m.steps" t-as="st" t-key="st_index" class="small text-muted" t-esc="st"/></details>
+                                <div t-out="render(m.text)"/>
+                                <div t-foreach="turnProposals(m)" t-as="p" t-key="p.id" class="o_ai_card">
+                                    <div class="small text-muted" t-esc="p.kind"/>
+                                    <div t-esc="p.summary"/>
+                                    <div t-if="p.files and p.files.length" class="small text-muted"><i class="fa fa-paperclip me-1"/><t t-esc="p.files.length"/> file(s) attached with it</div>
+                                    <button class="btn btn-sm mt-1" t-att-class="p.created ? 'btn-light' : 'btn-primary'" t-att-disabled="p.created" t-on-click="() => this.create(p)">
+                                        <t t-if="p.created"><t t-esc="p.type === 'attach' ? 'Attached' : 'Created'"/></t><t t-elif="p.type === 'attach'">Attach</t><t t-else="">Create draft</t>
+                                    </button>
+                                </div>
+                            </div>
+                        </t>
+                        <div t-if="state.busy" class="o_ai_msg ai o_ai_thinking"><img src="/sonador_unio_brand/static/img/unio_loader.svg" alt="" onerror="this.style.display='none'"/> Looking into it…</div>
+                    </t>
+                </div>
+                <div class="o_ai_input">
+                    <div t-if="state.files.length" class="o_ai_files">
+                        <span t-foreach="state.files" t-as="f" t-key="f.id" class="o_ai_file"><i t-att-class="'fa ' + (f.mimetype === 'application/pdf' ? 'fa-file-pdf-o' : 'fa-image')"/>
+                            <t t-esc="f.name"/><a href="#" t-on-click.prevent="() => this.dropFile(f)" title="Remove"><i class="fa fa-times"/></a></span>
+                    </div>
+                    <div class="o_ai_row">
+                        <t t-if="filesOn">
+                            <button class="btn btn-link px-1 o_ai_clip" title="Add receipts, bills or photos (pictures or PDF)" t-att-disabled="state.busy or state.uploading"
+                                t-on-click="() => this.fileInput.el.click()"><i t-att-class="state.uploading ? 'fa fa-spinner fa-spin' : 'fa fa-paperclip'"/></button>
+                            <input type="file" class="d-none" t-ref="fileInput" multiple="multiple" accept="image/*,application/pdf" t-on-change="onFiles"/>
+                        </t>
+                        <textarea rows="2" class="form-control" placeholder="Ask anything about your company… (Enter to send)" t-model="state.text" t-on-keydown="onKey"
+                            t-on-paste="onPaste" t-att-disabled="state.busy"/>
+                        <button class="btn btn-primary" t-on-click="() => this.send()" t-att-disabled="state.busy or state.uploading or (!state.text.trim() and !state.files.length)"><i class="fa fa-arrow-up"/></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

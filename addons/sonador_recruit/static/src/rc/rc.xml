@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_recruit.App">
+        <div class="o_pp o_rc o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker">People</div>
+                        <h1 class="o_pp_title"><i class="fa fa-user-plus me-2"/>Recruitment</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-if="ctx.is_hr" t-att-class="['openings','pipeline'].includes(state.page) ? 'active' : ''" t-on-click="() => this.go('openings')"><i class="fa fa-briefcase"/> Openings</button>
+                        <button t-att-class="state.page === 'interviews' ? 'active' : ''" t-on-click="() => this.go('interviews')"><i class="fa fa-comments-o"/> Interviews</button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'stats' ? 'active' : ''" t-on-click="() => this.go('stats')"><i class="fa fa-bar-chart"/> Funnel</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.jobEdit" t-call="sonador_recruit.JobForm"/>
+                <t t-if="state.page === 'openings' and state.open" t-call="sonador_recruit.Openings"/>
+                <t t-if="state.page === 'pipeline' and state.pipe" t-call="sonador_recruit.Pipeline"/>
+                <t t-if="state.page === 'interviews'" t-call="sonador_recruit.Interviews"/>
+                <t t-if="state.page === 'stats' and state.stats" t-call="sonador_recruit.Stats"/>
+            </div>
+            <t t-if="state.app" t-call="sonador_recruit.Drawer"/>
+        </div>
+    </t>
+
+    <t t-name="sonador_recruit.Openings">
+        <t t-set="o" t-value="state.open"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-sm btn-light border" t-on-click="toggleClosed"><i t-attf-class="fa {{ state.showClosed ? 'fa-eye-slash' : 'fa-eye' }} me-1"/><t t-esc="state.showClosed ? 'Open positions only' : 'Also closed positions with applicants'"/></button>
+            <a t-if="o.unassigned" href="#" class="small" t-on-click.prevent="() => this.openJob(false)"><t t-esc="o.unassigned"/> applications not linked to an opening</a>
+            <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.editJob(false)"><i class="fa fa-plus me-1"/>Opening</button>
+        </div>
+        <div class="o_pp_cards o_rc_jobs">
+            <div t-foreach="o.jobs" t-as="j" t-key="j.id" t-attf-class="o_rc_job {{ j.open ? '' : 'closed' }}" t-on-click="() => this.openJob(j.id)">
+                <div class="d-flex align-items-start gap-2">
+                    <div class="flex-grow-1"><b t-esc="j.name"/><div class="small text-muted"><t t-esc="j.department or 'No department'"/><t t-if="j.manager"> · <t t-esc="j.manager"/></t></div></div>
+                    <span t-if="!j.open" class="o_pp_badge">closed</span><span t-elif="j.new_week" class="o_pp_badge">+<t t-esc="j.new_week"/> this week</span>
+                </div>
+                <div class="o_rc_funnel">
+                    <t t-foreach="ctx.stages" t-as="st" t-key="st.id">
+                        <div t-att-title="st.name"><b t-esc="j.counts[st.id] or 0"/><span t-esc="st.name"/></div>
+                    </t>
+                </div>
+                <div class="small text-muted d-flex"><span><t t-esc="j.total"/> in the pipeline · <t t-esc="j.openings"/> to fill</span>
+                    <span t-if="j.close_ec" class="ms-auto">closes <t t-esc="j.close_ec"/></span></div>
+            </div>
+        </div>
+        <div t-if="!o.jobs.length" class="o_pp_card o_pp_empty p-4">No open positions. Add an opening, or show closed positions with applicants.</div>
+    </t>
+
+    <t t-name="sonador_recruit.JobForm">
+        <t t-set="j" t-value="state.jobEdit"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-briefcase"/><t t-esc="j.id ? 'Opening' : 'New opening'"/></div>
+            <div class="o_pp_formgrid">
+                <label class="wide">Position<input class="form-control" t-model="j.name"/></label>
+                <label>Department<select class="form-select" t-model="j.department_id"><option value="">—</option><option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-esc="d.name"/></select></label>
+                <label>Hiring manager<select class="form-select" t-model="j.manager_id"><option value="">—</option><option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label>People to hire<input type="number" class="form-control" t-model="j.openings"/></label>
+                <label>Applications close<input type="date" class="form-control" t-model="j.close"/></label>
+                <label>Salary from<input type="number" class="form-control" t-model="j.salary_from"/></label>
+                <label>Salary to<input type="number" class="form-control" t-model="j.salary_to"/></label>
+                <label class="o_rc_check"><input type="checkbox" class="form-check-input" t-model="j.open"/> Recruiting</label>
+                <label class="wide">Job description<textarea class="form-control" rows="3" t-model="j.description"/></label>
+                <label class="wide">Requirements<textarea class="form-control" rows="3" t-model="j.requirements"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.jobEdit = null">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="!j.name" t-on-click="saveJob">Save</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_recruit.Pipeline">
+        <t t-set="p" t-value="state.pipe"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.go('openings')"><i class="fa fa-arrow-left me-1"/>Openings</button>
+            <h4 class="m-0 ms-2" t-esc="p.job.name"/>
+            <span class="small text-muted"><t t-esc="p.count"/> <t t-esc="p.archived ? 'not continuing' : 'in the pipeline'"/></span>
+            <input class="form-control form-control-sm o_pp_search ms-auto" placeholder="Find a candidate…" t-model="state.search" t-on-change="onSearch"/>
+            <button class="btn btn-light border btn-sm" t-on-click="toggleArchived"><t t-esc="p.archived ? 'Pipeline' : 'Not continuing'"/></button>
+            <button t-if="p.job.id" class="btn btn-light border btn-sm" t-on-click="() => this.editJob(p.job)"><i class="fa fa-pencil me-1"/>Opening</button>
+            <button class="btn btn-primary btn-sm" t-on-click="newApp"><i class="fa fa-plus me-1"/>Candidate</button>
+        </div>
+        <div class="o_rc_board">
+            <div t-foreach="ctx.stages" t-as="st" t-key="st.id" class="o_rc_col">
+                <div class="o_rc_colhead"><b t-esc="st.name"/><span t-esc="p.columns[st.id].length"/></div>
+                <div class="o_rc_colbody">
+                    <div t-foreach="p.columns[st.id]" t-as="a" t-key="a.id" class="o_rc_cand" t-on-click="() => this.openApp(a.id)">
+                        <div class="d-flex align-items-center gap-1"><b class="flex-grow-1" t-esc="a.name"/>
+                            <span class="o_rc_stars"><i t-foreach="[1,2,3]" t-as="n" t-key="n" t-attf-class="fa {{ a.rating &gt;= n ? 'fa-star' : 'fa-star-o' }}"/></span></div>
+                        <div class="small text-muted" t-esc="a.education or a.email or a.phone"/>
+                        <div class="small d-flex gap-2 mt-1"><span class="text-muted" t-esc="a.applied_ec"/>
+                            <span t-if="a.interviews" class="ms-auto"><i class="fa fa-comments-o me-1"/><t t-esc="a.interviews"/><t t-if="a.score"> · <b t-esc="a.score"/>/5</t></span></div>
+                        <div t-if="a.reason" class="small text-danger" t-esc="a.reason"/>
+                    </div>
+                    <div t-if="!p.columns[st.id].length" class="o_rc_none">—</div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_recruit.Drawer">
+        <div class="o_rc_shade" t-on-click="closeApp"/>
+        <aside class="o_rc_drawer">
+            <t t-set="a" t-value="state.app"/>
+            <div class="o_rc_dhead">
+                <div class="flex-grow-1"><h3 class="m-0" t-esc="a.new ? 'New candidate' : a.name"/><div t-if="!a.new" class="small text-muted"><t t-esc="a.job or 'No opening'"/> · applied <t t-esc="a.applied_ec"/></div></div>
+                <button class="btn btn-link" t-on-click="closeApp"><i class="fa fa-times"/></button>
+            </div>
+            <div class="o_rc_dbody">
+                <t t-if="state.appEdit">
+                    <t t-set="e" t-value="state.appEdit"/>
+                    <div class="o_pp_formgrid one">
+                        <label>Name<input class="form-control" t-model="e.candidate.name"/></label>
+                        <label>Email<input class="form-control" t-model="e.candidate.email"/></label>
+                        <label>Phone<input class="form-control" t-model="e.candidate.phone"/></label>
+                        <label>Education<input class="form-control" t-model="e.candidate.education" placeholder="e.g. BSc Plant Science, Haramaya University"/></label>
+                        <label>Years of experience<input type="number" class="form-control" t-model="e.candidate.experience_years"/></label>
+                        <label>City<input class="form-control" t-model="e.candidate.city"/></label>
+                        <label>LinkedIn<input class="form-control" t-model="e.candidate.linkedin"/></label>
+                        <label>Source<input class="form-control" t-model="e.candidate.source" placeholder="Ethiojobs, referral, walk-in …"/></label>
+                        <label>CV<input type="file" class="form-control" t-on-change="onCv"/></label>
+                        <label>Expected salary<input type="number" class="form-control" t-model="e.expected"/></label>
+                        <label>Proposed salary<input type="number" class="form-control" t-model="e.proposed"/></label>
+                        <label>Notes<textarea class="form-control" rows="3" t-model="e.notes"/></label>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-end mt-2">
+                        <button class="btn btn-light border" t-on-click="cancelEdit">Cancel</button>
+                        <button class="btn btn-primary" t-att-disabled="!e.candidate.name" t-on-click="saveApp">Save</button>
+                    </div>
+                </t>
+                <t t-elif="!a.new">
+                    <div t-if="a.is_hr" class="o_rc_stagebar">
+                        <button t-foreach="ctx.stages" t-as="st" t-key="st.id" t-att-disabled="st.id === 'hired'" t-attf-class="{{ a.stage === st.id ? 'on' : '' }}" t-on-click="() => this.move(st.id)" t-esc="st.name"/>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 my-2">
+                        <span class="o_rc_stars big"><i t-foreach="[1,2,3]" t-as="n" t-key="n" t-attf-class="fa {{ a.rating &gt;= n ? 'fa-star' : 'fa-star-o' }}" t-on-click="() => a.is_hr and this.rate(n)"/></span>
+                        <span t-if="!a.active" class="o_pp_badge bad">Not continuing: <t t-esc="a.reason"/></span>
+                        <span t-if="a.hired" class="o_pp_badge">Hired</span>
+                        <button t-if="a.is_hr" class="btn btn-light border btn-sm ms-auto" t-on-click="editApp"><i class="fa fa-pencil me-1"/>Edit</button>
+                    </div>
+                    <div class="o_pp_fields">
+                        <label><span>Email</span><b t-esc="a.candidate.email or '—'"/></label>
+                        <label><span>Phone</span><b t-esc="a.candidate.phone or '—'"/></label>
+                        <label><span>Education</span><b t-esc="a.candidate.education or '—'"/></label>
+                        <label><span>Experience</span><b t-esc="a.candidate.experience_years ? a.candidate.experience_years + ' years' : '—'"/></label>
+                        <label><span>Expected salary</span><b t-esc="money(a.expected) or '—'"/></label>
+                        <label t-if="a.candidate.linkedin"><span>LinkedIn</span><b t-esc="a.candidate.linkedin"/></label>
+                        <label t-if="a.candidate.cv"><span>CV</span><a t-att-href="'/web/content/' + a.candidate.cv.id + '?download=true'" t-esc="a.candidate.cv.name"/></label>
+                    </div>
+                    <div t-if="a.notes or a.candidate.notes" class="o_rc_notes" t-esc="a.notes or a.candidate.notes"/>
+                    <div class="o_rc_sec"><b>Interviews</b><button t-if="a.is_hr" class="btn btn-link btn-sm ms-auto" t-on-click="newInterview"><i class="fa fa-plus me-1"/>Schedule</button></div>
+                    <div t-foreach="a.interviews" t-as="i" t-key="i.id" class="o_rc_iv" t-on-click="() => this.editInterview(i)">
+                        <div class="d-flex"><b t-esc="i.when.slice(0, 16)"/><span class="ms-auto" t-if="i.score"><b t-esc="i.score"/>/5 <t t-esc="i.recommendation.replace('_', ' ')"/></span></div>
+                        <div class="small text-muted"><t t-esc="i.kind"/> · <t t-esc="i.interviewers.map((x) =&gt; x.name).join(', ') or 'no interviewers yet'"/></div>
+                    </div>
+                    <t t-if="state.iv" t-call="sonador_recruit.InterviewForm"/>
+                    <div t-if="a.others.length" class="o_rc_sec"><b>Other applications</b></div>
+                    <div t-foreach="a.others" t-as="x" t-key="x.id" class="small o_rc_other" t-on-click="() => this.openApp(x.id)"><t t-esc="x.job or 'No opening'"/> · <t t-esc="stageLabel(x.stage)"/><t t-if="!x.active"> (not continuing)</t></div>
+                    <t t-if="a.is_hr and a.active and !a.hired">
+                        <div class="o_rc_sec"><b>Decision</b></div>
+                        <div t-if="state.hire" class="o_pp_formgrid one">
+                            <label>Start date<input type="date" class="form-control" t-model="state.hire.start"/></label>
+                            <label>Basic salary<input type="number" class="form-control" t-model="state.hire.wage"/></label>
+                            <label>Department<select class="form-select" t-model="state.hire.department_id"><option value="">Opening's department</option><option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-esc="d.name"/></select></label>
+                            <label>Manager<select class="form-select" t-model="state.hire.parent_id"><option value="">Hiring manager</option><option t-foreach="ctx.people" t-as="pp" t-key="pp.id" t-att-value="pp.id" t-esc="pp.name"/></select></label>
+                            <label>Work email<input class="form-control" t-model="state.hire.email"/></label>
+                            <label>Contract ends (fixed term only)<input type="date" class="form-control" t-model="state.hire.contract_end"/></label>
+                            <div class="d-flex gap-2 justify-content-end"><button class="btn btn-light border" t-on-click="() => state.hire = null">Cancel</button>
+                                <button class="btn btn-primary" t-on-click="doHire"><i class="fa fa-check me-1"/>Hire into People</button></div>
+                        </div>
+                        <div t-else="" class="d-flex flex-wrap gap-2 align-items-center">
+                            <button class="btn btn-primary btn-sm" t-on-click="startHire"><i class="fa fa-user-plus me-1"/>Hire</button>
+                            <select class="form-select form-select-sm w-auto ms-auto" t-model="state.reject"><option value="">Reason…</option><option t-foreach="ctx.reasons" t-as="r" t-key="r.id" t-att-value="r.id" t-esc="r.name"/></select>
+                            <button class="btn btn-light border btn-sm text-danger" t-att-disabled="!state.reject" t-on-click="doReject">Not continuing</button>
+                        </div>
+                    </t>
+                    <button t-if="a.is_hr and !a.active" class="btn btn-light border btn-sm mt-2" t-on-click="doRestore">Back into the pipeline</button>
+                </t>
+            </div>
+        </aside>
+    </t>
+
+    <t t-name="sonador_recruit.InterviewForm">
+        <t t-set="v" t-value="state.iv"/>
+        <div class="o_rc_ivform">
+            <t t-if="ctx.is_hr">
+                <div class="o_pp_formgrid one">
+                    <label>When<input type="datetime-local" class="form-control" t-model="v.when"/></label>
+                    <label>Kind<select class="form-select" t-model="v.kind"><option value="phone">Phone screen</option><option value="panel">Panel interview</option><option value="practical">Practical test</option><option value="final">Final interview</option></select></label>
+                    <label>Place<input class="form-control" t-model="v.place"/></label>
+                </div>
+                <div class="small text-muted mt-1">Interviewers</div>
+                <div class="o_rc_people"><button t-foreach="ctx.people" t-as="p" t-key="p.id" t-attf-class="{{ v.interviewer_ids.includes(p.id) ? 'on' : '' }}" t-on-click="() => this.toggleInterviewer(p.id)" t-esc="p.name"/></div>
+            </t>
+            <t t-if="v.id">
+                <div t-foreach="[['score_skills','Skills'],['score_experience','Experience'],['score_attitude','Attitude and fit'],['score_communication','Communication']]" t-as="k" t-key="k[0]" class="d-flex align-items-center gap-2 mt-1">
+                    <span class="flex-grow-1 small" t-esc="k[1]"/>
+                    <span class="o_rc_score"><button t-foreach="[1,2,3,4,5]" t-as="n" t-key="n" t-attf-class="{{ v[k[0]] &gt;= n ? 'on' : '' }}" t-on-click="() => this.setScore(k[0], n)" t-esc="n"/></span>
+                </div>
+                <div class="o_pp_formgrid one mt-1">
+                    <label>Recommendation<select class="form-select" t-model="v.recommendation"><option value="">—</option><option value="strong_yes">Strong yes</option><option value="yes">Yes</option><option value="no">No</option><option value="strong_no">Strong no</option></select></label>
+                    <label>Notes<textarea class="form-control" rows="2" t-model="v.notes"/></label>
+                    <label class="o_rc_check"><input type="checkbox" class="form-check-input" t-model="v.done"/> Interview held</label>
+                </div>
+            </t>
+            <div class="d-flex gap-2 justify-content-end mt-2"><button class="btn btn-light border btn-sm" t-on-click="() => state.iv = null">Cancel</button>
+                <button class="btn btn-primary btn-sm" t-on-click="saveInterview">Save</button></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_recruit.Interviews">
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-comments-o"/>Interviews <t t-if="!ctx.is_hr">I am on</t></div>
+            <div t-foreach="state.ivs" t-as="i" t-key="i.id" class="o_rc_iv row-like" t-on-click="() => this.openApp(i.application_id)">
+                <div class="d-flex gap-2"><b t-esc="i.candidate"/><span class="text-muted" t-esc="i.job"/><span class="ms-auto" t-esc="i.when.slice(0, 16)"/></div>
+                <div class="small text-muted"><t t-esc="i.kind"/> · <t t-esc="i.interviewers.map((x) =&gt; x.name).join(', ')"/><t t-if="i.score"> · <b t-esc="i.score"/>/5</t><t t-if="!i.done"> · to hold</t></div>
+            </div>
+            <div t-if="!state.ivs.length" class="o_pp_empty">No interviews.</div>
+        </div>
+    </t>
+
+    <t t-name="sonador_recruit.Stats">
+        <t t-set="s" t-value="state.stats"/>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>Applications</span><b t-esc="s.total"/><small><t t-esc="s.active"/> still in a pipeline</small></div>
+            <div class="o_pp_kpi"><span>Hired</span><b class="o_pp_good" t-esc="s.hired"/></div>
+            <div class="o_pp_kpi"><span>Time to hire</span><b><t t-esc="s.time_to_hire === null ? '—' : s.time_to_hire"/> <small>days</small></b><small>application to hire</small></div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-filter"/>Funnel: applications that reached each stage</div>
+                <div class="p-3">
+                    <div t-foreach="s.funnel" t-as="f" t-key="f.stage" class="o_rc_fbar"><span t-esc="f.stage"/><div><i t-attf-style="width: {{ s.total ? Math.max(f.count / s.total * 100, 0.5) : 0 }}%"/></div><b t-esc="f.count"/></div>
+                </div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-calendar"/>Applications by month</div>
+                <div class="p-3"><SbChart type="'bar'" labels="monthChart.labels" series="monthChart.series" height="220"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-times-circle-o"/>Why candidates did not continue</div>
+                <div t-foreach="s.reasons" t-as="r" t-key="r[0]" class="o_pp_li"><span class="flex-grow-1" t-esc="r[0]"/><b t-esc="r[1]"/></div></div>
+        </div>
+    </t>
+</templates>

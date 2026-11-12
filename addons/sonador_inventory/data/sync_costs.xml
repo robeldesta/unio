@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Odoo's own item cost follows the stock records (average-cost items), on every upgrade -->
+    <function model="sb.stock" name="_sync_all_standard_prices"/>
+    <!-- goods brought back on a credit note follow the delivery they return -->
+    <function model="sb.stock" name="_link_sale_returns"/>
+    <!-- the entries the stock engine posted change through the engine only -->
+    <function model="account.move" name="_sb_mark_engine_entries"/>
+</odoo>

@@ -1,0 +1,22 @@
+.o_saas_help_wrap { position: relative; }
+.o_saas_help_badge { position: absolute; top: 2px; right: -2px; font-size: 9px; }
+.o_saas_help {
+    position: absolute; top: 42px; right: 0; width: 400px; max-height: 76vh; display: flex; flex-direction: column; gap: 8px;
+    background: #fff; color: #1B2240; border: 1px solid #E3E6EF; border-radius: 12px; padding: 12px; z-index: 1050;
+    box-shadow: 0 14px 40px rgba(27, 34, 64, .18);
+}
+.o_saas_help_head { display: flex; justify-content: space-between; align-items: center; }
+.o_saas_help_body { overflow: auto; }
+.o_saas_help_result { padding: 8px; border-radius: 8px; cursor: pointer; &:hover { background: #F3F7FF; } }
+.o_saas_help_article { font-size: 13.5px; line-height: 1.55; ol, ul { padding-left: 1.2rem; } }
+.o_saas_help_vote { margin-top: 12px; font-size: 13px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.o_saas_help_ticket { border: 1px solid #E3E6EF; border-radius: 8px; padding: 8px; margin-top: 8px; }
+.o_saas_help_answer { margin-top: 6px; padding: 8px; background: #EEF8F2; border-radius: 6px; font-size: 13px; }
+.o_saas_help_tours { margin-top: 10px; }
+.o_saas_help_label { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: #6B7286; font-weight: 600; margin-bottom: 4px; a { text-transform: none; letter-spacing: 0; } }
+.o_saas_help_tour {
+    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 1px solid #e6e8ef; background: #fff;
+    border-radius: 8px; padding: 7px 10px; margin-bottom: 5px; font-weight: 600; color: #1B2240;
+    .fa { color: #00A09D; font-size: 1.1rem; } span { flex: 1; } small { color: #6B7286; font-weight: 400; }
+    &:hover { border-color: #00A09D; }
+}

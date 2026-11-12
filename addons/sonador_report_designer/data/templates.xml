@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- starting templates, one per department head: Finance changes them freely afterwards -->
+    <record id="tpl_commercial" model="sb.rep.template">
+        <field name="name">Commercial manager</field>
+        <field name="sequence">10</field>
+        <field name="period">week</field>
+        <field name="section_ids" eval="[Command.clear()] + [
+            Command.create({&quot;sequence&quot;: 10, &quot;title&quot;: 'Summary', &quot;prompt&quot;: 'The week in three lines', &quot;required&quot;: True, &quot;block_codes&quot;: 'sales_summary'}),
+            Command.create({&quot;sequence&quot;: 20, &quot;title&quot;: 'Sales', &quot;prompt&quot;: 'Why a product or region moved', &quot;required&quot;: True, &quot;block_codes&quot;: 'sales_by_product,sales_by_type,sales_by_person'}),
+            Command.create({&quot;sequence&quot;: 30, &quot;title&quot;: 'Van sales', &quot;prompt&quot;: 'Trips next week, money still with salespeople', &quot;required&quot;: False, &quot;block_codes&quot;: 'van_trips'}),
+            Command.create({&quot;sequence&quot;: 40, &quot;title&quot;: 'Collections', &quot;prompt&quot;: 'Who promised to pay, and when', &quot;required&quot;: True, &quot;block_codes&quot;: 'collections,receivables_ageing'}),
+            Command.create({&quot;sequence&quot;: 50, &quot;title&quot;: 'Marketing spend', &quot;prompt&quot;: 'What the money bought', &quot;required&quot;: False, &quot;block_codes&quot;: 'marketing_expenses'}),
+            Command.create({&quot;sequence&quot;: 70, &quot;title&quot;: 'Plan', &quot;prompt&quot;: &quot;Next week's focus&quot;, &quot;required&quot;: True, &quot;block_codes&quot;: 'plan_checkins'}),
+        ]"/>
+    </record>
+    <record id="tpl_finance" model="sb.rep.template">
+        <field name="name">Finance</field>
+        <field name="sequence">20</field>
+        <field name="period">week</field>
+        <field name="section_ids" eval="[Command.clear()] + [
+            Command.create({&quot;sequence&quot;: 10, &quot;title&quot;: 'Summary', &quot;prompt&quot;: 'The week in three lines', &quot;required&quot;: True, &quot;block_codes&quot;: ''}),
+            Command.create({&quot;sequence&quot;: 20, &quot;title&quot;: 'Cash and bank', &quot;prompt&quot;: 'Anything unusual in the accounts', &quot;required&quot;: True, &quot;block_codes&quot;: 'cash_bank'}),
+            Command.create({&quot;sequence&quot;: 30, &quot;title&quot;: 'Money in and out', &quot;prompt&quot;: 'Large payments and receipts', &quot;required&quot;: False, &quot;block_codes&quot;: 'collections,payments_by_purpose'}),
+            Command.create({&quot;sequence&quot;: 40, &quot;title&quot;: 'Waiting', &quot;prompt&quot;: 'Requests and approvals still open', &quot;required&quot;: False, &quot;block_codes&quot;: 'requests_waiting,approvals_decided'}),
+            Command.create({&quot;sequence&quot;: 50, &quot;title&quot;: 'Tax', &quot;prompt&quot;: 'Due dates coming', &quot;required&quot;: False, &quot;block_codes&quot;: 'vat_wht'}),
+            Command.create({&quot;sequence&quot;: 60, &quot;title&quot;: 'Customers owing', &quot;prompt&quot;: 'Who to chase', &quot;required&quot;: False, &quot;block_codes&quot;: 'receivables_ageing'}),
+            Command.create({&quot;sequence&quot;: 70, &quot;title&quot;: 'Plan', &quot;prompt&quot;: &quot;Next week's focus&quot;, &quot;required&quot;: True, &quot;block_codes&quot;: 'plan_checkins'}),
+        ]"/>
+    </record>
+    <record id="tpl_store" model="sb.rep.template">
+        <field name="name">Store</field>
+        <field name="sequence">30</field>
+        <field name="period">week</field>
+        <field name="section_ids" eval="[Command.clear()] + [
+            Command.create({&quot;sequence&quot;: 10, &quot;title&quot;: 'Summary', &quot;prompt&quot;: 'The week in three lines', &quot;required&quot;: True, &quot;block_codes&quot;: ''}),
+            Command.create({&quot;sequence&quot;: 20, &quot;title&quot;: 'Stock in and out', &quot;prompt&quot;: 'Large receipts and issues', &quot;required&quot;: True, &quot;block_codes&quot;: 'stock_movements'}),
+            Command.create({&quot;sequence&quot;: 30, &quot;title&quot;: 'Reorder', &quot;prompt&quot;: 'What must be bought', &quot;required&quot;: False, &quot;block_codes&quot;: 'stock_low'}),
+            Command.create({&quot;sequence&quot;: 40, &quot;title&quot;: 'Deliveries', &quot;prompt&quot;: 'Delays at loading or the gate', &quot;required&quot;: False, &quot;block_codes&quot;: 'deliveries'}),
+            Command.create({&quot;sequence&quot;: 50, &quot;title&quot;: 'Plan', &quot;prompt&quot;: &quot;Next week's focus&quot;, &quot;required&quot;: True, &quot;block_codes&quot;: 'plan_checkins'}),
+        ]"/>
+    </record>
+    <record id="tpl_production" model="sb.rep.template">
+        <field name="name">Production</field>
+        <field name="sequence">40</field>
+        <field name="period">week</field>
+        <field name="section_ids" eval="[Command.clear()] + [
+            Command.create({&quot;sequence&quot;: 10, &quot;title&quot;: 'Summary', &quot;prompt&quot;: 'The week in three lines', &quot;required&quot;: True, &quot;block_codes&quot;: ''}),
+            Command.create({&quot;sequence&quot;: 20, &quot;title&quot;: 'Output', &quot;prompt&quot;: 'Why output was above or below plan', &quot;required&quot;: True, &quot;block_codes&quot;: 'production'}),
+            Command.create({&quot;sequence&quot;: 30, &quot;title&quot;: 'Materials', &quot;prompt&quot;: 'Materials issued and what ran short', &quot;required&quot;: False, &quot;block_codes&quot;: 'stock_movements,stock_low'}),
+            Command.create({&quot;sequence&quot;: 40, &quot;title&quot;: 'Team', &quot;prompt&quot;: 'Attendance and overtime', &quot;required&quot;: False, &quot;block_codes&quot;: 'team_attendance'}),
+            Command.create({&quot;sequence&quot;: 50, &quot;title&quot;: 'Plan', &quot;prompt&quot;: &quot;Next week's focus&quot;, &quot;required&quot;: True, &quot;block_codes&quot;: 'plan_checkins'}),
+        ]"/>
+    </record>
+    <record id="tpl_purchase" model="sb.rep.template">
+        <field name="name">Purchase</field>
+        <field name="sequence">50</field>
+        <field name="period">week</field>
+        <field name="section_ids" eval="[Command.clear()] + [
+            Command.create({&quot;sequence&quot;: 10, &quot;title&quot;: 'Summary', &quot;prompt&quot;: 'The week in three lines', &quot;required&quot;: True, &quot;block_codes&quot;: ''}),
+            Command.create({&quot;sequence&quot;: 20, &quot;title&quot;: 'Orders', &quot;prompt&quot;: 'Late suppliers, price changes', &quot;required&quot;: True, &quot;block_codes&quot;: 'po_status'}),
+            Command.create({&quot;sequence&quot;: 30, &quot;title&quot;: 'Requests', &quot;prompt&quot;: 'What waits and why', &quot;required&quot;: False, &quot;block_codes&quot;: 'purchase_requests'}),
+            Command.create({&quot;sequence&quot;: 40, &quot;title&quot;: 'Reorder', &quot;prompt&quot;: 'Items to buy next', &quot;required&quot;: False, &quot;block_codes&quot;: 'stock_low'}),
+            Command.create({&quot;sequence&quot;: 50, &quot;title&quot;: 'Plan', &quot;prompt&quot;: &quot;Next week's focus&quot;, &quot;required&quot;: True, &quot;block_codes&quot;: 'plan_checkins'}),
+        ]"/>
+    </record>
+    <record id="tpl_hr" model="sb.rep.template">
+        <field name="name">HR and admin</field>
+        <field name="sequence">60</field>
+        <field name="period">month</field>
+        <field name="section_ids" eval="[Command.clear()] + [
+            Command.create({&quot;sequence&quot;: 10, &quot;title&quot;: 'Summary', &quot;prompt&quot;: 'The month in three lines', &quot;required&quot;: True, &quot;block_codes&quot;: ''}),
+            Command.create({&quot;sequence&quot;: 20, &quot;title&quot;: 'Attendance', &quot;prompt&quot;: 'Lateness and absence to act on', &quot;required&quot;: True, &quot;block_codes&quot;: 'team_attendance'}),
+            Command.create({&quot;sequence&quot;: 30, &quot;title&quot;: 'Leave', &quot;prompt&quot;: 'Who is away next month', &quot;required&quot;: False, &quot;block_codes&quot;: 'team_leave'}),
+            Command.create({&quot;sequence&quot;: 40, &quot;title&quot;: 'System use', &quot;prompt&quot;: 'Who needs training', &quot;required&quot;: False, &quot;block_codes&quot;: 'team_usage'}),
+            Command.create({&quot;sequence&quot;: 50, &quot;title&quot;: 'Plan', &quot;prompt&quot;: &quot;Next month's focus&quot;, &quot;required&quot;: True, &quot;block_codes&quot;: 'plan_checkins'}),
+        ]"/>
+    </record>
+    <record id="tpl_gm" model="sb.rep.template">
+        <field name="name">General manager</field>
+        <field name="sequence">70</field>
+        <field name="period">week</field>
+        <field name="section_ids" eval="[Command.clear()] + [
+            Command.create({&quot;sequence&quot;: 10, &quot;title&quot;: 'Summary', &quot;prompt&quot;: 'The week in a few lines', &quot;required&quot;: True, &quot;block_codes&quot;: 'sales_summary'}),
+            Command.create({&quot;sequence&quot;: 20, &quot;title&quot;: 'Sales', &quot;prompt&quot;: 'Where sales came from', &quot;required&quot;: False, &quot;block_codes&quot;: 'sales_by_type,sales_by_person,top_customers'}),
+            Command.create({&quot;sequence&quot;: 30, &quot;title&quot;: 'Money', &quot;prompt&quot;: 'Cash, collections, what we owe', &quot;required&quot;: True, &quot;block_codes&quot;: 'cash_bank,collections,receivables_ageing'}),
+            Command.create({&quot;sequence&quot;: 40, &quot;title&quot;: 'Operations', &quot;prompt&quot;: 'Production, store and deliveries', &quot;required&quot;: False, &quot;block_codes&quot;: 'production,stock_movements,deliveries'}),
+            Command.create({&quot;sequence&quot;: 50, &quot;title&quot;: 'Costs', &quot;prompt&quot;: 'Marketing and other spending', &quot;required&quot;: False, &quot;block_codes&quot;: 'marketing_expenses,payments_by_purpose'}),
+            Command.create({&quot;sequence&quot;: 60, &quot;title&quot;: 'People', &quot;prompt&quot;: 'Attendance and system use', &quot;required&quot;: False, &quot;block_codes&quot;: 'team_attendance,team_usage'}),
+            Command.create({&quot;sequence&quot;: 70, &quot;title&quot;: 'Decisions', &quot;prompt&quot;: 'What needs a decision', &quot;required&quot;: False, &quot;block_codes&quot;: 'approvals_decided'}),
+        ]"/>
+    </record>
+</odoo>

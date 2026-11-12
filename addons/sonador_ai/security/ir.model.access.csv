@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_ai_chat,sb.ai.chat own,model_sb_ai_chat,base.group_user,1,1,1,1
+access_sb_ai_memory_user,sb.ai.memory user,model_sb_ai_memory,base.group_user,1,0,0,0
+access_sb_ai_memory_admin,sb.ai.memory admin,model_sb_ai_memory,base.group_erp_manager,1,1,1,1

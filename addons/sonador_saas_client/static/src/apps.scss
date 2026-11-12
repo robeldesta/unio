@@ -1,0 +1,20 @@
+.o_saas_apps {
+    max-width: 980px; margin: 0 auto; padding: 28px 24px 60px; overflow: auto; height: 100%;
+    h1 { font-size: 26px; font-weight: 800; letter-spacing: -.4px; margin-bottom: 4px; }
+}
+.o_saas_apps_grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 18px; }
+.o_saas_app {
+    display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #E3E6EF; border-radius: 12px; padding: 14px;
+    img { width: 44px; height: 44px; flex: none; }
+    &.off img { filter: grayscale(1); opacity: .45; }
+    .o_saas_app_text { flex: 1; min-width: 0; }
+    .o_saas_app_name { font-weight: 700; }
+    .o_saas_app_tag { font-size: 11px; font-weight: 600; color: #1F9A5A; background: #E7F8EE; border-radius: 10px; padding: 1px 8px; margin-left: 8px; }
+    .form-switch .form-check-input { width: 2.6em; height: 1.4em; cursor: pointer; }
+}
+.o_saas_refer_link { display: flex; gap: 8px; max-width: 640px; margin: 18px 0 10px; input { font-weight: 600; } }
+.o_saas_refer_share { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.o_saas_refer_stats { display: flex; gap: 14px; margin: 24px 0;
+    div { background: #fff; border: 1px solid #E3E6EF; border-radius: 12px; padding: 14px 20px; min-width: 150px; display: flex; flex-direction: column; }
+    b { font-size: 26px; font-weight: 800; } span { color: #6B7286; font-size: 13px; } }
+.o_saas_app_adding { color: #b7791f; font-weight: 600; margin-top: 4px; }

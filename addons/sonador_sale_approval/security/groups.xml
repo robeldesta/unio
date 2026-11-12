@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_so_finance" model="res.groups">
+        <field name="name">Sales: finance check</field>
+        <field name="comment">Checks sales orders (prices, credit, payment) before the commercial approval, when sales approvals are on.</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="group_so_commercial" model="res.groups">
+        <field name="name">Sales: commercial approval</field>
+        <field name="comment">Gives the commercial approval of sales orders; the order is then confirmed for delivery.</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+</odoo>

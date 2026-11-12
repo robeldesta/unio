@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_agenda_todo_user,agenda.todo user,model_agenda_todo,base.group_user,1,1,1,1
+access_agenda_mark_user,agenda.mark user,model_agenda_mark,base.group_user,1,0,0,0
+access_agenda_rule_user,agenda.rule user,model_agenda_rule,base.group_user,1,0,0,0
+access_agenda_rule_manager,agenda.rule manager,model_agenda_rule,sonador_books.group_sb_manager,1,1,1,1

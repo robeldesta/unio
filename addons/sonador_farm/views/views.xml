@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- buying for a flock (any job): the request line and the order line say what it is for; the GRN and the bill follow -->
+    <record id="purchase_order_form_farm" model="ir.ui.view">
+        <field name="name">purchase.order.form.farm</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_qty']" position="before">
+                <field name="job_id" optional="show" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

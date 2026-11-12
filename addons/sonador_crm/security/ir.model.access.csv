@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_woreda_user,woreda,model_sb_woreda,base.group_user,1,0,0,0
+access_woreda_mgr,woreda mgr,model_sb_woreda,group_crm_manager,1,1,1,1
+access_tag_sales,tag,model_sb_crm_tag,group_crm_user,1,1,1,0
+access_tag_mgr,tag mgr,model_sb_crm_tag,group_crm_manager,1,1,1,1
+access_pipe_sales,pipeline,model_sb_crm_pipeline,group_crm_user,1,0,0,0
+access_pipe_mgr,pipeline mgr,model_sb_crm_pipeline,group_crm_manager,1,1,1,1
+access_stage_sales,stage,model_sb_crm_stage,group_crm_user,1,0,0,0
+access_stage_mgr,stage mgr,model_sb_crm_stage,group_crm_manager,1,1,1,1
+access_deal_sales,deal,model_sb_deal,group_crm_user,1,1,1,0
+access_deal_mgr,deal mgr,model_sb_deal,group_crm_manager,1,1,1,1
+access_act_sales,activity,model_sb_crm_activity,group_crm_user,1,1,1,0
+access_act_mgr,activity mgr,model_sb_crm_activity,group_crm_manager,1,1,1,1
+access_target_sales,target,model_sb_crm_target,group_crm_user,1,0,0,0
+access_target_mgr,target mgr,model_sb_crm_target,group_crm_manager,1,1,1,1
+access_lost_sales,lost,model_sb_crm_lost_reason,group_crm_user,1,0,0,0
+access_lost_mgr,lost mgr,model_sb_crm_lost_reason,group_crm_manager,1,1,1,1

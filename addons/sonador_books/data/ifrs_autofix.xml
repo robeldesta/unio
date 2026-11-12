@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- every upgrade: accounts the old defaults left on a clearly wrong statement line are put right -->
+    <function model="account.account" name="_sb_ifrs_autofix"/>
+    <!-- and every upgrade: which accounts are customers' or vendors' -->
+    <function model="account.account" name="_sb_recompute_partner_side"/>
+</odoo>

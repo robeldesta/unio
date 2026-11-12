@@ -1,0 +1,238 @@
+// Dashboard. Hero in the company colour (briefing + ask), a strip of numbers, then "needs you" beside "what's off" and
+// the chart. Every colour comes from the theme ($primary and the semantic colours), so each company keeps its own look.
+// Note for libsass: no CSS max()/min() with mixed units and no rgba(var(--x)) here; use SCSS colours.
+
+$sb-ink: $body-color;
+$sb-soft: mix($body-color, $body-bg, 55%);
+$sb-line: mix($body-color, $body-bg, 10%);
+$sb-page: mix($primary, $body-bg, 4%);
+$sb-hero: mix(#0b120e, $primary, 58%);
+$sb-hero-2: mix(#0b120e, $primary, 40%);
+$sb-radius: 16px;
+$sb-shadow: 0 1px 2px rgba(16, 24, 20, .04), 0 6px 20px rgba(16, 24, 20, .06);
+
+.o_sb_dash, .o_sb_dash.o_action {
+    overflow: auto !important;
+    background: $sb-page;
+    color: $sb-ink;
+}
+.o_sb_page {
+    max-width: 1320px; margin: 0 auto; padding: 24px 28px 56px;
+    display: flex; flex-direction: column; gap: 22px;
+    @media (max-width: 700px) { padding: 14px 14px 40px; gap: 16px; }
+}
+.o_sb_loading { display: flex; height: 60vh; align-items: center; justify-content: center; font-size: 28px; color: $primary; }
+
+// ---------------------------------------------------------------- hero
+.o_sb_hero {
+    position: relative; overflow: hidden; border-radius: 22px;
+    background: linear-gradient(135deg, $sb-hero 0%, $sb-hero-2 100%);
+    color: #fff; padding: 30px 32px 22px;
+    display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 28px;
+    box-shadow: 0 10px 30px rgba(11, 18, 14, .18);
+    &::after { // a soft light in the corner, nothing more
+        content: ""; position: absolute; right: -120px; top: -160px; width: 420px; height: 420px; border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(255, 255, 255, .10), rgba(255, 255, 255, 0)); pointer-events: none;
+    }
+    @media (max-width: 980px) { grid-template-columns: minmax(0, 1fr); padding: 22px 20px 18px; }
+}
+.o_sb_hero_main { position: relative; z-index: 1; min-width: 0; display: flex; flex-direction: column; }
+.o_sb_hero_who { display: flex; align-items: center; gap: 12px; }
+.o_sb_hero_av { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, .55); }
+.o_sb_eyebrow { font-size: 11.5px; letter-spacing: 1.6px; text-transform: uppercase; color: rgba(255, 255, 255, .72); font-weight: 600; }
+.o_sb_role {
+    display: inline-block; margin-top: 3px; font-size: 12px; padding: 2px 10px; border-radius: 999px;
+    background: rgba(255, 255, 255, .14); color: #fff; font-weight: 500;
+}
+.o_sb_hero h1 { font-size: 34px; line-height: 1.15; font-weight: 700; letter-spacing: -.5px; margin: 18px 0 12px; color: #fff; }
+.o_sb_brief {
+    max-width: 68ch;
+    p { font-size: 16.5px; line-height: 1.62; margin: 0 0 10px; color: rgba(255, 255, 255, .9); }
+    b { color: #fff; font-weight: 700; }
+}
+.o_sb_hero_foot {
+    margin-top: auto; padding-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+    border-top: 1px solid rgba(255, 255, 255, .14); font-size: 12.5px;
+}
+.o_sb_src { color: rgba(255, 255, 255, .7); }
+.o_sb_push { margin-left: auto; }
+.o_sb_link_light {
+    background: none; border: 0; padding: 0; color: #fff; font-weight: 600; opacity: .9;
+    &:hover { opacity: 1; text-decoration: underline; }
+    &:disabled { opacity: .5; }
+}
+
+// ask (a white card inside the hero)
+.o_sb_ask {
+    position: relative; z-index: 1; min-width: 0; align-self: start;
+    background: $body-bg; color: $sb-ink; border-radius: $sb-radius; padding: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+.o_sb_ask_head { font-size: 13px; font-weight: 700; color: $sb-ink; margin-bottom: 10px; i { color: $primary; margin-right: 4px; } }
+.o_sb_ask_box {
+    display: flex; align-items: center; gap: 6px; border: 1.5px solid $sb-line; border-radius: 12px; padding: 4px 4px 4px 12px;
+    background: $body-bg; transition: border-color .15s;
+    &:focus-within { border-color: $primary; }
+    input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: $sb-ink; font-size: 14px; padding: 6px 0; }
+    button {
+        width: 34px; height: 34px; border-radius: 9px; border: 0; background: $primary; color: color-contrast($primary);
+        display: inline-flex; align-items: center; justify-content: center; flex: none;
+        &:disabled { opacity: .6; }
+    }
+}
+.o_sb_chips { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.o_sb_chip {
+    text-align: left; border: 1px solid $sb-line; background: mix($primary, $body-bg, 5%); color: $sb-ink;
+    border-radius: 10px; padding: 7px 11px; font-size: 13px; line-height: 1.35;
+    &::before { content: "\f10d"; font-family: FontAwesome; font-size: 10px; color: $primary; margin-right: 8px; opacity: .7; }
+    &:hover { border-color: $primary; background: mix($primary, $body-bg, 10%); }
+}
+.o_sb_answer {
+    margin-top: 12px; border-radius: 12px; padding: 12px 14px; background: mix($primary, $body-bg, 7%); font-size: 13.5px; line-height: 1.6;
+    max-height: 340px; overflow: auto;
+    &.o_err { background: mix($warning, $body-bg, 14%); }
+    &.o_sb_thinking { color: $sb-soft; font-style: italic; }
+    p { margin: 0 0 6px; } ul { margin: 0 0 6px; padding-left: 18px; }
+    a.o_sb_dash_link { color: $primary; font-weight: 600; }
+}
+.o_sb_q { font-size: 11.5px; text-transform: uppercase; letter-spacing: .8px; color: $sb-soft; font-weight: 700; margin-bottom: 6px; }
+.o_sb_answer_foot { display: flex; gap: 14px; margin-top: 8px; font-size: 12.5px; a { color: $primary; font-weight: 600; } }
+
+// ---------------------------------------------------------------- numbers strip
+.o_sb_kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.o_sb_kpi {
+    display: grid; grid-template-columns: auto 1fr; grid-template-areas: "icon label" "value value" "sub sub";
+    column-gap: 10px; row-gap: 4px; align-items: center; text-align: left;
+    background: $body-bg; border: 1px solid $sb-line; border-radius: $sb-radius; padding: 16px 16px 14px; box-shadow: $sb-shadow;
+    color: $sb-ink; transition: transform .12s, box-shadow .12s, border-color .12s;
+    &:hover { transform: translateY(-2px); border-color: mix($primary, $body-bg, 40%); box-shadow: 0 10px 26px rgba(16, 24, 20, .10); }
+}
+.o_sb_kpi_icon {
+    grid-area: icon; width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center;
+    background: mix($primary, $body-bg, 12%); color: $primary; font-size: 14px;
+}
+.o_sb_kpi_label { grid-area: label; font-size: 11.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: $sb-soft; }
+.o_sb_kpi_value {
+    grid-area: value; font-size: 30px; font-weight: 750; letter-spacing: -.8px; line-height: 1.1; margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+    small { font-size: 13px; font-weight: 600; color: $sb-soft; margin-left: 4px; letter-spacing: 0; }
+}
+.o_sb_kpi_sub { grid-area: sub; font-size: 12.5px; color: $sb-soft;
+    &.o_up { color: $success; font-weight: 600; } &.o_down { color: $danger; font-weight: 600; } }
+
+// ---------------------------------------------------------------- the two columns
+.o_sb_grid {
+    display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 22px; align-items: start;
+    @media (max-width: 1100px) { grid-template-columns: minmax(0, 1fr); }
+}
+.o_sb_col { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.o_sb_card {
+    background: $body-bg; border: 1px solid $sb-line; border-radius: $sb-radius; padding: 18px 20px; box-shadow: $sb-shadow; min-width: 0;
+    > header {
+        display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+        h2 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -.2px; }
+    }
+}
+.o_sb_meta { margin-left: auto; font-size: 12px; color: $sb-soft; }
+.o_sb_badge {
+    min-width: 24px; height: 24px; padding: 0 8px; border-radius: 999px; background: $primary; color: color-contrast($primary);
+    font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;
+}
+.o_sb_empty, .o_sb_ok { color: $sb-soft; padding: 10px 0; font-size: 14px; i { color: $success; margin-right: 6px; } }
+.o_sb_ok { padding: 18px 20px; }
+
+// needs you
+.o_sb_item {
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 14px; align-items: start;
+    padding: 14px 0; border-top: 1px solid $sb-line;
+    &:first-of-type { border-top: 0; }
+    &.o_done { opacity: .55; .o_sb_item_title { text-decoration: line-through; } }
+    @media (max-width: 640px) { grid-template-columns: 36px minmax(0, 1fr); .o_sb_item_side { grid-column: 2; align-items: flex-start; } }
+}
+.o_sb_item_av { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.o_sb_item_icon {
+    width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+    background: mix($primary, $body-bg, 12%); color: $primary; font-size: 16px;
+}
+.o_sb_item_body { min-width: 0; }
+.o_sb_item_top { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.o_sb_app {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: $primary;
+    background: mix($primary, $body-bg, 10%); padding: 2px 7px; border-radius: 5px;
+}
+.o_sb_age { font-size: 12px; color: $sb-soft; font-weight: 600;
+    &.o_warn { color: mix($warning, #000, 70%); } &.o_bad { color: $danger; } }
+.o_sb_item_title { display: block; font-weight: 650; font-size: 14.5px; color: $sb-ink; line-height: 1.35;
+    &:hover { color: $primary; text-decoration: none; } }
+.o_sb_item_sub { font-size: 12.5px; color: $sb-soft; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o_sb_item_side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.o_sb_amount { font-size: 16px; font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap;
+    small { font-size: 11px; color: $sb-soft; font-weight: 600; } }
+.o_sb_actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.o_sb_btn {
+    border: 1px solid $sb-line; background: $body-bg; color: $sb-ink; border-radius: 9px; padding: 6px 12px;
+    font-size: 12.5px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+    &:hover { border-color: mix($sb-ink, $body-bg, 30%); }
+    &.o_primary { background: $primary; border-color: $primary; color: color-contrast($primary);
+        &:hover { background: mix(#000, $primary, 12%); } }
+    &.o_ghost { border-color: transparent; color: $sb-soft; }
+    &:disabled { opacity: .55; }
+}
+.o_sb_donetag { font-size: 12.5px; font-weight: 700; color: $success; }
+.o_sb_refuse { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+    input { flex: 1; min-width: 180px; border: 1.5px solid $sb-line; border-radius: 9px; padding: 6px 10px; background: $body-bg; color: $sb-ink;
+        &:focus { outline: 0; border-color: $primary; } } }
+.o_sb_more { display: block; padding: 10px 0 4px; font-size: 13px; font-weight: 600; color: $primary; border-top: 1px dashed $sb-line; }
+.o_sb_sub { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: $sb-soft; margin: 18px 0 6px; }
+.o_sb_queue {
+    display: flex; align-items: center; gap: 12px; text-align: left; background: none; border: 0;
+    padding: 10px 8px; margin: 0 -8px; width: calc(100% + 16px); border-radius: 10px; color: $sb-ink;
+    &:hover { background: mix($primary, $body-bg, 5%); .o_sb_chev { color: $primary; } }
+}
+.o_sb_queue_count {
+    min-width: 46px; height: 32px; padding: 0 8px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 750; font-size: 14px; font-variant-numeric: tabular-nums;
+    &.o_warn { background: mix($warning, $body-bg, 18%); color: mix($warning, #000, 55%); }
+    &.o_bad { background: mix($danger, $body-bg, 14%); color: $danger; }
+}
+.o_sb_queue_body { min-width: 0; flex: 1; display: flex; flex-direction: column; }
+.o_sb_queue_title { font-weight: 650; font-size: 14px; .o_sb_app { margin-left: 6px; } }
+.o_sb_queue_rows { font-size: 12px; color: $sb-soft; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o_sb_chev { color: $sb-soft; font-size: 18px; }
+
+// what's off
+.o_sb_sig {
+    display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; padding: 13px 0; border-top: 1px solid $sb-line;
+    &:first-of-type { border-top: 0; }
+}
+.o_sb_sig_icon {
+    width: 36px; height: 36px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px;
+    background: mix($warning, $body-bg, 16%); color: mix($warning, #000, 60%);
+}
+.o_sb_sig.o_bad .o_sb_sig_icon { background: mix($danger, $body-bg, 12%); color: $danger; }
+.o_sb_sig.o_info .o_sb_sig_icon { background: mix($info, $body-bg, 14%); color: mix($info, #000, 70%); }
+.o_sb_sig_body { min-width: 0; }
+.o_sb_sig_top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.o_sb_sig_title { font-weight: 650; font-size: 14.5px; }
+.o_sb_level { font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; white-space: nowrap; color: mix($warning, #000, 65%); }
+.o_sb_sig.o_bad .o_sb_level { color: $danger; }
+.o_sb_sig.o_info .o_sb_level { color: mix($info, #000, 70%); }
+.o_sb_sig_fig { font-size: 13px; color: $sb-ink; opacity: .85; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.o_sb_why {
+    margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: mix($sb-ink, $body-bg, 4%); font-size: 13px; line-height: 1.55;
+    p { margin: 0 0 4px; } b { font-weight: 700; }
+}
+.o_sb_sig_acts { display: flex; gap: 16px; margin-top: 6px;
+    button { background: none; border: 0; padding: 0; font-size: 12.5px; font-weight: 600; color: $primary; &:hover { text-decoration: underline; } } }
+
+// chart
+.o_sb_chart {
+    width: 100%; height: auto; display: block; margin-top: 4px;
+    .o_grid { stroke: $sb-line; stroke-dasharray: 3 4; }
+    .o_axis { stroke: mix($sb-ink, $body-bg, 25%); }
+    .o_bar { fill: mix($primary, $body-bg, 45%); }
+    .o_bar.o_top { fill: $primary; }
+    .o_bar.o_partial { fill: mix($primary, $body-bg, 20%); stroke: mix($primary, $body-bg, 55%); stroke-dasharray: 4 3; }
+    .o_val { font-size: 11px; font-weight: 700; fill: $sb-ink; }
+    .o_lab { font-size: 11px; fill: $sb-soft; }
+}
+.o_sb_hidden { font-size: 12px; color: $sb-soft; padding: 0 4px; }

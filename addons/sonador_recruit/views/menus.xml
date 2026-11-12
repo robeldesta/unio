@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_recruit" model="ir.actions.client">
+        <field name="name">Recruitment</field>
+        <field name="tag">sonador_recruit.app</field>
+        <field name="params" eval="{'page': 'openings'}"/>
+    </record>
+    <record id="action_my_interviews" model="ir.actions.client">
+        <field name="name">My Interviews</field>
+        <field name="tag">sonador_recruit.app</field>
+        <field name="params" eval="{'page': 'interviews'}"/>
+    </record>
+    <menuitem id="menu_recruit" name="Recruitment" parent="sonador_books.menu_hr_root" action="action_recruit" sequence="11" groups="sonador_books.group_sb_hr"/>
+    <menuitem id="menu_my_interviews" name="My Interviews" parent="sonador_books.menu_hr_root" action="action_my_interviews" sequence="12"/>
+    <function model="sb.recruit" name="_hide_odoo_recruitment"/>
+</odoo>

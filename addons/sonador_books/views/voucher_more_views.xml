@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_voucher_form_more" model="ir.ui.view">
+        <field name="name">sb.voucher.form.more</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sb_voucher_form_series"/>
+        <field name="arch" type="xml">
+            <!-- Print: each voucher as what it is; not offered where only a fiscal device issues the invoice -->
+            <xpath expr="//header/button[@name='action_view_move']" position="before">
+                <field name="sb_printable" invisible="1"/>
+                <field name="sb_editing" invisible="1"/>
+                <button name="action_sb_print" type="object" string="Print" icon="fa-print" invisible="not sb_printable or not id"/>
+                <button name="action_sb_print_internal" type="object" string="Print internal copy" icon="fa-print"
+                        invisible="voucher_type not in ('sale', 'cash_sale', 'sale_return') or not id"/>
+                <button name="action_discard_edit" type="object" string="Discard changes" invisible="not sb_editing"
+                        confirm="Discard the changes and go back to the voucher as it was posted?" confirm-label="Discard changes"/>
+            </xpath>
+            <!-- a posted voucher reopened with Edit is "Being edited", not "Not posted": its entry is still in the books -->
+            <xpath expr="//header/field[@name='state']" position="attributes">
+                <attribute name="invisible">sb_editing</attribute>
+            </xpath>
+            <xpath expr="//header/field[@name='state']" position="after">
+                <field name="sb_status" widget="statusbar" statusbar_visible="editing,posted" invisible="not sb_editing"/>
+            </xpath>
+            <xpath expr="//header/button[@name='action_edit']" position="attributes">
+                <attribute name="confirm">Edit this voucher? The posted entry stays in the books until you post your changes; Discard changes returns to it.</attribute>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="alert alert-warning mb-2" role="alert" invisible="not sb_editing">
+                    <b>Editing a posted voucher.</b> The posted entry stays in the books, unchanged, until you post your changes.
+                    Post to replace it, or Discard changes to go back to it.
+                </div>
+            </xpath>
+            <!-- Ethiopia: the fiscal receipt / e-invoice number is the document's number -->
+            <xpath expr="(//field[@name='sb_pad_number'])[2]" position="attributes">
+                <attribute name="required">sb_fiscal_only and state == 'draft'</attribute>
+            </xpath>
+            <!-- purchase bills and debit notes are numbered by series too -->
+            <xpath expr="//field[@name='sb_series_id']" position="attributes">
+                <attribute name="invisible">sb_fiscal_only or voucher_type not in ('sale', 'cash_sale', 'sale_return', 'receipt', 'payment', 'journal', 'bill', 'purchase_return') or (state != 'draft' and not sb_series_id)</attribute>
+            </xpath>
+            <!-- withholding (goods or services, amount, the 30% warning) above the tabs: a payment is worked on its Apply tab -->
+            <xpath expr="//notebook" position="before">
+                <xpath expr="//page[@name='lines']/group" position="move"/>
+            </xpath>
+            <xpath expr="//field[@name='wht_supply']" position="attributes">
+                <attribute name="required">sb_wht_supply_needed</attribute>
+            </xpath>
+            <xpath expr="//field[@name='wht_supply']" position="before">
+                <field name="sb_wht_supply_needed" invisible="1"/>
+                <field name="sb_wht_none" invisible="1"/>
+            </xpath>
+            <!-- paying taxes, pension, salaries, a dividend or a loan: no withholding block at all -->
+            <xpath expr="//field[@name='wht_supply']/../.." position="attributes">
+                <attribute name="invisible">voucher_type not in ('receipt', 'payment', 'cash_sale', 'cash_purchase') or (state != 'draft' and not withholding) or (sb_wht_none and not withholding)</attribute>
+            </xpath>
+            <!-- a receipt or payment is not "paid": no PAID ribbon on them -->
+            <xpath expr="(//widget[@name='web_ribbon'])[2]" position="attributes">
+                <attribute name="invisible">payment_state != 'paid' or state != 'posted' or voucher_type in ('receipt', 'payment')</attribute>
+            </xpath>
+            <!-- the total's "Less withholding" is a figure, not an input (an input there overlapped the amount and Br) -->
+            <xpath expr="//group[hasclass('oe_subtotal_footer')]/field[@name='wht_amount']" position="attributes">
+                <attribute name="readonly">1</attribute>
+            </xpath>
+            <!-- apply grid: the full number, date, due date, original and open amounts (credits negative); once posted, only
+                 what the voucher applied -->
+            <xpath expr="//field[@name='apply_ids']" position="attributes">
+                <attribute name="invisible">state != 'draft'</attribute>
+                <attribute name="class">o_sb_apply_grid</attribute>
+            </xpath>
+            <!-- the grid fits the form beside the chatter (about 740px at 1440): narrow columns, amounts without the
+                 currency symbol, the document date on demand (the due date shows) -->
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='document']" position="attributes">
+                <attribute name="width">90px</attribute>
+                <attribute name="class">text-nowrap</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='item_type']" position="attributes">
+                <attribute name="width">70px</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='invoice_date_due']" position="attributes">
+                <attribute name="width">80px</attribute>
+                <attribute name="string">Due</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='pay']" position="attributes">
+                <attribute name="width">40px</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='amount_applied']" position="attributes">
+                <attribute name="width">90px</attribute>
+                <attribute name="string">Applied</attribute>
+                <attribute name="options">{'no_symbol': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='discount']" position="attributes">
+                <attribute name="width">75px</attribute>
+                <attribute name="string">Discount</attribute>
+                <attribute name="options">{'no_symbol': True}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='invoice_ref']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='invoice_date']" position="attributes">
+                <attribute name="optional">show</attribute>
+                <attribute name="width">85px</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='amount_total']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='amount_residual']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='amount_residual']" position="after">
+                <field name="sb_original" width="85px" options="{'no_symbol': True}"/>
+                <field name="sb_open" width="85px" options="{'no_symbol': True}"/>
+            </xpath>
+            <xpath expr="//field[@name='apply_ids']" position="after">
+                <field name="sb_applied_ids" readonly="1" invisible="state == 'draft'">
+                    <list decoration-info="kind == 'credit'">
+                        <field name="kind" column_invisible="1"/>
+                        <field name="item_currency_id" column_invisible="1"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="document" width="170px" class="text-nowrap"/>
+                        <field name="item_type"/>
+                        <field name="invoice_ref" optional="hide"/>
+                        <field name="invoice_date"/>
+                        <field name="invoice_date_due"/>
+                        <field name="sb_original"/>
+                        <field name="amount_applied"/>
+                        <field name="discount" optional="show"/>
+                        <field name="sb_open" string="Open now" optional="hide"/>
+                        <field name="amount_applied_company" optional="hide"/>
+                    </list>
+                </field>
+            </xpath>
+            <xpath expr="//page[@name='apply']" position="attributes">
+                <attribute name="invisible">voucher_type not in ('receipt', 'payment') or not partner_id or (state != 'draft' and not sb_applied_ids)</attribute>
+            </xpath>
+            <xpath expr="//field[@name='line_ids']/list/field[@name='product_id']" position="attributes">
+                <attribute name="context">{'sb_item_side': 'sale' if parent.voucher_type in ('sale', 'cash_sale', 'sale_return') else 'purchase'}</attribute>
+                <!-- sales documents offer only items ticked "Can be sold"; purchase documents only "Can be bought" -->
+                <attribute name="domain">[('sale_ok', '=', True)] if parent.voucher_type in ('sale', 'cash_sale', 'sale_return') else ([('purchase_ok', '=', True)] if parent.voucher_type in ('bill', 'cash_purchase', 'purchase_return') else [])</attribute>
+            </xpath>
+            <!-- discounts / write-offs: Accountants (up to the company limit) and Managers, always with a reason -->
+            <xpath expr="//field[@name='apply_ids']/list/field[@name='discount']" position="attributes">
+                <attribute name="groups">sonador_books.group_sb_accountant</attribute>
+            </xpath>
+            <xpath expr="//page[@name='apply']" position="inside">
+                <div class="d-flex gap-2 align-items-baseline mt-2" groups="sonador_books.group_sb_accountant"
+                     invisible="voucher_type not in ('receipt', 'payment') or (state != 'draft' and not sb_setoff)">
+                    <field name="sb_setoff" readonly="state != 'draft'" nolabel="1"/>
+                    <label for="sb_setoff" string="Set off receivable against payable (same customer / vendor; logged)"/>
+                </div>
+                <div class="d-flex gap-2 align-items-baseline mt-2"
+                     invisible="voucher_type not in ('receipt', 'payment', 'cash_sale', 'cash_purchase') or (state != 'draft' and not sb_discount_reason)">
+                    <label for="sb_discount_reason" string="Reason for discount / write-off"/>
+                    <field name="sb_discount_reason" required="amount_discount" readonly="state != 'draft'" class="w-75"
+                           placeholder="Who agreed it and why"/>
+                </div>
+            </xpath>
+            <!-- a journal voucher that lowers a customer's / vendor's balance is a write-off: its reason -->
+            <xpath expr="//page[@name='lines']" position="inside">
+                <div class="d-flex gap-2 align-items-baseline mt-2"
+                     invisible="voucher_type != 'journal' or (state != 'draft' and not sb_discount_reason)">
+                    <label for="sb_discount_reason" string="Reason if it writes off a customer / vendor balance"/>
+                    <field name="sb_discount_reason" readonly="state != 'draft'" class="w-75"
+                           placeholder="Who agreed it and why (needed when the journal lowers what a customer owes or what is owed to a vendor)"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_voucher_list_more" model="ir.ui.view">
+        <field name="name">sb.voucher.list.more</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sb_voucher_list"/>
+        <field name="arch" type="xml">
+            <!-- a voucher reopened with Edit is still in the books: it does not list as "Not posted" -->
+            <field name="state" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </field>
+            <field name="state" position="after">
+                <field name="sb_status" widget="badge" decoration-success="sb_status == 'posted'" decoration-info="sb_status == 'draft'"
+                       decoration-warning="sb_status == 'editing'" decoration-muted="sb_status == 'void'"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="sb_voucher_search_more" model="ir.ui.view">
+        <field name="name">sb.voucher.search.more</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sb_voucher_search"/>
+        <field name="arch" type="xml">
+            <!-- Enter searches number, partner, reference, cheque / slip number and amount at once -->
+            <field name="name" position="before">
+                <field name="sb_search" string="Number, partner, reference, cheque or amount"/>
+            </field>
+            <filter name="draft" position="after">
+                <filter name="editing" string="Being edited" domain="[('sb_editing', '=', True)]"/>
+            </filter>
+        </field>
+    </record>
+
+    <record id="sb_doc_series_form_cash" model="ir.ui.view">
+        <field name="name">sb.doc.series.form.cash</field>
+        <field name="model">sb.doc.series</field>
+        <field name="inherit_id" ref="sb_doc_series_form"/>
+        <field name="arch" type="xml">
+            <field name="is_default" position="before">
+                <field name="sb_cash_account_id" invisible="doc_type != 'payment'" options="{'no_create': True}"/>
+            </field>
+        </field>
+    </record>
+
+    <function model="sb.doc.series" name="_ensure_defaults"/>
+    <function model="sb.doc.series" name="_sb_link_petty_cash"/>
+    <function model="product.template" name="_sb_clear_default_price"/>
+    <function model="res.company" name="_sb_print_defaults"/>
+</odoo>

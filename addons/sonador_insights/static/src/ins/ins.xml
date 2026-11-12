@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_insights.App">
+        <div class="o_pp o_in o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker">People</div>
+                        <h1 class="o_pp_title"><i class="fa fa-pie-chart me-2"/>Insights</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-if="state.sv and state.sv.is_hr" t-att-class="state.page === 'analytics' ? 'active' : ''" t-on-click="() => this.go('analytics')"><i class="fa fa-line-chart"/> HR analytics</button>
+                        <button t-att-class="state.page === 'surveys' ? 'active' : ''" t-on-click="() => this.go('surveys')"><i class="fa fa-commenting-o"/> Surveys</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'analytics' and state.d" t-call="sonador_insights.Analytics"/>
+                <t t-if="state.page === 'surveys' and state.sv" t-call="sonador_insights.Surveys"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_insights.Analytics">
+        <t t-set="d" t-value="state.d"/>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>Headcount</span><b t-esc="d.kpis.headcount"/><small><t t-esc="d.kpis.women"/> women</small></div>
+            <div class="o_pp_kpi"><span>Turnover, 12 months</span><b t-attf-class="{{ d.kpis.turnover &gt; 20 ? 'o_pp_badtxt' : '' }}"><t t-esc="d.kpis.turnover"/>%</b><small><t t-esc="d.kpis.leavers12"/> left · <t t-esc="d.kpis.hires12"/> joined</small></div>
+            <div class="o_pp_kpi"><span>Payroll cost</span><b t-esc="money(d.kpis.payroll_month)"/><small><t t-esc="d.kpis.payroll_label"/>, gross + employer pension</small></div>
+            <div class="o_pp_kpi"><span>Recruiting</span><b t-esc="d.recruit.open_positions"/><small><t t-esc="d.recruit.in_pipeline"/> candidates · <t t-esc="d.recruit.hired_fy"/> hired this year</small></div>
+        </div>
+        <div class="o_pp_grid">
+            <div class="o_pp_card wide"><div class="o_pp_card_head"><i class="fa fa-users"/>Headcount, last 24 months</div>
+                <div class="p-3"><SbChart type="'line'" labels="headChart.labels" series="headChart.series" height="220"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-exchange"/>Joined and left by month</div>
+                <div class="p-3"><SbChart type="'bar'" labels="flowChart.labels" series="flowChart.series" height="220"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-money"/>Payroll cost and overtime, last 12 months</div>
+                <div class="p-3"><SbChart type="'bar'" labels="costChart.labels" series="costChart.series" height="220"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-building-o"/>Payroll cost by department, last 3 months</div>
+                <div t-foreach="d.dept_cost" t-as="r" t-key="r[0]" class="o_pp_li"><span class="flex-grow-1" t-esc="r[0]"/><b t-esc="money(r[1])"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-hourglass-half"/>Tenure</div>
+                <div class="p-3"><SbChart type="'bar'" labels="pairs(d.tenure).labels" series="pairs(d.tenure).series" height="200"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-birthday-cake"/>Age</div>
+                <div class="p-3"><SbChart type="'bar'" labels="pairs(d.ages).labels" series="pairs(d.ages).series" height="200"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-venus-mars"/>Women and men</div>
+                <div class="p-3"><SbChart type="'doughnut'" labels="pairs(d.gender).labels" series="pairs(d.gender).series" height="200"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-calendar-check-o"/>Leave taken, <t t-esc="d.fy"/></div>
+                <div t-foreach="d.leave" t-as="r" t-key="r[0]" class="o_pp_li"><span class="flex-grow-1" t-esc="r[0]"/><b><t t-esc="r[1]"/> days</b></div>
+                <div t-if="!d.leave.length" class="o_pp_empty">No leave recorded this fiscal year yet.</div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-star-half-o"/>Ratings: <t t-esc="d.ratings.cycle or 'no closed review cycle'"/></div>
+                <div t-foreach="d.ratings.rows" t-as="r" t-key="r[0]" class="o_pp_li"><span class="flex-grow-1" t-esc="r[0]"/><b t-esc="r[1]"/></div></div>
+        </div>
+    </t>
+
+    <t t-name="sonador_insights.Surveys">
+        <t t-set="sv" t-value="state.sv"/>
+        <t t-if="state.take">
+            <div class="o_pp_card o_pp_panel">
+                <div class="o_pp_card_head"><i class="fa fa-commenting-o"/><t t-esc="state.take.name"/> <small class="text-muted ms-2">anonymous: your name is not stored with your answers</small></div>
+                <div class="p-3 d-flex flex-column gap-3">
+                    <div t-foreach="state.take.questions" t-as="q" t-key="q.id">
+                        <div class="mb-1"><b t-esc="q.name"/></div>
+                        <div t-if="q.kind === 'enps'" class="o_in_scale">
+                            <button t-foreach="[0,1,2,3,4,5,6,7,8,9,10]" t-as="n" t-key="n" t-attf-class="{{ state.answers[q.id] === n ? 'on' : '' }}" t-on-click="() => this.setAnswer(q.id, n)" t-esc="n"/>
+                        </div>
+                        <div t-elif="q.kind === 'scale'" class="o_in_scale">
+                            <button t-foreach="[[1,'Strongly disagree'],[2,'Disagree'],[3,'Neutral'],[4,'Agree'],[5,'Strongly agree']]" t-as="o" t-key="o[0]"
+                                    t-attf-class="wide {{ state.answers[q.id] === o[0] ? 'on' : '' }}" t-on-click="() => this.setAnswer(q.id, o[0])" t-esc="o[1]"/>
+                        </div>
+                        <textarea t-else="" class="form-control" rows="2" t-on-input="(ev) => this.setAnswer(q.id, ev.target.value)"/>
+                    </div>
+                </div>
+                <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.take = null">Cancel</button>
+                    <button class="btn btn-primary" t-on-click="submit">Send anonymously</button></div>
+            </div>
+        </t>
+        <t t-elif="state.res" t-call="sonador_insights.Results"/>
+        <t t-else="">
+            <div class="o_pp_toolbar" t-if="sv.is_hr"><span class="small text-muted me-auto">Short anonymous pulse surveys with an eNPS question. Results by department show only from 5 answers.</span>
+                <button class="btn btn-primary btn-sm" t-on-click="newSurvey"><i class="fa fa-plus me-1"/>Survey</button></div>
+            <div t-if="state.edit" class="o_pp_card o_pp_panel">
+                <div class="o_pp_card_head"><i class="fa fa-commenting-o"/>New pulse survey</div>
+                <div class="o_pp_formgrid">
+                    <label class="wide">Name<input class="form-control" t-model="state.edit.name" placeholder="e.g. Pulse, Tikimt 2019"/></label>
+                    <label>Closes<input type="date" class="form-control" t-model="state.edit.close"/></label>
+                </div>
+                <div class="small text-muted px-3 pb-2">Starts with 7 questions: eNPS, clarity, feedback, tools, fair pay, intent to stay, one comment.</div>
+                <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.edit = null">Cancel</button>
+                    <button class="btn btn-light border" t-att-disabled="!state.edit.name" t-on-click="() => this.saveSurvey(false)">Save as draft</button>
+                    <button class="btn btn-primary" t-att-disabled="!state.edit.name" t-on-click="() => this.saveSurvey('open')">Open to everyone</button></div>
+            </div>
+            <div class="o_pp_card">
+                <div t-foreach="sv.surveys" t-as="s" t-key="s.id" class="o_pp_li">
+                    <i class="fa fa-commenting-o o_pp_ico"/>
+                    <div class="flex-grow-1"><b t-esc="s.name"/><div class="small text-muted"><t t-esc="s.state"/><t t-if="s.close"> · closes <t t-esc="s.close"/></t>
+                        <t t-if="sv.is_hr"> · <t t-esc="s.responses"/> of <t t-esc="s.heads"/> answered</t></div></div>
+                    <t t-if="sv.is_hr">
+                        <button t-if="s.state === 'draft'" class="btn btn-sm btn-light border" t-on-click="() => this.setState(s, 'open')">Open</button>
+                        <button t-if="s.state === 'open'" class="btn btn-sm btn-light border" t-on-click="() => this.setState(s, 'closed')">Close</button>
+                        <button class="btn btn-sm btn-light border" t-on-click="() => this.results(s)">Results</button>
+                    </t>
+                    <button t-if="s.state === 'open' and !s.taken and sv.me" class="btn btn-sm btn-primary" t-on-click="() => this.startTake(s)">Answer</button>
+                    <span t-if="s.taken" class="small text-success"><i class="fa fa-check me-1"/>Answered</span>
+                </div>
+                <div t-if="!sv.surveys.length" class="o_pp_empty p-3">No surveys open.</div>
+            </div>
+        </t>
+    </t>
+
+    <t t-name="sonador_insights.Results">
+        <t t-set="r" t-value="state.res"/>
+        <div class="o_pp_toolbar"><button class="btn btn-light border btn-sm" t-on-click="() => state.res = null"><i class="fa fa-arrow-left me-1"/>Surveys</button>
+            <h4 class="m-0 ms-2" t-esc="r.name"/><span class="small text-muted"><t t-esc="r.responses"/> answers</span></div>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>eNPS</span><b t-attf-class="{{ r.enps === null ? '' : r.enps &gt;= 0 ? 'o_pp_good' : 'o_pp_badtxt' }}" t-esc="r.enps === null ? '—' : r.enps"/><small>promoters (9-10) minus detractors (0-6)</small></div>
+        </div>
+        <div class="o_pp_grid">
+            <div t-foreach="r.questions" t-as="q" t-key="q.id" class="o_pp_card">
+                <div class="o_pp_card_head"><t t-esc="q.name"/></div>
+                <div class="p-3">
+                    <t t-if="q.kind === 'enps' and q.count"><div class="o_in_split"><i class="pro" t-attf-style="width: {{ q.promoters }}%"/><i class="pas" t-attf-style="width: {{ q.passives }}%"/><i class="det" t-attf-style="width: {{ q.detractors }}%"/></div>
+                        <div class="small text-muted mt-1"><t t-esc="q.promoters"/>% promoters · <t t-esc="q.passives"/>% passives · <t t-esc="q.detractors"/>% detractors</div></t>
+                    <t t-elif="q.kind === 'scale' and q.count"><div><b t-esc="q.avg"/> / 5 · <t t-esc="q.favourable"/>% agree</div>
+                        <div class="o_in_dist"><span t-foreach="q.dist" t-as="n" t-key="n_index" t-attf-style="height: {{ q.count ? Math.max(n / q.count * 100, 2) : 2 }}%" t-att-title="(n_index + 1) + ': ' + n"/></div></t>
+                    <t t-elif="q.kind === 'text'"><div t-foreach="q.comments" t-as="c" t-key="c_index" class="o_in_comment" t-esc="c"/><div t-if="!q.comments.length" class="text-muted">No comments.</div></t>
+                    <div t-else="" class="text-muted">No answers yet.</div>
+                </div>
+            </div>
+            <div class="o_pp_card"><div class="o_pp_card_head">By department (from <t t-esc="r.min_group"/> answers)</div>
+                <div t-foreach="r.by_dept" t-as="d" t-key="d.name" class="o_pp_li"><span class="flex-grow-1" t-esc="d.name"/>
+                    <span t-if="d.hidden" class="small text-muted">fewer than <t t-esc="r.min_group"/> answers</span>
+                    <span t-else="" class="small">eNPS <b t-esc="d.enps === null ? '—' : d.enps"/> · <b t-esc="d.favourable === null ? '—' : d.favourable"/>% agree</span></div></div>
+        </div>
+    </t>
+</templates>

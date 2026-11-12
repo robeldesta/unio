@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- On every update: the restrictive audit trail is on for every company, and a closed year is locked. -->
+    <function model="res.company" name="_sb_enforce_controls"/>
+    <!-- The chart's old withholding taxes (negative rates), never used, are archived: withholding is taken on payments. -->
+    <function model="res.company" name="_sb_retire_withholding_taxes"/>
+    <!-- One way to close: the fiscal year app's own closing and lock date screens are hidden. -->
+    <function model="account.fiscal.year" name="_sb_hide_other_closing"/>
+    <!-- A company keeping its own chart does not see the standard chart's accounts it never used (archived, unreferenced). -->
+    <function model="account.account" name="_sb_hide_unused_template_accounts"/>
+    <!-- Dates are written day first (dd/mm/yyyy) in every country the packs serve. -->
+    <function model="sb.locale" name="_sb_day_first_dates"/>
+</odoo>

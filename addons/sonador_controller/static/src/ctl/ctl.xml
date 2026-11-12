@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_controller.App">
+        <div class="o_ctl o_action h-100 overflow-auto">
+            <div class="o_ctl_top">
+                <div class="o_ctl_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_ctl_kicker">Finance control · read-only</div>
+                        <h1 class="o_ctl_title">Controller</h1>
+                    </div>
+                    <button class="btn btn-light" t-on-click="() => this.openFindings()"><i class="fa fa-list me-1"/>All findings</button>
+                    <button t-if="state.d and state.d.can_run" class="btn btn-primary" t-att-disabled="state.busy" t-on-click="runNow">
+                        <i t-attf-class="fa {{ state.busy ? 'fa-circle-o-notch fa-spin' : 'fa-play' }} me-1"/>Run checks now
+                    </button>
+                </div>
+            </div>
+            <div class="o_ctl_inner o_ctl_body" t-if="state.d">
+                <t t-set="d" t-value="state.d"/>
+                <div class="o_ctl_kpis">
+                    <div class="o_ctl_kpi" t-on-click="() => this.openFindings()"><span>Open findings</span><b t-esc="d.open"/>
+                        <small><t t-esc="d.high"/> high · <t t-esc="d.review"/> in review</small></div>
+                    <div class="o_ctl_kpi"><span>Amount at stake</span><b><small t-esc="d.currency"/> <t t-esc="money(d.amount)"/></b>
+                        <small>to verify, not a loss</small></div>
+                    <div class="o_ctl_kpi"><span>Checks passed</span><b><t t-esc="d.passed"/><small> / <t t-esc="d.applicable"/></small></b>
+                        <small>of the checks that apply</small></div>
+                    <div class="o_ctl_kpi"><span>Last run</span><b class="o_ctl_small" t-esc="lastRun()"/>
+                        <small>every night, posted records only</small></div>
+                </div>
+                <div class="o_ctl_grid">
+                    <div class="o_ctl_card wide">
+                        <div class="o_ctl_card_head">Needs attention</div>
+                        <div t-if="!d.top.length" class="o_ctl_empty"><i class="fa fa-check-circle me-1"/>Nothing open. <t t-if="!d.last_run">Run the checks to start.</t></div>
+                        <div t-foreach="d.top" t-as="f" t-key="f.id" class="o_ctl_find" t-on-click="() => this.openFinding(f.id)">
+                            <span t-attf-class="o_ctl_sev {{ f.severity }}" t-esc="f.severity"/>
+                            <div class="o_ctl_find_main">
+                                <div class="o_ctl_find_cat"><t t-esc="f.category"/><t t-if="f.period"> · <t t-esc="f.period"/></t></div>
+                                <div class="o_ctl_find_name" t-esc="f.name"/>
+                                <div class="o_ctl_find_sum" t-esc="f.summary"/>
+                                <div class="o_ctl_find_meta"><t t-esc="f.evidence"/> records · confidence <t t-esc="f.confidence"/>
+                                    <t t-if="f.user"> · <t t-esc="f.user"/></t><t t-if="f.state === 'review'"> · in review</t></div>
+                            </div>
+                            <div class="o_ctl_find_amt"><t t-esc="money(f.amount)"/></div>
+                        </div>
+                    </div>
+                    <div class="o_ctl_card wide">
+                        <div class="o_ctl_card_head">Checks</div>
+                        <div t-foreach="d.checks" t-as="c" t-key="c.code" class="o_ctl_check" t-on-click="() => this.openFindings(c.code)">
+                            <span t-attf-class="o_ctl_dot {{ c.status }}"/>
+                            <div class="o_ctl_check_main"><b t-esc="c.name"/><small t-esc="c.what"/></div>
+                            <div class="o_ctl_check_res">
+                                <t t-if="c.status === 'ok'">Passed</t>
+                                <t t-elif="c.status === 'found'"><t t-esc="c.count"/> found · <t t-esc="money(c.amount)"/></t>
+                                <t t-elif="c.status === 'skipped'">Does not apply</t>
+                                <t t-elif="c.status === 'error'">Could not run</t>
+                                <t t-else="">Not run yet</t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

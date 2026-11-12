@@ -1,0 +1,20 @@
+.o_to {
+    .o_pf_state { font-size: .72rem; font-weight: 700; padding: .12rem .55rem; border-radius: 999px; white-space: nowrap;
+        &.closed { background: rgba($sb-good, .14); color: $sb-good; } &.calibration { background: rgba($sb-amber, .2); color: darken($sb-amber, 25%); }
+        &.draft { background: rgba($sb-coral, .1); color: $sb-coral; } }
+    .o_pf_click { cursor: pointer; }
+    .o_to_req { display: flex; align-items: center; gap: .7rem; padding: .6rem 1rem; border-bottom: 1px solid $sb-line; flex-wrap: wrap; }
+    .o_to_dot { display: inline-block; width: .75rem; height: .75rem; border-radius: 3px; flex: none; vertical-align: middle;
+        &.hol { background: repeating-linear-gradient(45deg, rgba($sb-amber, .5), rgba($sb-amber, .5) 2px, transparent 2px, transparent 4px); }
+        &.pend { background: $sb-steel; opacity: .45; } }
+    .o_to_days { font-size: 1.05rem; color: $sb-navy; margin-bottom: .2rem; }
+    .o_to_calwrap { overflow: auto; }
+    .o_to_cal { border-collapse: collapse; font-size: .78rem; width: 100%;
+        th, td { border-bottom: 1px solid $sb-line; text-align: center; padding: .2rem .1rem; min-width: 1.6rem; }
+        th { color: $sb-muted; font-weight: 600; line-height: 1.15; }
+        .name { text-align: left; min-width: 13rem; padding-left: .7rem; white-space: nowrap; position: sticky; left: 0; background: #fff; z-index: 1; }
+        .we { background: $sb-band; }
+        .hol { background: repeating-linear-gradient(45deg, rgba($sb-amber, .18), rgba($sb-amber, .18) 4px, transparent 4px, transparent 8px); }
+        th.today { color: #fff; background: $sb-teal; border-radius: 6px; } }
+    .o_to_cell { height: 1.2rem; border-radius: 4px; &.pending { opacity: .45; } }
+}

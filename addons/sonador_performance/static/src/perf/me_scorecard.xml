@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_performance.MeScorecard">
+        <div class="o_pf_me">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div>
+                    <div class="small text-muted" t-esc="d.month.label"/>
+                    <div t-attf-class="fs-3 fw-bold {{ pctClass(d.total) }}" t-esc="d.total === null ? '—' : fmt(d.total, 1) + '%'"/>
+                    <div class="small" t-esc="d.rating"/>
+                </div>
+                <div class="small text-muted">
+                    <div><t t-esc="d.results"/> of <t t-esc="d.kpis"/> KPIs with a result</div>
+                    <div t-if="d.achievement !== null">Achieved <t t-esc="fmt(d.achievement, 1)"/>% of target (weighted)</div>
+                </div>
+                <div class="ms-auto d-flex align-items-end gap-1" style="height: 40px" title="Last 6 periods">
+                    <div t-foreach="d.trend" t-as="t" t-key="t_index" class="text-center" style="width: 26px">
+                        <div t-attf-class="rounded-top {{ t.score === null ? 'bg-light' : t.score >= 85 ? 'bg-success' : t.score >= 70 ? 'bg-warning' : 'bg-danger' }}"
+                             t-attf-style="height: {{ Math.max(3, (t.score || 0) * 0.32) }}px"/>
+                        <div style="font-size: 9px" class="text-muted" t-esc="t.label.slice(0, 3)"/>
+                    </div>
+                </div>
+            </div>
+            <table class="table table-sm mb-2">
+                <thead><tr><th>KPI</th><th class="text-end">Weight</th><th class="text-end">Target</th><th class="text-end">Actual</th><th class="text-end">Achieved</th><th>Level</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="d.rows" t-as="r" t-key="r_index">
+                        <td><i t-if="r.auto" class="fa fa-bolt text-warning me-1" title="Computed from system data"/><t t-esc="r.name"/></td>
+                        <td class="text-end" t-esc="fmt(r.weight * 100) + '%'"/>
+                        <td class="text-end"><t t-esc="fmt(r.target)"/> <small class="text-muted" t-esc="r.unit"/></td>
+                        <td class="text-end" t-esc="fmt(r.actual)"/>
+                        <td class="text-end" t-esc="r.achievement === null ? '—' : fmt(r.achievement, 1) + '%'"/>
+                        <td><span t-if="r.level" class="badge" t-attf-style="background: {{ r.color or '#6c757d' }}" t-esc="r.level"/></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div t-if="d.krs.length" class="mb-2">
+                <div class="small text-muted mb-1">My key results</div>
+                <div t-foreach="d.krs" t-as="k" t-key="k_index" class="d-flex align-items-center gap-2 small mb-1">
+                    <span class="text-truncate" style="max-width: 60%" t-att-title="k.goal" t-esc="k.name"/>
+                    <div class="flex-grow-1 bg-light rounded" style="height: 6px"><div class="bg-primary rounded" t-attf-style="height: 6px; {{ bar(k.progress) }}"/></div>
+                    <span t-esc="fmt(k.progress) + '%'"/>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-light border" t-on-click="open"><i class="fa fa-tachometer me-1"/>Open scorecard</button>
+                <button t-if="d.krs.length" class="btn btn-sm btn-light border" t-on-click="openGoals"><i class="fa fa-bullseye me-1"/>My goals</button>
+            </div>
+        </div>
+    </t>
+</templates>

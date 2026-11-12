@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_hub" model="ir.actions.client">
+        <field name="name">Support</field>
+        <field name="tag">sonador_support.hub</field>
+    </record>
+    <record id="view_ticket_list" model="ir.ui.view">
+        <field name="name">sb.support.ticket.list</field>
+        <field name="model">sb.support.ticket</field>
+        <field name="arch" type="xml">
+            <list create="0">
+                <field name="name"/><field name="create_date" string="Reported"/><field name="subject"/><field name="reporter_id"/>
+                <field name="priority"/><field name="assignee_id"/>
+                <field name="state" widget="badge" decoration-success="state == 'closed'" decoration-warning="state in ('new', 'waiting')" decoration-info="state in ('progress', 'resolved')"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_tickets" model="ir.actions.act_window">
+        <field name="name">All problems</field>
+        <field name="res_model">sb.support.ticket</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

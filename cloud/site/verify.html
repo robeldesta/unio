@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Confirm your email · Unio</title>
+<link rel="icon" href="assets/unio_b.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=15">
+</head>
+<body>
+<header class="nav"><div class="wrap"><a class="brand" href="./"><svg width="34" height="34" aria-hidden="true" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"><defs><mask id="k250" maskUnits="userSpaceOnUse" x="0" y="0" width="50" height="50"><circle cx="19" cy="25" r="14" fill="#fff"/></mask></defs><circle cx="19" cy="25" r="14" fill="#2D6BFF"/><circle cx="31" cy="25" r="14" fill="#1FD1B5"/><g mask="url(#k250)"><circle cx="31" cy="25" r="14" fill="#1B3FB8"/></g></svg> unio</a><div class="right"><a class="btn btn-ghost" href="./#pricing">Pricing</a></div></div></header>
+<main class="wrap">
+<div class="signup">
+  <div id="verify-box">
+    <div class="eyebrow">Email confirmed</div>
+    <h2 style="margin-top:8px">Choose your password</h2>
+    <p style="margin-top:8px" id="verify-what">Checking your link…</p>
+    <form id="verify-form" novalidate hidden>
+      <label>Email (your login)<input name="email" type="email" disabled></label>
+      <div class="grid2">
+        <label>Password<input name="password" type="password" minlength="8" required autocomplete="new-password"></label>
+        <label>Password again<input name="password2" type="password" minlength="8" required autocomplete="new-password"></label>
+      </div>
+      <div class="msg" id="msg" hidden></div>
+      <button class="btn btn-primary" type="submit">Create my system</button>
+    </form>
+    <div class="msg" id="link-msg" hidden></div>
+    <a class="btn btn-ghost" id="again" href="signup.html" hidden>Sign up again</a>
+  </div>
+  <div class="done" id="done" hidden>
+    <h2>Your system is ready</h2>
+    <p>Sign in at <b class="where"></b> with your email and password.</p>
+    <a class="btn btn-primary" href="#">Open my system</a>
+  </div>
+</div>
+</main>
+<script src="assets/site.js?v=15"></script>
+</body>
+</html>

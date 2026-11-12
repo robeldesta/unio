@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_po_store,purchase.order store,purchase.model_purchase_order,sonador_inventory.group_sb_store_user,1,0,0,0
+access_pol_store,purchase.order.line store,purchase.model_purchase_order_line,sonador_inventory.group_sb_store_user,1,0,0,0
+access_po_auditor,purchase.order auditor,purchase.model_purchase_order,sonador_books.group_sb_auditor,1,0,0,0
+access_pol_auditor,purchase.order.line auditor,purchase.model_purchase_order_line,sonador_books.group_sb_auditor,1,0,0,0
+access_sv_purchase,sb.stock.voucher purchase,sonador_inventory.model_sb_stock_voucher,group_sb_purchase_user,1,0,0,0
+access_svl_purchase,sb.stock.voucher.line purchase,sonador_inventory.model_sb_stock_voucher_line,group_sb_purchase_user,1,0,0,0
+access_v_purchase,sb.voucher purchase,sonador_books.model_sb_voucher,group_sb_purchase_user,1,0,0,0
+access_vl_purchase,sb.voucher.line purchase,sonador_books.model_sb_voucher_line,group_sb_purchase_user,1,0,0,0
+access_gp_purchase,sb.gate.pass purchase,sonador_inventory.model_sb_gate_pass,group_sb_purchase_user,1,0,0,0
+access_acc_purchase,account.account purchase,account.model_account_account,group_sb_purchase_user,1,0,0,0
+access_journal_purchase,account.journal purchase,account.model_account_journal,group_sb_purchase_user,1,0,0,0
+access_po_rule_user,sb.po.approval.rule user,model_sb_po_approval_rule,base.group_user,1,0,0,0
+access_po_rule_mgr,sb.po.approval.rule manager,model_sb_po_approval_rule,sonador_books.group_sb_manager,1,1,1,1

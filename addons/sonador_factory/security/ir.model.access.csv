@@ -1,0 +1,18 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_line_op,line,model_sb_mfg_line,group_operator,1,0,0,0
+access_line_mgr,line mgr,model_sb_mfg_line,group_manager,1,1,1,1
+access_shift_op,shift,model_sb_mfg_shift,group_operator,1,0,0,0
+access_shift_mgr,shift mgr,model_sb_mfg_shift,group_manager,1,1,1,1
+access_reason_op,reason,model_sb_mfg_reason,group_operator,1,0,0,0
+access_reason_mgr,reason mgr,model_sb_mfg_reason,group_manager,1,1,1,1
+access_order_op,order,model_sb_mfg_order,group_operator,1,1,0,0
+access_order_mgr,order mgr,model_sb_mfg_order,group_manager,1,1,1,1
+access_mat_op,material,model_sb_mfg_material,group_operator,1,1,1,0
+access_mat_mgr,material mgr,model_sb_mfg_material,group_manager,1,1,1,1
+access_entry_op,entry,model_sb_mfg_entry,group_operator,1,1,1,0
+access_entry_mgr,entry mgr,model_sb_mfg_entry,group_manager,1,1,1,1
+access_loss_op,loss,model_sb_mfg_loss,group_operator,1,1,1,1
+access_qtpl_op,qtpl,model_sb_mfg_check_template,group_operator,1,0,0,0
+access_qtpl_mgr,qtpl mgr,model_sb_mfg_check_template,group_manager,1,1,1,1
+access_check_op,check,model_sb_mfg_check,group_operator,1,1,1,0
+access_check_mgr,check mgr,model_sb_mfg_check,group_manager,1,1,1,1

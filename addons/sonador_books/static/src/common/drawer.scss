@@ -1,0 +1,23 @@
+// right-hand slide-over for records opened from reports and centers
+.modal:has(.o_sb_drawer) .modal-dialog {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: 0;
+    width: 56rem;
+    max-width: 100vw;
+    height: 100vh;
+    animation: o_sb_slide_in .18s ease-out;
+}
+.o_sb_drawer {
+    height: 100vh;
+    border-radius: 0 !important;
+    border: 0;
+    box-shadow: -12px 0 32px rgba(31, 45, 54, .18);
+    .modal-body { overflow-y: auto; }
+}
+@keyframes o_sb_slide_in {
+    from { transform: translateX(40px); opacity: .4; }
+    to { transform: translateX(0); opacity: 1; }
+}

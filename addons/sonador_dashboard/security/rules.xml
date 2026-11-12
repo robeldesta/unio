@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- a briefing is written for one person from what they may see: nobody else reads it -->
+    <record id="rule_brief_own" model="ir.rule">
+        <field name="name">Dashboard briefing: own only</field>
+        <field name="model_id" ref="model_sb_dashboard_brief"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+</odoo>

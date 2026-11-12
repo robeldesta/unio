@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_exit" model="ir.actions.client">
+        <field name="name">Leaving and clearance</field>
+        <field name="tag">sonador_exit.app</field>
+    </record>
+    <menuitem id="menu_exit" name="Leaving and clearance" parent="sonador_books.menu_hr_root" action="action_exit" sequence="8"/>
+</odoo>

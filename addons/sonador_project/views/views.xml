@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- the job on every voucher line and store voucher line -->
+    <record id="sb_voucher_form_job" model="ir.ui.view">
+        <field name="name">sb.voucher.form.job</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='line_ids']/list/field[@name='name']" position="after">
+                <field name="job_id" optional="show" options="{'no_create': True}" column_invisible="parent.voucher_type in ('sale', 'cash_sale', 'sale_return')"/>
+                <field name="job_id" optional="hide" options="{'no_create': True}" column_invisible="parent.voucher_type not in ('sale', 'cash_sale', 'sale_return')"/>
+                <field name="job_phase_id" optional="hide" options="{'no_create': True}"/>
+                <field name="cost_code_id" optional="hide" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_stock_voucher_form_job" model="ir.ui.view">
+        <field name="name">sb.stock.voucher.form.job</field>
+        <field name="model">sb.stock.voucher</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_stock_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='line_ids']/list/field[@name='value']" position="after">
+                <field name="job_id" column_invisible="parent.voucher_type != 'giv'" optional="show" options="{'no_create': True}"/>
+                <field name="job_phase_id" column_invisible="parent.voucher_type != 'giv'" optional="hide" options="{'no_create': True}"/>
+                <field name="cost_code_id" column_invisible="parent.voucher_type != 'giv'" optional="hide" options="{'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

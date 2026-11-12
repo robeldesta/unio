@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- On every update: a goods issue is charged by default to the account the company's issues use most. -->
+    <function model="res.company" name="_sb_fix_giv_default"/>
+</odoo>

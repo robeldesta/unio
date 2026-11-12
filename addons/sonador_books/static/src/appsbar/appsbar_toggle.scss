@@ -1,0 +1,35 @@
+.mk_apps_sidebar_panel {
+    transition: width 180ms ease;
+    .mk_apps_sidebar_menu {
+        flex: 1 1 auto;
+    }
+    .o_sb_sidebar_foot {
+        padding: 6px;
+    }
+    .o_sb_sidebar_toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 7px 8px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: $mk-appbar-color;
+        font-size: 13px;
+        opacity: .7;
+        .fa {
+            width: 22px;
+            text-align: center;
+            font-size: 16px;
+        }
+        &:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, .08);
+        }
+    }
+}
+
+.mk_sidebar_type_small .o_sb_sidebar_toggle {
+    justify-content: center;
+}

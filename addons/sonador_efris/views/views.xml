@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_voucher_form_efris" model="ir.ui.view">
+        <field name="name">sb.voucher.form.efris</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_sb_efris_send" type="object" string="Send to URA (EFRIS)" class="btn-secondary"
+                        invisible="sb_efris_state not in ('waiting', 'error')" groups="sonador_books.group_sb_accountant"/>
+            </xpath>
+            <xpath expr="//field[@name='reference']" position="after">
+                <field name="sb_efris_mode" invisible="1"/>
+                <field name="sb_efris_fdn" string="EFRIS fiscal document no." placeholder="From the URA e-invoice / e-receipt"
+                       invisible="sb_efris_mode != 'manual' or state != 'posted' or voucher_type not in ('sale', 'cash_sale', 'sale_return')"/>
+                <field name="sb_efris_code" string="EFRIS verification code"
+                       invisible="sb_efris_mode != 'manual' or state != 'posted' or voucher_type not in ('sale', 'cash_sale', 'sale_return')"/>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="after">
+                <div invisible="sb_efris_state == 'none'" class="alert alert-info mb-2" role="status">
+                    <field name="sb_efris_state" invisible="1"/>
+                    <span invisible="sb_efris_state != 'done'"><b>EFRIS</b> FDN <field name="sb_efris_fdn" readonly="1" class="d-inline"/> · verification code
+                        <field name="sb_efris_code" readonly="1" class="d-inline"/><span invisible="not sb_efris_test" class="text-danger"> · TEST, not fiscal</span>
+                        <field name="sb_efris_test" invisible="1"/></span>
+                    <span invisible="sb_efris_state != 'waiting'"><b>EFRIS</b>: waiting to be sent to URA.</span>
+                    <span invisible="sb_efris_state != 'manual'"><b>EFRIS</b>: issue it in the URA portal, then type its numbers here.</span>
+                    <span invisible="sb_efris_state != 'error'"><b>EFRIS</b>: URA refused it - <field name="sb_efris_error" readonly="1" class="d-inline"/></span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_voucher_list_efris" model="ir.ui.view">
+        <field name="name">sb.voucher.list.efris</field>
+        <field name="model">sb.voucher</field>
+        <field name="inherit_id" ref="sonador_books.sb_voucher_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="sb_efris_state" optional="show" string="EFRIS" widget="badge"
+                       decoration-success="sb_efris_state == 'done'" decoration-warning="sb_efris_state in ('waiting', 'manual')" decoration-danger="sb_efris_state == 'error'"/>
+                <field name="sb_efris_fdn" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="sb_company_settings_efris" model="ir.ui.view">
+        <field name="name">res.company.form.sb.settings.efris</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="sonador_books.sb_company_settings_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='sb_wht_rate']/.." position="before">
+                <group string="EFRIS (Uganda e-invoicing)" invisible="country_code != 'UG'">
+                    <field name="country_code" invisible="1"/>
+                    <field name="sb_efris_mode" widget="radio"/>
+                    <field name="vat" string="TIN"/>
+                    <field name="sb_efris_device"/>
+                    <field name="sb_efris_branch"/>
+                    <field name="sb_efris_operator"/>
+                    <field name="sb_efris_key" groups="base.group_system"/>
+                    <field name="sb_efris_key_password" password="True" groups="base.group_system"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+    <record id="product_form_efris" model="ir.ui.view">
+        <field name="name">product.template.form.efris</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='default_code']" position="after">
+                <field name="sb_efris_category" invisible="not sale_ok"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

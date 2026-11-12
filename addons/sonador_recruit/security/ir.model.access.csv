@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_reason_hr,reason,model_sb_recruit_reason,sonador_books.group_sb_hr,1,1,1,1
+access_cand_hr,cand,model_sb_recruit_candidate,sonador_books.group_sb_hr,1,1,1,1
+access_app_hr,app,model_sb_recruit_application,sonador_books.group_sb_hr,1,1,1,1
+access_iv_hr,iv,model_sb_recruit_interview,sonador_books.group_sb_hr,1,1,1,1

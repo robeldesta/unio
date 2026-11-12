@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_studio_app,sb.studio.app,model_sb_studio_app,base.group_system,1,1,1,1
+access_sb_studio_model,sb.studio.model,model_sb_studio_model,base.group_system,1,1,1,1
+access_sb_studio_version,sb.studio.version,model_sb_studio_version,base.group_system,1,1,1,1
+access_sb_studio_rule,sb.studio.rule,model_sb_studio_rule,base.group_system,1,1,1,1

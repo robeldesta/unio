@@ -1,0 +1,720 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_attendance.App">
+        <div t-if="state.page === 'kiosk'" class="o_at_kiosk o_action h-100 overflow-auto"><t t-call="sonador_attendance.Kiosk"/></div>
+        <div t-else="" class="o_pp o_at o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker">People · <t t-esc="ctx.today_ec"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-clock-o me-2"/>Attendance</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="state.page === 'clock' ? 'active' : ''" t-on-click="() => this.go('clock')"><i class="fa fa-hand-pointer-o"/> Clock</button>
+                        <button t-if="canTeam" t-att-class="state.page === 'board' ? 'active' : ''" t-on-click="() => this.go('board')"><i class="fa fa-users"/> Today</button>
+                        <button t-if="canTeam" t-att-class="state.page === 'sheets' ? 'active' : ''" t-on-click="() => this.go('sheets')"><i class="fa fa-th"/> Timesheets</button>
+                        <button t-if="canTeam" t-att-class="state.page === 'overtime' ? 'active' : ''" t-on-click="() => this.go('overtime')"><i class="fa fa-bolt"/> Overtime</button>
+                        <button t-if="canTeam" t-att-class="state.page === 'report' ? 'active' : ''" t-on-click="() => this.go('report')"><i class="fa fa-bar-chart"/> Report</button>
+                        <button t-if="ctx.is_hr or ctx.is_ot_clerk" t-att-class="state.page === 'pay' ? 'active' : ''" t-on-click="() => this.go('pay')"><i class="fa fa-money"/> Days worked</button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'setup' ? 'active' : ''" t-on-click="() => this.go('setup')"><i class="fa fa-cog"/> Setup</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'clock' and state.me" t-call="sonador_attendance.Clock"/>
+                <t t-if="state.page === 'board' and state.board" t-call="sonador_attendance.Board"/>
+                <t t-if="state.page === 'sheets' and state.grid" t-call="sonador_attendance.Sheets"/>
+                <t t-if="state.page === 'overtime'" t-call="sonador_attendance.Overtime"/>
+                <t t-if="state.page === 'report' and state.rep" t-call="sonador_attendance.Report"/>
+                <t t-if="state.page === 'setup' and state.set" t-call="sonador_attendance.Setup"/>
+                <t t-if="state.page === 'pay' and state.pay" t-call="sonador_attendance.Pay"/>
+            </div>
+            <t t-if="state.day" t-call="sonador_attendance.Day"/>
+            <t t-if="state.person">
+                <div class="o_at_shade" t-on-click="() => this.state.person = null"/>
+                <div class="o_at_modal o_at_ymodal o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-calendar"/><t t-esc="state.person.name"/>
+                        <button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.state.person = null"><i class="fa fa-times"/></button></div>
+                    <div class="p-3"><t t-call="sonador_attendance.Year"><t t-set="y" t-value="state.person"/></t></div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <!-- ============================================================ clock -->
+    <t t-name="sonador_attendance.Clock">
+        <t t-set="me" t-value="state.me"/>
+        <div t-if="me.none" class="o_pp_card p-4 text-center text-muted">Your login is not linked to a person in People. HR links it on the person's profile: People › Directory › the person › Overview › "Login".</div>
+        <div t-else="" class="o_at_clockwrap">
+            <div class="o_pp_card o_at_clockcard">
+                <div class="o_at_now" t-esc="nowLabel"/>
+                <div class="o_at_date"><t t-esc="me.today_ec"/></div>
+                <button t-att-class="'o_at_big ' + (me.is_in ? 'out' : 'in')" t-att-disabled="state.locating" t-on-click="clock">
+                    <t t-if="state.locating"><i class="fa fa-circle-o-notch fa-spin"/><small>Finding you…</small></t>
+                    <t t-elif="me.is_in"><i class="fa fa-sign-out"/><span>Clock out</span><small t-esc="elapsed"/></t>
+                    <t t-else=""><i class="fa fa-sign-in"/><span>Clock in</span><small t-if="me.punches.length">Back from a break?</small></t>
+                </button>
+                <div class="o_at_status">
+                    <span t-if="me.is_in" class="o_at_pill in"><i class="fa fa-circle me-1"/>Clocked in</span>
+                    <span t-elif="me.punches.length" class="o_at_pill out">Clocked out</span>
+                    <span t-else="" class="o_at_pill">Not clocked in today</span>
+                    <span t-if="me.late_today" class="o_at_pill late">Late <t t-esc="me.late_today"/> min</span>
+                </div>
+                <div class="o_at_today">
+                    <div><span>Worked today</span><b t-esc="hm(me.worked_today)"/></div>
+                    <div><span>Scheduled</span><b t-esc="me.expected_today ? hm(me.expected_today) : 'Day off'"/></div>
+                    <div><span>This week</span><b><t t-esc="me.week_hours"/> h</b></div>
+                </div>
+                <div class="o_at_hint"><i class="fa fa-map-marker me-1"/>Your location is taken once, when you press the button<t t-if="me.anywhere">; you may clock in anywhere</t>.</div>
+            </div>
+            <div class="d-flex flex-column gap-3">
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-list"/>Today</div>
+                    <div t-if="!me.punches.length" class="o_pp_empty">No punches yet today.</div>
+                    <div t-foreach="me.punches" t-as="p" t-key="p.id" class="o_at_punch">
+                        <span t-att-class="'o_at_kind ' + p.kind" t-esc="p.kind === 'out' ? 'OUT' : (p.kind === 'in' ? 'IN' : '•')"/>
+                        <b t-esc="p.time"/>
+                        <span class="text-muted small" t-esc="p.device or p.source"/>
+                        <span t-if="p.site" class="small"><i class="fa fa-map-marker me-1"/><t t-esc="p.site"/></span>
+                        <span t-if="p.outside" class="o_pp_badge warn"><t t-esc="p.distance.toLocaleString()"/> m from site</span>
+                    </div>
+                </div>
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-calendar"/>This week</div>
+                    <div class="o_at_week">
+                        <div t-foreach="me.week" t-as="w" t-key="w.date" t-att-class="'o_at_wd ' + w.status + (w.today ? ' today' : '')" t-att-title="w.ec">
+                            <div class="o_at_wbarbox"><div class="o_at_wbar" t-att-style="weekBar(w)"/></div>
+                            <b t-esc="w.hours ? w.hours.toFixed(1) : '–'"/>
+                            <span t-esc="w.label"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="o_pp_kpis mb-0">
+                    <div class="o_pp_kpi"><span>Days in this month</span><b t-esc="me.month.present"/><small><t t-esc="me.month.hours"/> h worked</small></div>
+                    <div class="o_pp_kpi"><span>Late arrivals</span><b t-att-class="me.month.late ? 'o_pp_badtxt' : ''" t-esc="me.month.late"/><small><t t-esc="me.month.late_min"/> min in all</small></div>
+                    <div class="o_pp_kpi"><span>Overtime approved</span><b><t t-esc="me.month.ot_ok"/><small> h</small></b><small><t t-esc="me.month.ot_wait"/> h waiting for approval</small></div>
+                </div>
+            </div>
+        </div>
+        <div t-if="state.year and state.year.cells" class="o_pp_card mt-3">
+            <div class="o_pp_card_head"><i class="fa fa-calendar"/>My attendance</div>
+            <div class="p-3"><t t-call="sonador_attendance.Year"><t t-set="y" t-value="state.year"/></t></div>
+        </div>
+    </t>
+
+    <!-- ============================================================ today board -->
+    <t t-name="sonador_attendance.Board">
+        <t t-set="b" t-value="state.board"/>
+        <div class="o_pp_toolbar">
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setBoardDept(ev.target.value)">
+                <option value="">All departments</option>
+                <option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-att-selected="d.id == state.boardDept" t-esc="d.name"/>
+            </select>
+            <span class="text-muted small ms-auto"><t t-esc="b.today_ec"/> · <t t-esc="b.total"/> people tracked</span>
+        </div>
+        <div t-if="b.waiting" class="o_pp_card p-2 px-3 mb-2 small"><i class="fa fa-clock-o me-1"/>Today's machine records have not reached unio yet (the last one is from <b t-esc="b.last_record"/>). They arrive each hour; until then nobody is marked absent.
+            <button class="btn btn-light border btn-sm" t-on-click="load"><i class="fa fa-refresh"/></button>
+        </div>
+        <div class="o_at_counts">
+            <t t-foreach="[['', 'Everyone', b.total], ['in', 'In now', boardCount('in')], ['out', 'Done', boardCount('out')], ['late', 'Late', boardCount('late')], ['notyet', 'Not in yet', boardCount('notyet')], ['missing_in', 'Not in', boardCount('missing_in')], ['nodata', 'No record yet', boardCount('nodata')], ['leave', 'On leave', boardCount('leave')]]" t-as="k" t-key="k[0]">
+                <button t-att-class="'o_at_count ' + (k[0] || 'all') + (state.boardFilter === k[0] ? ' on' : '')" t-on-click="() => this.state.boardFilter = k[0]">
+                    <b t-esc="k[2]"/><span t-esc="k[1]"/>
+                </button>
+            </t>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>Person</th><th>Status</th><th>In</th><th>Out</th><th>Worked</th><th>Where</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="boardPeople" t-as="p" t-key="p.id" class="o_at_row" t-on-click="() => this.openDay(p.id, b.today)">
+                        <td><div class="d-flex align-items-center gap-2"><img class="o_pp_av xs" t-att-src="p.avatar"/><div><b t-esc="p.name"/><div class="small text-muted" t-esc="p.department"/></div></div></td>
+                        <td><span t-att-class="'o_at_st ' + p.board" t-esc="boardLabel(p.board)"/><span t-if="p.late" class="o_pp_badge warn ms-1">late <t t-esc="p.late"/> min</span><span t-if="p.leave" class="small text-muted ms-1" t-esc="p.leave"/></td>
+                        <td t-esc="p.first or ''"/>
+                        <td t-esc="p.last or ''"/>
+                        <td t-esc="p.worked ? hm(p.worked) : ''"/>
+                        <td><span t-esc="p.site or p.source"/><span t-if="p.outside" class="o_pp_badge warn ms-1">outside site</span></td>
+                    </tr>
+                    <tr t-if="!boardPeople.length"><td colspan="6" class="o_pp_empty">Nobody here.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ timesheets -->
+    <t t-name="sonador_attendance.MonthBar">
+        <div class="o_pp_toolbar">
+            <div class="btn-group">
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftMonth(-1)"><i class="fa fa-chevron-left"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftMonth(1)"><i class="fa fa-chevron-right"/></button>
+            </div>
+            <div><b t-esc="label"/><div class="small text-muted" t-esc="label_ec"/></div>
+            <select class="form-select form-select-sm w-auto ms-3" t-on-change="(ev) => this.setDept(ev.target.value)">
+                <option value="">All departments</option>
+                <option t-foreach="ctx.departments" t-as="d" t-key="d.id" t-att-value="d.id" t-att-selected="d.id == state.dept" t-esc="d.name"/>
+            </select>
+        </div>
+    </t>
+
+    <t t-name="sonador_attendance.Sheets">
+        <t t-set="g" t-value="state.grid"/>
+        <t t-call="sonador_attendance.MonthBar"><t t-set="label" t-value="g.label"/><t t-set="label_ec" t-value="g.label_ec"/></t>
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+            <input class="form-control form-control-sm o_pp_search" placeholder="Search a name or code…" t-att-value="state.search"
+                   t-on-change="(ev) => this.setSearch(ev.target.value)"/>
+            <div class="o_at_legend small">
+                <span><i class="o_at_c present"/>Hours worked</span><span><i class="o_at_c late"/>Late</span><span><i class="o_at_c missing"/>No check-out</span>
+                <span><i class="o_at_c absent"/>A: absent</span><span><i class="o_at_c leave"/>L: leave</span><span><i class="o_at_c holiday"/>H: holiday</span>
+                <span><i class="o_at_c present otp"/>Overtime to approve</span>
+            </div>
+        </div>
+        <div class="o_pp_card o_at_gridwrap">
+            <table class="o_at_grid">
+                <thead><tr>
+                    <th class="name">Person</th>
+                    <th t-foreach="g.days" t-as="d" t-key="d.date" t-att-class="(d.sun or d.hol ? 'off ' : '') + (d.today ? 'today' : '')" t-att-title="d.ec + (d.hol ? ' · ' + d.hol : '')"><span t-esc="d.wd"/><br/><t t-esc="d.n"/></th>
+                    <th class="tot">Hours</th><th class="tot">Late</th><th class="tot">Absent</th><th class="tot">OT h</th>
+                </tr></thead>
+                <tbody>
+                    <tr t-foreach="g.people" t-as="p" t-key="p.id">
+                        <td class="name"><b class="o_at_plink" t-esc="p.name" t-on-click="() => this.openPerson(p.id)" title="The last 12 months"/><div class="small text-muted"><t t-esc="p.department"/><t t-if="!p.tracked"> · exempt</t></div></td>
+                        <td t-foreach="p.cells" t-as="c" t-key="c_index" t-att-class="g.days[c_index].sun or g.days[c_index].hol ? 'off' : ''">
+                            <div t-if="c.s !== 'future' and c.s !== 'na'" t-att-class="cellClass(c, g.days[c_index])" t-att-title="cellTitle(c, g.days[c_index])"
+                                 t-on-click="() => this.openDay(p.id, g.days[c_index].date)" t-esc="cellText(c)"/>
+                        </td>
+                        <td class="tot" t-esc="p.tot.hours"/>
+                        <td class="tot" t-att-class="p.tot.late ? 'o_pp_badtxt' : ''" t-esc="p.tot.late or ''"/>
+                        <td class="tot" t-att-class="p.tot.absent ? 'o_pp_badtxt' : ''" t-esc="p.tot.absent or ''"/>
+                        <td class="tot"><t t-esc="p.tot.ot or ''"/><small t-if="p.tot.otp" class="text-warning d-block">+<t t-esc="p.tot.otp"/> wait</small></td>
+                    </tr>
+                    <tr t-if="!g.people.length"><td t-att-colspan="g.days.length + 5" class="o_pp_empty">Nobody.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ day drawer -->
+    <t t-name="sonador_attendance.Day">
+        <t t-set="d" t-value="state.day"/>
+        <div class="o_at_shade" t-on-click="closeDay"/>
+        <div class="o_at_drawer">
+            <div class="o_at_dhead">
+                <div class="me-auto">
+                    <h3 class="m-0" t-esc="d.employee.name"/>
+                    <div class="text-muted small"><t t-esc="d.weekday"/> <t t-esc="d.ec"/> · <t t-esc="d.date"/></div>
+                    <div class="small mt-1"><i class="fa fa-calendar-o me-1"/>Schedule: <t t-esc="d.schedule"/><t t-if="d.leave"> · Leave: <t t-esc="d.leave"/></t></div>
+                </div>
+                <button class="btn btn-light border btn-sm" t-on-click="closeDay"><i class="fa fa-times"/></button>
+            </div>
+            <div class="o_at_dbody">
+                <div class="o_at_daykpis">
+                    <div><span>Status</span><b t-esc="statusLabel(d.row.status)"/></div>
+                    <div><span>Worked</span><b t-esc="hm(d.row.worked)"/></div>
+                    <div><span>Scheduled</span><b t-esc="hm(d.row.expected)"/></div>
+                    <div><span>Late</span><b t-att-class="d.row.late ? 'o_pp_badtxt' : ''" t-esc="d.row.late ? d.row.late + ' min' : '—'"/></div>
+                    <div><span>Left early</span><b t-esc="d.row.early ? d.row.early + ' min' : '—'"/></div>
+                </div>
+
+                <div t-if="d.row.ot_total" class="o_at_otbox">
+                    <div class="d-flex align-items-center mb-1"><b class="me-auto"><i class="fa fa-bolt me-1"/>Overtime <t t-esc="hm(d.row.ot_total)"/></b>
+                        <span t-att-class="'o_at_ots ' + d.row.ot_state" t-esc="otLabel(d.row.ot_state)"/></div>
+                    <div class="small text-muted">
+                        <t t-if="d.row.ot_day">6 am–10 pm (1.5×): <t t-esc="hm(d.row.ot_day)"/> · </t>
+                        <t t-if="d.row.ot_night">10 pm–6 am (<t t-esc="ctx.ot.rates.ot_night"/>×): <t t-esc="hm(d.row.ot_night)"/> · </t>
+                        <t t-if="d.row.ot_rest">Rest day (2×): <t t-esc="hm(d.row.ot_rest)"/> · </t>
+                        <t t-if="d.row.ot_holiday">Public holiday (2.5×): <t t-esc="hm(d.row.ot_holiday)"/></t>
+                    </div>
+                    <div t-if="d.limit" class="o_pp_warn small mt-1"><i class="fa fa-exclamation-triangle me-1"/><t t-esc="d.limit"/></div>
+                    <div t-if="d.row.ot_by" class="small mt-1">Decided by <t t-esc="d.row.ot_by"/></div>
+                    <div t-if="d.can_edit and ctx.ot_approver and d.row.ot_state !== 'approved'" class="mt-2 d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" t-on-click="() => this.decideDay('approve')"><i class="fa fa-check me-1"/>Approve</button>
+                        <button t-if="d.row.ot_state !== 'refused'" class="btn btn-sm btn-light border" t-on-click="() => this.decideDay('refuse')">Refuse</button>
+                    </div>
+                    <button t-elif="d.can_edit and ctx.ot_approver" class="btn btn-sm btn-light border mt-2" t-on-click="() => this.decideDay('refuse')">Undo approval</button>
+                </div>
+
+                <div t-if="d.row.status === 'absent'" class="o_at_absbox">
+                    <b class="d-block mb-1">Absence</b>
+                    <div class="btn-group btn-group-sm" t-if="d.can_edit">
+                        <button t-att-class="'btn border ' + (d.row.absence === 'unexcused' ? 'btn-danger' : 'btn-light')" t-on-click="() => this.setAbsence('unexcused')">Unexcused</button>
+                        <button t-att-class="'btn border ' + (d.row.absence === 'excused' ? 'btn-success' : 'btn-light')" t-on-click="() => this.setAbsence('excused')">Excused, paid</button>
+                        <button t-att-class="'btn border ' + (d.row.absence === 'unpaid' ? 'btn-warning' : 'btn-light')" t-on-click="() => this.setAbsence('unpaid')">Unpaid</button>
+                    </div>
+                    <span t-else="" t-esc="d.row.absence"/>
+                    <div class="small text-muted mt-1">Unpaid days come off this month's salary in Payroll (art. 54: wages are for work done). Unexcused days count toward art. 27(1)(b). For real leave, record it in Leave Requests.</div>
+                </div>
+
+                <div class="o_at_sec">Punches</div>
+                <div t-if="!d.punches.length" class="text-muted small mb-2">No punches.</div>
+                <div t-foreach="d.punches" t-as="p" t-key="p.id" class="o_at_punch">
+                    <span t-att-class="'o_at_kind ' + p.kind" t-esc="p.kind === 'out' ? 'OUT' : (p.kind === 'in' ? 'IN' : '•')"/>
+                    <b t-esc="p.time"/>
+                    <span class="small text-muted"><t t-esc="p.device or p.source"/><t t-if="p.by"> · <t t-esc="p.by"/></t></span>
+                    <span t-if="p.note" class="small fst-italic" t-esc="p.note"/>
+                    <a t-if="p.map" t-att-href="p.map" target="_blank" class="small"><i class="fa fa-map-marker me-1"/><t t-esc="p.site or 'map'"/></a>
+                    <span t-if="p.outside" class="o_pp_badge warn"><t t-esc="p.distance.toLocaleString()"/> m out</span>
+                    <button t-if="d.is_hr" class="btn btn-link btn-sm text-danger ms-auto p-0" title="Remove" t-on-click="() => this.removePunch(p.id)"><i class="fa fa-trash"/></button>
+                </div>
+                <div t-if="d.is_hr" class="o_at_addpunch">
+                    <input type="time" class="form-control form-control-sm" t-att-value="state.punch.time" t-on-change="(ev) => this.state.punch.time = ev.target.value"/>
+                    <select class="form-select form-select-sm" t-on-change="(ev) => this.state.punch.kind = ev.target.value">
+                        <option value="in" t-att-selected="state.punch.kind === 'in'">In</option>
+                        <option value="out" t-att-selected="state.punch.kind === 'out'">Out</option>
+                    </select>
+                    <input class="form-control form-control-sm" placeholder="Why (e.g. forgot to clock out)" t-att-value="state.punch.note" t-on-change="(ev) => this.state.punch.note = ev.target.value"/>
+                    <button class="btn btn-sm btn-primary" t-on-click="addPunch"><i class="fa fa-plus"/></button>
+                </div>
+                <div t-if="d.can_edit" class="mt-3">
+                    <div class="o_at_sec">Note</div>
+                    <input class="form-control form-control-sm" t-att-value="d.row.note" placeholder="A note on this day" t-on-change="(ev) => this.setNote(ev.target.value)"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ overtime -->
+    <t t-name="sonador_attendance.Overtime">
+        <div class="o_pp_toolbar">
+            <div class="btn-group btn-group-sm">
+                <button t-foreach="[['pending', 'To approve'], ['approved', 'Approved'], ['refused', 'Refused']]" t-as="k" t-key="k[0]"
+                        t-att-class="'btn border ' + (state.otState === k[0] ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setOtState(k[0])" t-esc="k[1]"/>
+            </div>
+            <t t-if="state.otState !== 'pending'">
+                <div class="btn-group">
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftMonth(-1)"><i class="fa fa-chevron-left"/></button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.shiftMonth(1)"><i class="fa fa-chevron-right"/></button>
+                </div>
+                <b t-esc="state.month.slice(0, 7)"/>
+            </t>
+            <span class="small text-muted ms-auto">Overtime is worked on the employer's instruction (art. 66–67). Approved hours go to Payroll at the art. 68 rates.</span>
+        </div>
+        <div t-if="state.otState === 'pending' and state.ot.length and ctx.ot_approver" class="o_pp_card o_at_otbar mb-2">
+            <button class="btn btn-sm btn-light border" t-on-click="selectAllOt"><i class="fa fa-check-square-o me-1"/>Select all</button>
+            <input class="form-control form-control-sm" placeholder="Note (optional)" t-att-value="state.otNote" t-on-change="(ev) => this.state.otNote = ev.target.value"/>
+            <button class="btn btn-sm btn-primary" t-att-disabled="!otChosen.length" t-on-click="() => this.decide('approve')">Approve <t t-esc="otChosen.length or ''"/></button>
+            <button class="btn btn-sm btn-light border" t-att-disabled="!otChosen.length" t-on-click="() => this.decide('refuse')">Refuse</button>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr>
+                    <th t-if="state.otState === 'pending' and ctx.ot_approver" style="width:2rem"/>
+                    <th>Person</th><th>Day</th><th>In–out</th><th class="text-end"><t t-esc="ctx.ot.rates.ot_day"/>× h</th><th class="text-end">night <t t-esc="ctx.ot.rates.ot_night"/>× h</th><th class="text-end">rest <t t-esc="ctx.ot.rates.ot_rest"/>× h</th><th class="text-end">holiday <t t-esc="ctx.ot.rates.ot_holiday"/>× h</th><th class="text-end">Total</th><th/>
+                </tr></thead>
+                <tbody>
+                    <tr t-foreach="state.ot" t-as="r" t-key="r.id">
+                        <td t-if="state.otState === 'pending' and ctx.ot_approver"><input type="checkbox" t-att-checked="state.otSel[r.id]" t-att-disabled="r.employee_id === ctx.me and !ctx.is_hr" t-on-change="() => this.toggleOt(r.id)"/></td>
+                        <td><b t-esc="r.name"/><div class="small text-muted" t-esc="r.department"/></td>
+                        <td class="o_at_link" t-on-click="() => this.openDay(r.employee_id, r.date)"><t t-esc="r.weekday"/> <t t-esc="r.ec"/></td>
+                        <td><t t-esc="r.first"/>–<t t-esc="r.last"/></td>
+                        <td class="text-end" t-esc="r.day or ''"/><td class="text-end" t-esc="r.night or ''"/><td class="text-end" t-esc="r.rest or ''"/><td class="text-end" t-esc="r.holiday or ''"/>
+                        <td class="text-end"><b t-esc="r.total"/></td>
+                        <td><span t-if="r.limit" class="o_pp_badge bad" t-att-title="r.limit"><i class="fa fa-exclamation-triangle me-1"/><t t-esc="r.limit"/></span>
+                            <span t-if="r.by" class="small text-muted"><t t-esc="r.by"/></span>
+                            <span t-if="state.otState === 'pending' and ctx.ot_approver" class="d-inline-flex gap-1">
+                                <button class="btn btn-sm btn-link p-0" t-if="r.employee_id !== ctx.me or ctx.is_hr" t-on-click="() => this.decide('approve', [r.id])">Approve</button>
+                            </span>
+                            <button t-if="state.otState !== 'pending' and ctx.ot_approver" class="btn btn-sm btn-link p-0" t-on-click="() => this.decide(state.otState === 'approved' ? 'refuse' : 'approve', [r.id])" t-esc="state.otState === 'approved' ? 'Refuse' : 'Approve'"/></td>
+                    </tr>
+                    <tr t-if="state.ot.length" class="fw-bold"><td t-if="state.otState === 'pending'"/><td colspan="3">Total</td>
+                        <td class="text-end" t-esc="otTotals.day.toFixed(2)"/><td class="text-end" t-esc="otTotals.night.toFixed(2)"/><td class="text-end" t-esc="otTotals.rest.toFixed(2)"/><td class="text-end" t-esc="otTotals.holiday.toFixed(2)"/><td class="text-end" t-esc="otTotals.total.toFixed(2)"/><td/></tr>
+                    <tr t-if="!state.ot.length"><td colspan="10" class="o_pp_empty">Nothing here.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ report -->
+    <t t-name="sonador_attendance.Report">
+        <t t-set="r" t-value="state.rep"/>
+        <t t-call="sonador_attendance.MonthBar"><t t-set="label" t-value="r.label"/><t t-set="label_ec" t-value="r.label_ec"/></t>
+        <div class="o_pp_grid mb-3">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-line-chart"/>Late arrivals and absences, 6 months</div>
+                <div class="p-3"><SbChart type="'bar'" labels="trendChart.labels" series="trendChart.series" height="200"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-gavel"/>Labour Proclamation 1156/2019</div>
+                <div class="p-3 small">
+                    <p class="mb-2"><b>Art. 27(1)(a)–(b):</b> being late <b>8 times</b> or absent <b>5 days</b> in six months, <i>after a written warning</i>, allows dismissal without notice. The counts below run from <t t-esc="r.six_from"/>.</p>
+                    <p class="mb-2"><b>Art. 61:</b> normal hours are at most 8 a day and 48 a week (the working schedule). <b>Art. 67(2):</b> overtime at most 4 hours a day and 12 a week.</p>
+                    <p class="mb-0"><b>Art. 54, 59:</b> wages are for work done; unpaid absence comes off the salary, and deductions stay under a third of the monthly wage unless the worker agrees in writing.</p>
+                </div></div>
+        </div>
+        <div class="d-flex mb-2"><button class="btn btn-light border btn-sm ms-auto" t-on-click="exportCsv"><i class="fa fa-download me-1"/>Export (CSV)</button></div>
+        <div class="o_pp_card o_at_gridwrap">
+            <table class="o_pp_table o_at_rep">
+                <thead><tr><th>Person</th><th class="text-end">Present</th><th class="text-end">Late</th><th class="text-end">Late min</th><th class="text-end">Early</th>
+                    <th class="text-end">No out</th><th class="text-end">Absent</th><th class="text-end">Unpaid</th><th class="text-end">Leave</th>
+                    <th class="text-end">Hours</th><th class="text-end">OT <t t-esc="ctx.ot.rates.ot_day"/>×</th><th class="text-end">night</th><th class="text-end">rest</th><th class="text-end">holiday</th><th>6 months</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="r.rows" t-as="x" t-key="x.id">
+                        <td><b t-esc="x.name"/><div class="small text-muted" t-esc="x.department"/></td>
+                        <td class="text-end" t-att-title="'Working days with a record, of the working days so far' + (x.rest_worked ? '; also worked ' + x.rest_worked + ' rest day(s) or holiday(s)' : '')"><t t-esc="x.present"/><small class="text-muted">/<t t-esc="x.scheduled"/></small><small t-if="x.rest_worked" class="d-block text-muted">+<t t-esc="x.rest_worked"/> rest day</small></td>
+                        <td class="text-end" t-att-class="x.late ? 'o_pp_badtxt' : ''" t-esc="x.late or ''"/>
+                        <td class="text-end" t-esc="x.late_min or ''"/>
+                        <td class="text-end" t-esc="x.early or ''"/>
+                        <td class="text-end" t-esc="x.missing or ''"/>
+                        <td class="text-end" t-att-class="x.absent ? 'o_pp_badtxt' : ''" t-esc="x.absent or ''"/>
+                        <td class="text-end" t-esc="x.unpaid or ''"/>
+                        <td class="text-end" t-esc="x.leave or ''"/>
+                        <td class="text-end"><t t-esc="x.hours"/><small class="text-muted">/<t t-esc="x.expected"/></small></td>
+                        <td class="text-end" t-esc="x.ot_day or ''"/><td class="text-end" t-esc="x.ot_night or ''"/><td class="text-end" t-esc="x.ot_rest or ''"/><td class="text-end" t-esc="x.ot_holiday or ''"/>
+                        <td>
+                            <span class="small text-muted text-nowrap">late <t t-esc="x.half_late"/> · absent <t t-esc="x.half_absent"/></span>
+                            <div t-foreach="x.flags" t-as="f" t-key="f_index" class="o_pp_badge bad d-inline-block mt-1" t-esc="f"/>
+                            <div t-foreach="x.warnings" t-as="w" t-key="w_index" class="small text-muted"><i class="fa fa-file-text-o me-1"/>Warned <t t-esc="w.ec"/> (<t t-esc="w.kind"/>)</div>
+                            <div class="d-flex gap-2">
+                                <button t-if="x.half_late" class="btn btn-link btn-sm p-0" t-on-click="() => this.startWarn(x, 'late')">Warn: lateness</button>
+                                <button t-if="x.half_absent" class="btn btn-link btn-sm p-0" t-on-click="() => this.startWarn(x, 'absence')">Warn: absence</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr t-if="!r.rows.length"><td colspan="15" class="o_pp_empty">Everyone is exempt.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <t t-if="state.warn">
+            <div class="o_at_shade" t-on-click="() => this.state.warn = null"/>
+            <div class="o_at_modal o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-file-text-o"/>Written warning: <t t-esc="state.warn.name"/></div>
+                <div class="p-3"><textarea class="form-control" rows="6" t-att-value="state.warn.note" t-on-change="(ev) => this.state.warn.note = ev.target.value"/>
+                    <div class="small text-muted mt-1">Recorded on the person's timeline; give them a signed copy.</div></div>
+                <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveWarn">Record warning</button>
+                    <button class="btn btn-light border btn-sm" t-on-click="() => this.state.warn = null">Cancel</button></div>
+            </div>
+        </t>
+    </t>
+
+    <!-- ============================================================ setup -->
+    <t t-name="sonador_attendance.Setup">
+        <t t-set="S" t-value="state.set"/>
+        <div class="o_pp_tabs">
+            <button t-foreach="[['people', 'People and device IDs'], ['devices', 'Fingerprint / face devices'], ['sites', 'Work sites'], ['rules', 'Rules']]" t-as="k" t-key="k[0]"
+                    t-att-class="state.setTab === k[0] ? 'active' : ''" t-on-click="() => this.state.setTab = k[0]">
+                <t t-esc="k[1]"/><span t-if="k[0] === 'people' and S.unmapped.length" class="o_pp_badge bad ms-1" t-esc="S.unmapped.length"/>
+            </button>
+        </div>
+
+        <t t-if="state.setTab === 'people'">
+            <div t-if="S.unmapped.length" class="o_pp_card mb-3">
+                <div class="o_pp_card_head"><i class="fa fa-question-circle"/>Device users not linked to anyone (<t t-esc="S.unmapped.length"/>): user numbers are per device
+                    <button class="btn btn-link btn-sm ms-auto" t-on-click="() => this.state.showUnmapped = !state.showUnmapped" t-esc="state.showUnmapped ? 'Hide' : 'Show'"/></div>
+                <div t-if="state.showUnmapped" class="o_at_scroll">
+                <table class="o_pp_table">
+                    <thead><tr><th>Device</th><th>User number</th><th>Name on device</th><th class="text-end">Punches</th><th>From–to</th><th>Who is it?</th></tr></thead>
+                    <tbody><tr t-foreach="S.unmapped" t-as="u" t-key="u.id">
+                        <td t-esc="u.device"/><td><b t-esc="u.bio_id"/></td><td t-esc="u.name or '—'"/><td class="text-end" t-esc="u.punches"/><td class="small"><t t-esc="u.first"/> – <t t-esc="u.last"/></td>
+                        <td><select class="form-select form-select-sm" t-on-change="(ev) => this.mapBio(u, ev.target.value)">
+                            <option value="">Choose…</option>
+                            <option t-foreach="S.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/>
+                        </select></td>
+                    </tr></tbody>
+                </table>
+                </div>
+                <div t-if="state.showUnmapped" class="o_pp_empty small">People who left and were never in the system stay here; their punches are kept but not counted.</div>
+            </div>
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-users"/>People
+                    <input class="form-control form-control-sm ms-auto" style="max-width:16rem" placeholder="Filter…" t-att-value="state.peopleFilter" t-on-input="(ev) => this.state.peopleFilter = ev.target.value"/></div>
+                <table class="o_pp_table">
+                    <thead><tr><th>Person</th><th t-foreach="S.devices" t-as="d" t-key="d.id">No. on <t t-esc="d.name"/></th><th>Kiosk PIN</th><th title="No lateness or absences; paid the full month unless days are deducted (unpaid leave in Leave Requests, or pay days on the payroll line)">Exempt</th><th>Clock in anywhere</th><th title="This person's own late-after time (e.g. a later shift). Empty: the company rule.">Late after</th></tr></thead>
+                    <tbody><tr t-foreach="setupPeople" t-as="p" t-key="p.id">
+                        <td><b t-esc="p.name"/><div class="small text-muted" t-esc="p.department"/></td>
+                        <td t-foreach="S.devices" t-as="d" t-key="d.id"><input class="form-control form-control-sm" style="width:6.5rem" t-att-value="p.bios[d.id] or ''" t-on-change="(ev) => this.setBio(p, d.id, ev.target.value)"/></td>
+                        <td><input class="form-control form-control-sm" style="width:7rem" type="password" autocomplete="new-password" t-att-placeholder="p.pin ? 'set (hidden)' : 'none'" t-on-change="(ev) => this.setPerson(p, 'pin', ev.target.value)"/></td>
+                        <td><input type="checkbox" class="form-check-input" t-att-checked="!p.tracked" t-on-change="(ev) => this.setPerson(p, 'tracked', !ev.target.checked)"/></td>
+                        <td><input type="checkbox" class="form-check-input" t-att-checked="p.anywhere" t-on-change="(ev) => this.setPerson(p, 'anywhere', ev.target.checked)"/></td>
+                        <td><input type="time" class="form-control form-control-sm w-auto" t-att-value="p.late_after or ''" t-att-placeholder="S.rules.late_after or ''" t-on-change="(ev) => this.setPerson(p, 'late_after', ev.target.value)"/></td>
+                    </tr></tbody>
+                </table>
+            </div>
+        </t>
+
+        <t t-if="state.setTab === 'devices'">
+            <div class="o_pp_card mb-3">
+                <div class="o_pp_card_head"><i class="fa fa-hdd-o"/>Devices <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.editDevice()"><i class="fa fa-plus me-1"/>Add device</button></div>
+                <div t-if="state.device" class="o_pp_formgrid border-bottom">
+                    <label>Name<input class="form-control form-control-sm" t-att-value="state.device.name" t-on-change="(ev) => this.setDevice('name', ev.target.value)" placeholder="Factory gate"/></label>
+                    <label>Serial number (for push)<input class="form-control form-control-sm" t-att-value="state.device.serial" t-on-change="(ev) => this.setDevice('serial', ev.target.value)" placeholder="On the device: Menu › System info"/></label>
+                    <label>Site<select class="form-select form-select-sm" t-on-change="(ev) => this.setDevice('site_id', ev.target.value)">
+                        <option value="">—</option><option t-foreach="S.sites" t-as="s" t-key="s.id" t-att-value="s.id" t-att-selected="s.id == state.device.site_id" t-esc="s.name"/></select></label>
+                    <label class="d-flex align-items-center gap-2" title="Days recorded on this device give no overtime and nothing goes for approval: overtime comes only from the month's sheet"><input type="checkbox" class="form-check-input" t-att-checked="state.device.ot_manual" t-on-change="(ev) => this.setDevice('ot_manual', ev.target.checked)"/>Overtime: manual only (from the month's sheet)</label>
+                    <div class="d-flex align-items-end gap-2"><button class="btn btn-primary btn-sm" t-on-click="saveDevice">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.device = null">Cancel</button></div>
+                </div>
+                <table class="o_pp_table">
+                    <thead><tr><th>Device</th><th>Serial</th><th>Site</th><th class="text-end">Punches</th><th>Last heard from</th><th>Last punch</th><th/></tr></thead>
+                    <tbody><tr t-foreach="S.devices" t-as="d" t-key="d.id">
+                        <td><b t-esc="d.name"/><div t-if="d.code" class="small text-muted">Odoo 18 code <t t-esc="d.code"/></div><div t-if="d.ot_manual" class="small text-muted">Overtime: manual only</div></td>
+                        <td t-esc="d.serial or '—'"/><td t-esc="d.site"/><td class="text-end" t-esc="d.punches.toLocaleString()"/>
+                        <td class="small" t-esc="d.last_seen ? d.last_seen + ' UTC' : 'never'"/><td class="small" t-esc="d.last_punch ? d.last_punch + ' UTC' : ''"/>
+                        <td class="text-nowrap"><button class="btn btn-link btn-sm p-0 me-2" t-on-click="() => this.editDevice(d)">Edit</button>
+                            <button class="btn btn-link btn-sm p-0 me-2" t-on-click="() => this.copy(d.token)">Copy agent token</button>
+                            <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.deleteDevice(d.id)">Remove</button></td>
+                    </tr>
+                    <tr t-if="!S.devices.length"><td colspan="7" class="o_pp_empty">No devices yet.</td></tr></tbody>
+                </table>
+            </div>
+            <div class="o_pp_grid">
+                <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-cloud-upload"/>Way 1: the device sends punches itself (recommended)</div>
+                    <ol class="small p-3 ps-4 m-0">
+                        <li>On the device: <b>Menu › COMM. › Cloud Server Setting</b> (ADMS).</li>
+                        <li>Server address: <b t-esc="S.server"/> · Port: <b t-esc="S.port"/> · HTTPS if the address is https. Proxy off.</li>
+                        <li>Add the device here with its <b>serial number</b> (Menu › System info › Device info).</li>
+                        <li>Punches arrive within a minute; "Last heard from" shows the device is talking.</li>
+                    </ol>
+                    <div class="small text-muted px-3 pb-3">The server must be reachable from the device's network (your public address, not localhost).</div></div>
+                <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-desktop"/>Way 2: a PC reads the device (older models)</div>
+                    <ol class="small p-3 ps-4 m-0">
+                        <li>On a PC on the same network, install Python, then <code>pip install pyzk requests</code>.</li>
+                        <li>Download the <a href="/sonador_attendance/static/agent/zk_agent.py" target="_blank">sync agent</a>; the setup is written at its top.</li>
+                        <li>Put the device IP and its token (Copy agent token) in <code>zk_agent.json</code>, with <code t-esc="S.base_url"/> as the address.</li>
+                        <li>Schedule it every 10 minutes (Task Scheduler / cron). Re-sending is harmless.</li>
+                    </ol></div>
+            </div>
+            <div class="o_pp_card mt-3"><div class="o_pp_card_head"><i class="fa fa-tablet"/>Kiosk (a shared tablet at the gate)</div>
+                <div class="p-3 small">Set each person's PIN under People and device IDs, open the kiosk on the tablet, and people clock in with their PIN (or device user ID). The kiosk login needs the "Attendance kiosk" group, or HR.
+                    <button class="btn btn-light border btn-sm ms-2" t-on-click="openKiosk"><i class="fa fa-external-link me-1"/>Open the kiosk</button></div></div>
+        </t>
+
+        <t t-if="state.setTab === 'sites'">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-map-marker"/>Work sites: clocking in from a browser or phone is checked against these
+                    <button class="btn btn-primary btn-sm ms-auto" t-on-click="() => this.editSite()"><i class="fa fa-plus me-1"/>Add site</button></div>
+                <div t-if="state.site" class="o_pp_formgrid border-bottom">
+                    <label>Name<input class="form-control form-control-sm" t-att-value="state.site.name" t-on-change="(ev) => this.setSite('name', ev.target.value)"/></label>
+                    <label>Latitude<input class="form-control form-control-sm" t-att-value="state.site.latitude" t-on-change="(ev) => this.setSite('latitude', ev.target.value)"/></label>
+                    <label>Longitude<input class="form-control form-control-sm" t-att-value="state.site.longitude" t-on-change="(ev) => this.setSite('longitude', ev.target.value)"/></label>
+                    <label>Radius (m)<input type="number" class="form-control form-control-sm" t-att-value="state.site.radius" t-on-change="(ev) => this.setSite('radius', ev.target.value)"/></label>
+                    <div class="d-flex align-items-end gap-2"><button class="btn btn-light border btn-sm" t-on-click="hereForSite"><i class="fa fa-crosshairs me-1"/>I am here</button>
+                        <button class="btn btn-primary btn-sm" t-on-click="saveSite">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.site = null">Cancel</button></div>
+                </div>
+                <table class="o_pp_table">
+                    <thead><tr><th>Site</th><th>Location</th><th class="text-end">Radius</th><th/></tr></thead>
+                    <tbody><tr t-foreach="S.sites" t-as="s" t-key="s.id">
+                        <td><b t-esc="s.name"/></td>
+                        <td><a t-att-href="'https://maps.google.com/?q=' + s.latitude + ',' + s.longitude" target="_blank"><t t-esc="s.latitude"/>, <t t-esc="s.longitude"/></a></td>
+                        <td class="text-end"><t t-esc="s.radius"/> m</td>
+                        <td class="text-nowrap"><button class="btn btn-link btn-sm p-0 me-2" t-on-click="() => this.editSite(s)">Edit</button><button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.deleteSite(s.id)">Remove</button></td>
+                    </tr>
+                    <tr t-if="!S.sites.length"><td colspan="4" class="o_pp_empty">No sites: people can clock in from anywhere.</td></tr></tbody>
+                </table>
+            </div>
+        </t>
+
+        <t t-if="state.setTab === 'rules'">
+            <div class="o_pp_card" style="max-width:44rem">
+                <div class="o_pp_card_head"><i class="fa fa-sliders"/>Rules</div>
+                <div class="o_pp_fields">
+                    <label><span>Count absences from <small class="d-block text-muted">Empty until the devices and clocking in are running</small></span><input type="date" class="form-control form-control-sm w-auto" t-att-value="S.rules.live or ''" t-on-change="(ev) => this.setRule('live', ev.target.value)"/></label>
+                    <label><span>Late after <small class="d-block text-muted">A clock time, e.g. 08:15: late minutes count from it. Empty: start of work + grace minutes. A person can have their own (People).</small></span><input type="time" class="form-control form-control-sm w-auto" t-att-value="S.rules.late_after or ''" t-on-change="(ev) => this.setRule('late_after', ev.target.value)"/></label>
+                    <label><span>Grace minutes (not late, not early)</span><input type="number" class="form-control form-control-sm" style="width:6rem" t-att-value="S.rules.grace" t-on-change="(ev) => this.setRule('grace', ev.target.value)"/></label>
+                    <label><span>Smallest overtime block (minutes)</span><input type="number" class="form-control form-control-sm" style="width:6rem" t-att-value="S.rules.ot_min" t-on-change="(ev) => this.setRule('ot_min', ev.target.value)"/></label>
+                    <label><span>Clocking in away from the sites</span><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setRule('geofence', ev.target.value)">
+                        <option value="off" t-att-selected="S.rules.geofence === 'off'">Not checked</option>
+                        <option value="warn" t-att-selected="S.rules.geofence === 'warn'">Allowed, flagged to HR</option>
+                        <option value="block" t-att-selected="S.rules.geofence === 'block'">Not allowed</option></select></label>
+                    <label><span>Overtime approved by <small class="d-block text-muted">Empty: HR and each person's manager</small></span><select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setRule('ot_approver', ev.target.value)">
+                        <option value="" t-att-selected="!S.rules.ot_approver">HR and managers</option>
+                        <option t-foreach="S.users" t-as="u" t-key="u.id" t-att-value="u.id" t-att-selected="S.rules.ot_approver === u.id" t-esc="u.name"/></select></label>
+                    <label><span>Location required to clock in from a browser or phone</span><input type="checkbox" class="form-check-input" t-att-checked="S.rules.need_gps" t-on-change="(ev) => this.setRule('need_gps', ev.target.checked)"/></label>
+                    <label><span>Payroll pays days worked and overtime from the records <small class="d-block text-muted">As shown in Days worked and the OT sheet</small></span><input type="checkbox" class="form-check-input" t-att-checked="S.rules.sheet_pay" t-on-change="(ev) => this.setRule('sheet_pay', ev.target.checked)"/></label>
+                </div>
+                <div class="o_pp_empty small">Working hours come from each person's working schedule (People › Job &amp; Pay); public holidays from Leave Requests. Overtime (<t t-esc="ctx.ot.law"/>): <t t-esc="ctx.ot.note"/></div>
+                <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveRules">Save rules</button></div>
+            </div>
+        </t>
+    </t>
+
+
+
+    <!-- ============================================================ a year at a glance -->
+    <t t-name="sonador_attendance.Year">
+        <div class="o_at_year">
+            <div class="o_at_ybar">
+                <select t-if="state.yview === 'month'" class="form-select form-select-sm w-auto" t-on-change="(ev) => this.state.ymonth = +ev.target.value">
+                    <option t-foreach="y.months" t-as="m" t-key="m.from" t-att-value="m_index" t-att-selected="m_index === state.ymonth" t-esc="m.name"/>
+                </select>
+                <div class="btn-group btn-group-sm ms-auto">
+                    <button t-att-class="'btn border ' + (state.yview === 'month' ? 'btn-primary' : 'btn-light')" t-on-click="() => this.state.yview = 'month'">Month</button>
+                    <button t-att-class="'btn border ' + (state.yview === 'year' ? 'btn-primary' : 'btn-light')" t-on-click="() => this.state.yview = 'year'">12 months</button>
+                </div>
+            </div>
+            <t t-if="state.yview === 'month'">
+                <t t-set="M" t-value="y.months[state.ymonth] || y.months[0]"/>
+                <div class="o_at_mkpis">
+                    <div><span>Days worked</span><b t-esc="M.worked"/></div>
+                    <div><span>Paid days</span><b t-esc="M.paid"/></div>
+                    <div t-att-class="M.absent ? 'bad' : ''"><span>Absent</span><b t-esc="M.absent"/></div>
+                    <div t-att-class="M.late ? 'warn' : ''"><span>Late</span><b t-esc="M.late"/></div>
+                    <div><span>Leave</span><b t-esc="M.leave"/></div>
+                    <div><span>Overtime</span><b><t t-esc="M.ot"/> h</b></div>
+                </div>
+                <div class="o_at_mcal">
+                    <div t-foreach="['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" t-as="w" t-key="w" class="o_at_mwd" t-esc="w"/>
+                    <div t-foreach="padStart(M)" t-as="x" t-key="'p' + x" class="o_at_mday blank"/>
+                    <div t-foreach="M.cells" t-as="c" t-key="c.d"
+                         t-att-class="'o_at_mday ' + c.k + (y.can_enter and !['out', 'off', 'future'].includes(c.k) ? ' pick' : '') + (state.yearSel and state.yearSel.c.d === c.d ? ' sel' : '')"
+                         t-att-title="yearTitle(c)" t-on-click="() => this.pickDay(y, c)">
+                        <div class="o_at_mtop"><b t-esc="c_index + 1"/><small t-esc="c.g"/></div>
+                        <div class="o_at_mmid">
+                            <t t-if="c.in"><t t-esc="c.in"/><t t-if="c.out"> – <t t-esc="c.out"/></t></t>
+                            <t t-elif="!['ontime', 'late', 'ot', 'none', 'future', 'out'].includes(c.k)" t-esc="yearLabel(c.k)"/>
+                        </div>
+                        <div class="o_at_mbot">
+                            <span t-if="c.h"><t t-esc="c.h"/> h</span>
+                            <span t-if="c.late" class="late">late <t t-esc="c.late"/>′</span>
+                            <span t-if="c.ot" class="ot">OT <t t-esc="c.ot"/> h</span>
+                            <span t-if="c.k === 'manual'" class="man" t-esc="c.src"/>
+                        </div>
+                    </div>
+                </div>
+            </t>
+            <table t-else="" class="o_at_ytable">
+                <thead><tr><th/><th t-foreach="dayNums(y)" t-as="n" t-key="n" class="o_at_ynum" t-esc="n"/><th class="text-end">Worked</th><th class="text-end">Paid</th><th class="text-end">Absent</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="y.months" t-as="m" t-key="m.from" t-att-class="m.employed ? '' : 'o_at_yfaded'">
+                        <th class="o_at_ymname" t-att-title="m.from + ' to ' + m.to" t-esc="m.name"/>
+                        <td t-foreach="m.cells" t-as="c" t-key="c.d">
+                            <i t-att-class="'o_at_ysq ' + c.k + (y.can_enter and !['out', 'off', 'future'].includes(c.k) ? ' pick' : '') + (state.yearSel and state.yearSel.c.d === c.d ? ' sel' : '')"
+                               t-att-title="yearTitle(c)" t-on-click="() => this.pickDay(y, c)"/>
+                        </td>
+                        <td t-foreach="padCells(y, m)" t-as="x" t-key="x"/>
+                        <td class="o_at_ysum"><t t-if="m.employed" t-esc="m.worked"/></td>
+                        <td class="o_at_ysum fw-bold"><t t-if="m.employed" t-esc="m.paid"/></td>
+                        <td t-att-class="'o_at_ysum' + (m.absent ? ' o_pp_badtxt' : '')"><t t-if="m.employed and m.absent" t-esc="m.absent"/></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="o_at_ylegend">
+                <span t-foreach="yearKinds" t-as="k" t-key="k[0]"><i t-att-class="'o_at_ysq ' + k[0]"/><t t-esc="k[1]"/> <b t-if="state.yview === 'year' and y.tot[k[0]]" t-esc="y.tot[k[0]]"/></span>
+            </div>
+            <div t-if="state.yearSel and state.yearSel.y.employee_id === y.employee_id" class="o_at_yentry">
+                <t t-set="S" t-value="state.yearSel"/>
+                <div class="o_at_yentry_head"><b t-esc="S.c.ec"/> <span class="text-muted">(<t t-esc="S.c.d"/>)</span> · <t t-esc="yearLabel(S.c.k)"/><t t-if="S.c.info"> · <t t-esc="S.c.info"/></t>
+                    <button class="btn btn-link btn-sm p-0 ms-auto" t-on-click="() => this.state.yearSel = null"><i class="fa fa-times"/></button></div>
+                <div class="o_at_yentry_form">
+                    <label>In<input type="time" class="form-control form-control-sm" t-att-value="S.in" t-on-change="(ev) => S.in = ev.target.value"/></label>
+                    <label>Out<input type="time" class="form-control form-control-sm" t-att-value="S.out" t-on-change="(ev) => S.out = ev.target.value"/></label>
+                    <label class="grow">Reason<input class="form-control form-control-sm" placeholder="e.g. power cut, machine off" t-att-value="S.note" t-on-change="(ev) => S.note = ev.target.value"/></label>
+                    <button class="btn btn-primary btn-sm" t-on-click="saveDay">Enter by hand</button>
+                    <button t-if="S.c.info.includes('entered by')" class="btn btn-light border btn-sm" t-on-click="clearDay">Remove hand entry</button>
+                </div>
+                <div class="small text-muted">Only HR enters days by hand. The day then shows as "Manual or field", with who entered it, when and why, and counts in Days worked.</div>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ days worked and the OT sheet -->
+    <t t-name="sonador_attendance.Pay">
+        <t t-set="P" t-value="state.pay"/>
+        <div class="o_pp_toolbar flex-wrap">
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.openPay(ev.target.value)">
+                <option t-foreach="P.periods" t-as="p" t-key="p.key" t-att-value="p.key" t-att-selected="p.key === P.period" t-esc="p.label"/>
+            </select>
+            <div><b t-esc="P.name"/><div class="small text-muted"><t t-esc="P.from_ec"/> – <t t-esc="P.to_ec"/> · <t t-esc="P.from"/> to <t t-esc="P.to"/></div></div>
+            <div class="btn-group btn-group-sm ms-3">
+                <button t-att-class="'btn border ' + (state.payView === 'days' ? 'btn-primary' : 'btn-light')" t-on-click="() => this.state.payView = 'days'">Days worked</button>
+                <button t-att-class="'btn border ' + (state.payView === 'ot' ? 'btn-primary' : 'btn-light')" t-on-click="() => this.state.payView = 'ot'">OT sheet</button>
+            </div>
+            <t t-if="state.payView === 'ot'">
+                <select class="form-select form-select-sm w-auto ms-3" title="Where the overtime comes from" t-on-change="(ev) => this.state.otSource = ev.target.value">
+                    <option value="all" t-att-selected="!state.otSource or state.otSource === 'all'">All sources</option>
+                    <option t-foreach="P.ot_sources or []" t-as="s" t-key="s[0]" t-att-value="s[0]" t-att-selected="state.otSource === s[0]" t-esc="s[1]"/>
+                </select>
+                <button class="btn btn-primary btn-sm" t-on-click="otApproval" title="Name, Normal, Night, Weekend, Holiday of the source chosen, with signature lines"><i class="fa fa-pencil-square-o me-1"/>For approval (Excel)</button>
+            </t>
+            <button class="btn btn-light border btn-sm ms-auto" t-on-click="payCsv"><i class="fa fa-download me-1"/>Export (CSV)</button>
+            <button class="btn btn-light border btn-sm" t-on-click="payXlsx" title="One sheet per department, and a summary"><i class="fa fa-file-excel-o me-1"/>Excel by department</button>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-2 small text-muted">
+            <input class="form-control form-control-sm o_pp_search" placeholder="Search a name…" t-att-value="state.paySearch" t-on-input="(ev) => this.state.paySearch = ev.target.value"/>
+            <span t-if="state.payView === 'days'">Days worked: working days with a check-in/out record, plus approved annual and sick leave; exempt: 30. Paid days add the Sundays and holidays (at most 30): payroll pays these.<t t-if="P.open_month"> Absences up to <t t-esc="P.upto"/>.</t></span>
+            <span t-else=""><t t-if="P.holidays.length">Holidays: <t t-foreach="P.holidays" t-as="h" t-key="h.date"><t t-esc="h.ec"/> <t t-esc="h.name"/><t t-if="!h_last">, </t></t>; holiday hours at most <t t-esc="P.holidays.length * 8"/>.</t><t t-else="">No public holiday this month: no holiday hours.</t></span>
+            <span t-if="!P.sheet_pay" class="text-warning">Payroll does not use these yet: Setup › Rules.</span>
+        </div>
+        <t t-if="state.payView === 'ot' and P.ot_sheets" t-call="sonador_attendance.OtSheet"/>
+        <div class="o_pp_card o_at_gridwrap">
+            <table class="o_pp_table o_at_pay">
+                <thead><tr>
+                    <th>Employee</th>
+                    <th t-foreach="payCols" t-as="c" t-key="c[0]" class="text-end" t-att-title="c[2]" t-esc="c[1]"/>
+                </tr></thead>
+                <tbody>
+                    <tr t-foreach="payLines" t-as="l" t-key="l.id">
+                        <td class="text-nowrap"><b class="o_at_plink" t-esc="l.name" t-on-click="() => this.openPerson(l.id)" title="The last 12 months"/>
+                            <div class="small text-muted"><t t-esc="l.department"/><t t-if="l.exempt"> · exempt</t><t t-if="state.payView === 'ot' and l.ot_source_label"> · <t t-esc="l.ot_source_label"/></t></div></td>
+                        <td t-foreach="payCols" t-as="c" t-key="c[0]" t-att-class="'text-end' + (c[0] === 'paid_days' ? ' fw-bold' : '') + (l[c[0]] ? (c[0] === 'absences' || c[0] === 'late_days' || c[0] === 'late_min' ? ' o_pp_badtxt' : '') : ' text-muted')" t-esc="l[c[0]] || (c[0] === 'days_worked' || c[0] === 'paid_days' ? 0 : '')"/>
+                    </tr>
+                    <tr t-if="!P.lines.length"><td t-att-colspan="payCols.length + 1" class="o_pp_empty">Nobody on a salary this month.</td></tr>
+                </tbody>
+                <tfoot><tr><th><t t-esc="P.lines.length"/> people</th><th t-foreach="payCols" t-as="c" t-key="c[0]" class="text-end" t-esc="P.tot[c[0]] || ''"/></tr></tfoot>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ the month's OT sheet: uploaded, approved by HR -->
+    <t t-name="sonador_attendance.OtSheet">
+        <t t-set="O" t-value="P.ot_sheets"/>
+        <div class="o_pp_card mb-3 p-3">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="me-auto">
+                    <b>Overtime sheet of the month</b>
+                    <div class="small text-muted">Sent by the person who sends the payroll attendance, approved by HR before payroll. Once approved, its hours are the month's overtime.</div>
+                </div>
+                <t t-if="O.can_upload">
+                    <button class="btn btn-light border btn-sm" t-on-click="otTemplate"><i class="fa fa-file-excel-o me-1 text-success"/>Template (Excel)</button>
+                    <button class="btn btn-primary btn-sm" t-on-click="pickOtSheet"><i class="fa fa-upload me-1"/>Upload OT sheet</button>
+                    <input type="file" class="o_at_otfile d-none" accept=".xlsx,.csv" t-on-change="uploadOtSheet"/>
+                </t>
+            </div>
+            <div t-if="O.approved and !O.waiting" class="alert alert-success py-2 px-3 mt-3 mb-0 small">
+                <i class="fa fa-check-circle me-1"/>Approved by <b t-esc="O.approved.decided_by"/> on <t t-esc="O.approved.decided_on"/> (uploaded by <t t-esc="O.approved.by"/>): <t t-esc="O.approved.people"/> people, <t t-esc="O.approved.hours"/> hours. These are the month's overtime hours.
+            </div>
+            <div t-if="!O.approved and !O.waiting" class="small text-muted mt-3"><i class="fa fa-info-circle me-1"/>No sheet yet: the hours below come from the attendance records.</div>
+            <t t-if="O.waiting">
+                <t t-set="W" t-value="O.waiting"/>
+                <div class="alert alert-warning py-2 px-3 mt-3 mb-2 small">
+                    <i class="fa fa-hourglass-half me-1"/>Uploaded by <b t-esc="W.by"/> on <t t-esc="W.on"/>: <t t-esc="W.people"/> people, <t t-esc="W.hours"/> hours, <b t-esc="W.changed"/> different from the records. <b>Waiting for HR.</b>
+                    <t t-if="O.approved"> Until then the sheet approved by <t t-esc="O.approved.decided_by"/> counts.</t>
+                </div>
+                <table t-if="W.changed" class="o_pp_table small mb-2">
+                    <thead><tr><th>Employee</th><th class="text-end">Normal</th><th class="text-end">Night</th><th class="text-end">Weekend</th><th class="text-end">Holiday</th></tr></thead>
+                    <tbody><tr t-foreach="W.rows.filter((r) => r.changed)" t-as="r" t-key="r.name">
+                        <td t-esc="r.name"/>
+                        <td t-foreach="[0,1,2,3]" t-as="i" t-key="i" class="text-end"><t t-if="r.new[i] !== r.old[i]"><span class="text-muted text-decoration-line-through me-1" t-esc="r.old[i]"/><b t-esc="r.new[i]"/></t><t t-else="" t-esc="r.new[i] || ''"/></td>
+                    </tr></tbody>
+                </table>
+                <div t-if="O.can_decide and !W.mine" class="d-flex flex-wrap gap-2 align-items-center">
+                    <button class="btn btn-success btn-sm" t-on-click="() => this.otDecide(true)"><i class="fa fa-check me-1"/>Approve</button>
+                    <input class="form-control form-control-sm" style="max-width:20rem" placeholder="Reason, to refuse" t-att-value="state.otReason" t-on-input="(ev) => this.state.otReason = ev.target.value"/>
+                    <button class="btn btn-light border btn-sm" t-att-disabled="!state.otReason" t-on-click="() => this.otDecide(false)">Refuse</button>
+                </div>
+                <div t-elif="O.can_decide" class="small text-muted">You uploaded it: another HR person approves it.</div>
+            </t>
+            <details t-if="O.history.length" class="small mt-2"><summary class="text-muted">Earlier sheets of this month</summary>
+                <div t-foreach="O.history" t-as="h" t-key="h.id"><t t-esc="h.on"/> · <t t-esc="h.by"/> · <t t-esc="h.state_label"/><t t-if="h.decided_by"> by <t t-esc="h.decided_by"/></t><t t-if="h.reason"> (<t t-esc="h.reason"/>)</t> · <t t-esc="h.people"/> people, <t t-esc="h.hours"/> h</div>
+            </details>
+        </div>
+    </t>
+
+    <!-- ============================================================ kiosk -->
+    <t t-name="sonador_attendance.Kiosk">
+        <div class="o_at_kbox">
+            <div class="o_at_kclock" t-esc="nowLabel"/>
+            <div class="o_at_kdate"><t t-esc="ctx.today_ec"/> · <t t-esc="ctx.company"/></div>
+            <t t-if="state.kiosk.res">
+                <div t-att-class="'o_at_kres ' + state.kiosk.res.kind">
+                    <img class="o_pp_av xl" t-att-src="state.kiosk.res.avatar"/>
+                    <h2 t-esc="state.kiosk.res.name"/>
+                    <div class="o_at_kmsg"><t t-if="state.kiosk.res.kind === 'in'">Welcome! In at <t t-esc="state.kiosk.res.time"/></t><t t-else="">Goodbye! Out at <t t-esc="state.kiosk.res.time"/> · <t t-esc="hm(state.kiosk.res.worked)"/> today</t></div>
+                    <div t-if="state.kiosk.res.late" class="o_at_klate">Late <t t-esc="state.kiosk.res.late"/> minutes</div>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="o_at_kcode"><t t-esc="kioskDots"/></div>
+                <div class="o_at_kpad">
+                    <button t-foreach="['1','2','3','4','5','6','7','8','9','C','0','&lt;']" t-as="k" t-key="k" t-on-click="() => this.kioskKey(k)">
+                        <t t-if="k === '&lt;'"><i class="fa fa-long-arrow-left"/></t><t t-else="" t-esc="k"/></button>
+                </div>
+                <button class="o_at_kgo" t-att-disabled="!state.kiosk.code" t-on-click="kioskGo">Clock in / out</button>
+            </t>
+        </div>
+    </t>
+</templates>

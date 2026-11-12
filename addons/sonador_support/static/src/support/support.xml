@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="sonador_support.Systray">
+    <div class="o_sup_systray d-flex align-items-center">
+        <button class="btn btn-link o-dropdown--narrow px-2" title="Report a problem with the system" t-on-click="open">
+            <i class="fa fa-life-ring fa-lg"/>
+        </button>
+    </div>
+</t>
+
+<t t-name="sonador_support.Report">
+    <Dialog title="'Report a problem'" size="'md'">
+        <div class="o_sup_form">
+            <div class="o_sup_where"><i class="fa fa-map-marker me-1"/>From: <b t-esc="ctx.screen"/><t t-if="ctx.res_id"> (this record)</t>. IT sees exactly where you were.</div>
+            <label>What is the problem? <small class="text-muted">in a few words</small>
+                <input class="form-control" t-model="state.subject" placeholder="e.g. Cannot post the payment voucher"/></label>
+            <label>What happened <small class="text-muted">what you did, what you expected, any message you saw</small>
+                <textarea class="form-control" rows="4" t-model="state.description"/></label>
+            <label>Kind</label>
+            <div class="o_sup_chips">
+                <button t-foreach="kinds" t-as="k" t-key="k[0]" t-attf-class="o_sup_chip {{ state.kind === k[0] ? 'on' : '' }}" t-on-click="() => this.state.kind = k[0]" t-esc="k[1]"/>
+            </div>
+            <label>How urgent</label>
+            <div class="o_sup_chips">
+                <button t-foreach="prio" t-as="p" t-key="p[0]" t-attf-class="o_sup_chip {{ p[0] }} {{ state.priority === p[0] ? 'on' : '' }}" t-on-click="() => this.state.priority = p[0]" t-att-title="p[2]">
+                    <t t-esc="p[1]"/><small t-if="p[2]" class="d-block" t-esc="p[2]"/></button>
+            </div>
+        </div>
+        <t t-set-slot="footer">
+            <button class="btn btn-primary" t-att-disabled="state.busy or !state.subject.trim()" t-on-click="send"><i class="fa fa-paper-plane me-1"/>Send to IT</button>
+            <button class="btn btn-light" t-on-click="() => this.props.close()">Cancel</button>
+        </t>
+    </Dialog>
+</t>
+
+<t t-name="sonador_support.Hub">
+    <div class="o_sup o_action h-100 overflow-auto">
+        <div class="o_sup_top"><div class="o_sup_inner d-flex flex-wrap align-items-center gap-3">
+            <div class="me-auto"><div class="o_sup_kicker">Problems with the system</div><h1 class="o_sup_title">Support</h1></div>
+            <t t-if="state.d and state.d.agent">
+                <span class="o_sup_kpi"><b t-esc="state.d.counts.new"/> new</span>
+                <span t-attf-class="o_sup_kpi {{ state.d.counts.late ? 'bad' : '' }}"><b t-esc="state.d.counts.late"/> late</span>
+                <span class="o_sup_kpi"><b t-esc="state.d.counts.open"/> open</span>
+            </t>
+            <button class="btn btn-primary" t-on-click="report"><i class="fa fa-life-ring me-1"/>Report a problem</button>
+        </div>
+        <div class="o_sup_inner o_sup_tabs" t-if="state.d">
+            <button t-attf-class="o_sup_tab {{ state.tab === 'mine' ? 'on' : '' }}" t-on-click="() => this.state.tab = 'mine'">My problems</button>
+            <t t-if="state.d.agent">
+                <button t-attf-class="o_sup_tab {{ state.tab === 'queue' ? 'on' : '' }}" t-on-click="() => this.state.tab = 'queue'">Queue<span t-if="state.d.counts.open" class="o_sup_badge" t-esc="state.d.counts.open"/></button>
+                <button t-attf-class="o_sup_tab {{ state.tab === 'done' ? 'on' : '' }}" t-on-click="() => this.state.tab = 'done'">Closed</button>
+            </t>
+        </div></div>
+        <div class="o_sup_inner o_sup_body" t-if="state.d">
+            <div class="o_sup_list">
+                <div t-if="!rows.length" class="o_sup_empty">Nothing here.<t t-if="state.tab === 'mine'"> Use <i class="fa fa-life-ring"/> at the top of any screen when something does not work.</t></div>
+                <div t-foreach="rows" t-as="r" t-key="r.id" t-attf-class="o_sup_row {{ state.t and state.t.id === r.id ? 'sel' : '' }} {{ r.late ? 'late' : '' }}" t-on-click="() => this.open(r.id)">
+                    <span t-attf-class="o_sup_prio {{ r.priority }}"/>
+                    <div class="o_sup_row_main">
+                        <div class="o_sup_meta"><t t-esc="r.number"/> · <t t-esc="r.created"/><t t-if="state.tab !== 'mine'"> · <t t-esc="r.reporter"/></t></div>
+                        <b t-esc="r.subject"/>
+                        <div class="o_sup_meta"><t t-esc="r.screen"/><t t-if="r.assignee"> · <i class="fa fa-user"/> <t t-esc="r.assignee"/></t></div>
+                    </div>
+                    <div class="o_sup_row_side"><span t-attf-class="o_sup_state {{ r.state }}" t-esc="r.state_label"/><small t-if="r.late" class="text-danger">late</small></div>
+                </div>
+            </div>
+            <div class="o_sup_detail" t-if="state.t">
+                <t t-set="t" t-value="state.t"/>
+                <div class="o_sup_meta"><t t-esc="t.number"/> · <t t-esc="t.kind_label"/> · <t t-esc="t.priority_label"/> · reported <t t-esc="t.created"/> by <t t-esc="t.reporter"/></div>
+                <h2 t-esc="t.subject"/>
+                <div class="o_sup_status"><span t-attf-class="o_sup_state {{ t.state }}" t-esc="t.state_label"/>
+                    <span t-if="t.assignee"><i class="fa fa-user ms-2 me-1"/><t t-esc="t.assignee"/></span>
+                    <span class="ms-auto small text-muted">First answer <t t-esc="t.answered ? hours(t.answer_h) : 'not yet'"/> (target <t t-esc="hours(t.answer_target)"/>) · fixed in <t t-esc="hours(t.fix_h)"/> (target <t t-esc="hours(t.fix_target)"/>)</span></div>
+                <p t-if="t.description" class="o_sup_desc" t-esc="t.description"/>
+                <div t-if="t.screen or t.record" class="o_sup_screen" t-on-click="openScreen"><i class="fa fa-desktop me-1"/><t t-esc="t.screen"/><t t-if="t.record"> · <t t-esc="t.record"/></t> <i class="fa fa-external-link ms-1"/></div>
+                <div t-if="t.resolution" class="o_sup_fix"><b>What was done:</b> <t t-esc="t.resolution"/></div>
+                <div class="o_sup_msgs">
+                    <div t-foreach="t.messages" t-as="m" t-key="m_index" t-attf-class="o_sup_msg {{ m.me ? 'me' : '' }}">
+                        <div class="o_sup_meta"><t t-esc="m.author"/> · <t t-esc="m.when"/></div><t t-out="m.body"/></div>
+                </div>
+                <div class="o_sup_reply" t-if="t.state !== 'closed' and t.state !== 'cancelled'">
+                    <textarea class="form-control" rows="2" placeholder="Write a message" t-model="state.reply"/>
+                    <button class="btn btn-light border" t-on-click="send"><i class="fa fa-paper-plane"/></button>
+                </div>
+                <div class="o_sup_actions">
+                    <t t-if="t.mine and t.state === 'resolved'">
+                        <button class="btn btn-success" t-on-click="() => this.act('close')"><i class="fa fa-check me-1"/>Yes, it is fixed</button>
+                        <button class="btn btn-light border" t-on-click="() => this.act('reopen', this.state.reply)">Not fixed</button>
+                    </t>
+                    <t t-if="state.d.agent and t.state !== 'closed' and t.state !== 'cancelled'">
+                        <button t-if="!t.assignee_me" class="btn btn-primary" t-on-click="() => this.act('take')"><i class="fa fa-hand-paper-o me-1"/>I take it</button>
+                        <select class="form-select form-select-sm w-auto" t-on-change="(ev) => ev.target.value and this.act('assign', ev.target.value)">
+                            <option value="">Give to…</option><option t-foreach="state.d.agents" t-as="a" t-key="a.id" t-att-value="a.id" t-esc="a.name"/></select>
+                        <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.act('priority', ev.target.value)">
+                            <option t-foreach="state.d.priorities" t-as="p" t-key="p[0]" t-att-value="p[0]" t-att-selected="p[0] === t.priority" t-esc="p[1].split(':')[0]"/></select>
+                        <input class="form-control form-control-sm o_sup_note" placeholder="What was done / what you need from them" t-model="state.note"/>
+                        <button class="btn btn-success btn-sm" t-att-disabled="!state.note.trim()" t-on-click="() => this.act('resolve')"><i class="fa fa-check me-1"/>Fixed</button>
+                        <button class="btn btn-light border btn-sm" t-att-disabled="!state.note.trim()" t-on-click="() => this.act('waiting')">Need info from them</button>
+                    </t>
+                    <button t-if="t.mine and t.state === 'new'" class="btn btn-link text-danger btn-sm" t-on-click="() => this.act('cancel')">Cancel it</button>
+                </div>
+            </div>
+            <div class="o_sup_detail o_sup_empty" t-else="">Choose a problem to see it.</div>
+        </div>
+    </div>
+</t>
+</templates>

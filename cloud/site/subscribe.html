@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Subscribe · Unio</title>
+<link rel="icon" href="assets/unio_b.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=15">
+</head>
+<body>
+<header class="nav"><div class="wrap"><a class="brand" href="./"><svg width="34" height="34" aria-hidden="true" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg"><defs><mask id="k250" maskUnits="userSpaceOnUse" x="0" y="0" width="50" height="50"><circle cx="19" cy="25" r="14" fill="#fff"/></mask></defs><circle cx="19" cy="25" r="14" fill="#2D6BFF"/><circle cx="31" cy="25" r="14" fill="#1FD1B5"/><g mask="url(#k250)"><circle cx="31" cy="25" r="14" fill="#1B3FB8"/></g></svg> unio</a><div class="right"><a class="btn btn-ghost" href="./#pricing">Pricing</a></div></div></header>
+<main class="wrap">
+<div class="signup">
+  <div id="sub-box">
+    <div class="eyebrow">Keep everything from your trial</div>
+    <h2 style="margin-top:8px">Subscribe <span id="sub-company"></span></h2>
+    <p style="margin-top:8px">Your data, settings and everything you built stay exactly as they are. Every app is included.</p>
+    <form id="sub-form" novalidate>
+      <div class="period" role="group" aria-label="Pay monthly or yearly">
+        <button type="button" data-p="monthly" class="on">Monthly</button>
+        <button type="button" data-p="yearly">Yearly <span class="save">2 months free</span></button>
+      </div>
+      <label>Users<span class="hint" style="float:right" id="sub-each"></span>
+        <input name="users" type="range" min="1" max="50" value="3" id="sub-users"></label>
+      <div class="sub-total"><b id="sub-total"></b> <span class="hint"><span id="sub-per">a month</span> for <span id="sub-n"></span></span></div>
+      <div class="hint" id="sub-saving" hidden></div>
+      <div class="hint" id="sub-notes" hidden></div>
+      <label>Your email (the owner's login)<input name="email" type="email" required autocomplete="email"></label>
+      <label>Anything we should know? <span class="hint">(optional: annual payment, TIN on the invoice…)</span><input name="note"></label>
+      <input type="hidden" name="subdomain">
+      <div class="msg" id="msg" hidden></div>
+      <button class="btn btn-primary" type="submit">Request my subscription</button>
+    </form>
+    <div class="howpay">
+      <h3>How payment works</h3>
+      <ol>
+        <li>Send this request: we email you the invoice within one working day (in birr with VAT in Ethiopia, in US dollars elsewhere).</li>
+        <li>Pay by bank transfer. Your system stays fully open while the payment is on its way.</li>
+        <li>Online payment with telebirr, Chapa and cards is coming soon.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="done" id="sub-done" hidden>
+    <div class="eyebrow">Request received</div>
+    <h2 style="margin-top:8px">Pay now with telebirr</h2>
+    <p id="sub-done-text"></p>
+    <div id="pay-box" hidden>
+      <button class="btn btn-primary" id="pay-online" type="button" hidden>Pay with telebirr</button>
+      <button class="btn btn-primary" id="pay-chapa" type="button" hidden>Pay with CBE Birr, telebirr, M-Pesa or card</button>
+      <p class="hint" id="pay-or" hidden>or scan with the telebirr app:</p>
+      <img id="pay-qr" alt="telebirr QR code" class="pay-qr">
+      <p class="hint" id="pay-to"></p>
+      <ol class="pay-steps">
+        <li>Open telebirr and choose <b>Scan QR</b> (or pay to merchant <b id="pay-code"></b>).</li>
+        <li>Pay <b id="pay-amount"></b>.</li>
+        <li>Type the transaction number from telebirr's message here:</li>
+      </ol>
+      <form id="paid-form" novalidate>
+        <input name="reference" placeholder="e.g. CJK7AB12CD" autocomplete="off" style="text-transform:uppercase">
+        <div class="msg" id="paid-msg" hidden></div>
+        <button class="btn btn-primary" type="submit">I have paid</button>
+      </form>
+    </div>
+    <p class="hint" id="pay-bank"></p>
+  </div>
+  <div class="done" id="paid-done" hidden>
+    <div class="eyebrow">Payment received</div>
+    <h2 style="margin-top:8px" id="paid-title">Thank you</h2>
+    <p id="paid-text"></p>
+  </div>
+</div>
+</main>
+<script src="assets/site.js?v=15"></script>
+</body>
+</html>

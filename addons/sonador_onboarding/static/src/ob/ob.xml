@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_onboarding.App">
+        <div class="o_pp o_ob o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker">People</div>
+                        <h1 class="o_pp_title"><i class="fa fa-road me-2"/>Onboarding &amp; offboarding</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-if="ctx.is_hr" t-att-class="['overview','journey'].includes(state.page) ? 'active' : ''" t-on-click="() => this.go('overview')"><i class="fa fa-list"/> Checklists</button>
+                        <button t-att-class="state.page === 'mine' ? 'active' : ''" t-on-click="() => this.go('mine')"><i class="fa fa-check-square-o"/> My tasks</button>
+                        <button t-att-class="state.page === 'policies' ? 'active' : ''" t-on-click="() => this.go('policies')"><i class="fa fa-book"/> Policies</button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'setup' ? 'active' : ''" t-on-click="() => this.go('setup')"><i class="fa fa-cog"/> Set-up</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'overview'" t-call="sonador_onboarding.Overview"/>
+                <t t-if="state.page === 'journey' and state.cur" t-call="sonador_onboarding.Journey"/>
+                <t t-if="state.page === 'mine'" t-call="sonador_onboarding.Mine"/>
+                <t t-if="state.page === 'policies' and state.pol" t-call="sonador_onboarding.Policies"/>
+                <t t-if="state.page === 'setup' and state.tpl" t-call="sonador_onboarding.Setup"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_onboarding.Overview">
+        <div class="o_pp_toolbar">
+            <div class="btn-group btn-group-sm">
+                <button t-foreach="[['','All'],['onboarding','Joining'],['offboarding','Leaving']]" t-as="f" t-key="f[0]"
+                        t-attf-class="btn {{ state.kind === f[0] ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => this.setKind(f[0])" t-esc="f[1]"/>
+            </div>
+            <span class="small text-muted">Hiring in People starts onboarding; recording a leaving starts offboarding and clearance.</span>
+            <button class="btn btn-primary btn-sm ms-auto" t-on-click="newStart"><i class="fa fa-plus me-1"/>Start a checklist</button>
+        </div>
+        <div t-if="state.start" class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-road"/>Start a checklist for someone already in People</div>
+            <div class="o_pp_formgrid">
+                <label>Employee<select class="form-select" t-model="state.start.employee_id"><option value="">—</option><option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                <label>Kind<select class="form-select" t-model="state.start.kind"><option value="onboarding">Onboarding</option><option value="offboarding">Offboarding</option></select></label>
+                <label>First / last day<input type="date" class="form-control" t-model="state.start.day"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.start = null">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="!state.start.employee_id" t-on-click="doStart">Start</button></div>
+        </div>
+        <div class="o_pp_cards o_ob_cards">
+            <div t-foreach="state.list" t-as="j" t-key="j.id" class="o_ob_card" t-on-click="() => this.open(j.id)">
+                <div class="d-flex align-items-center gap-2">
+                    <img class="o_pp_av sm" t-att-src="j.employee.avatar"/>
+                    <div class="flex-grow-1"><b t-esc="j.employee.name"/><div class="small text-muted" t-esc="j.employee.job"/></div>
+                    <span t-attf-class="o_ob_kind {{ j.kind }}" t-esc="j.kind === 'onboarding' ? 'Joining' : 'Leaving'"/>
+                </div>
+                <div class="small text-muted mt-2"><t t-esc="j.kind === 'onboarding' ? 'First day' : 'Last day'"/>: <b t-esc="j.date_ec"/></div>
+                <div class="o_ob_bar"><div t-attf-style="width: {{ j.progress }}%"/></div>
+                <div class="d-flex small"><span><t t-esc="j.tasks_done"/> / <t t-esc="j.tasks_total"/> tasks</span>
+                    <span t-if="j.overdue" class="ms-auto text-danger"><i class="fa fa-clock-o me-1"/><t t-esc="j.overdue"/> overdue</span></div>
+            </div>
+        </div>
+        <div t-if="!state.list.length" class="o_pp_card o_pp_empty p-4">No checklist in progress.</div>
+    </t>
+
+    <t t-name="sonador_onboarding.Journey">
+        <t t-set="j" t-value="state.cur"/>
+        <div class="o_pp_toolbar">
+            <button t-if="ctx.is_hr" class="btn btn-light border btn-sm" t-on-click="() => this.go('overview')"><i class="fa fa-arrow-left me-1"/>Checklists</button>
+            <img class="o_pp_av sm" t-att-src="j.employee.avatar"/>
+            <div><b t-esc="j.employee.name"/><div class="small text-muted"><t t-esc="j.kind === 'onboarding' ? 'Onboarding, first day' : 'Offboarding, last day'"/> <t t-esc="j.date_ec"/> · <t t-esc="j.template"/></div></div>
+            <div class="ms-auto d-flex gap-2">
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.openProfile(j.employee.id)"><i class="fa fa-user me-1"/>Profile</button>
+                <button t-if="j.kind === 'offboarding' and j.can_hr" class="btn btn-light border btn-sm" t-on-click="() => this.certificate(j.employee.id)"><i class="fa fa-file-pdf-o me-1"/>Certificate of service</button>
+            </div>
+        </div>
+        <div class="o_ob_bar big"><div t-attf-style="width: {{ j.progress }}%"/></div>
+        <div class="small text-muted mb-3"><t t-esc="j.tasks_done"/> of <t t-esc="j.tasks_total"/> done (<t t-esc="j.progress"/>%)</div>
+        <div class="o_ob_grid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-check-square-o"/>Tasks</div>
+                <div t-foreach="j.tasks" t-as="t" t-key="t.id" t-attf-class="o_ob_task {{ t.done ? 'done' : '' }} {{ t.overdue ? 'late' : '' }}">
+                    <button class="o_ob_check" t-att-disabled="!t.can_do" t-on-click="() => this.toggle(t)"><i t-attf-class="fa {{ t.done ? 'fa-check-square' : 'fa-square-o' }}"/></button>
+                    <div class="flex-grow-1">
+                        <b t-esc="t.name"/><span t-if="t.legal_ref" class="o_ob_ref" t-esc="t.legal_ref"/>
+                        <div class="small text-muted"><i t-attf-class="fa {{ roleIcon(t.role) }} me-1"/><t t-esc="t.role_label"/><t t-if="t.owner"> · <t t-esc="t.owner"/></t>
+                            · due <t t-esc="t.due_ec"/><t t-if="t.done"> · done <t t-esc="t.done_on"/> by <t t-esc="t.done_by"/></t></div>
+                        <input t-if="t.can_do and !t.done" class="form-control form-control-sm mt-1" placeholder="Note (optional)" t-att-value="state.notes[t.id] or ''" t-on-input="(ev) => this.setNote(t.id, ev.target.value)"/>
+                        <div t-elif="t.note" class="small" t-esc="t.note"/>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-column gap-3">
+                <div t-if="j.kind === 'offboarding' and j.can_hr" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-comments-o"/>Exit interview</div>
+                    <div class="o_pp_formgrid one">
+                        <label>Main reasons for leaving<textarea class="form-control" rows="2" t-model="state.iv.exit_reason"/></label>
+                        <label>Overall experience<select class="form-select" t-model="state.iv.exit_rating"><option value="">—</option><option value="1">Very poor</option><option value="2">Poor</option><option value="3">Fair</option><option value="4">Good</option><option value="5">Very good</option></select></label>
+                        <label>What should we improve?<textarea class="form-control" rows="2" t-model="state.iv.exit_feedback"/></label>
+                        <label>Eligible for rehire<select class="form-select" t-model="state.iv.rehire"><option value="">—</option><option value="yes">Yes</option><option value="maybe">With conditions</option><option value="no">No</option></select></label>
+                    </div>
+                    <div class="o_pp_panel_foot"><button class="btn btn-primary ms-auto" t-on-click="saveInterview">Save</button></div>
+                </div>
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-book"/>Policies acknowledged</div>
+                    <div t-foreach="j.policies" t-as="p" t-key="p.id" class="o_ob_pol"><i t-attf-class="fa {{ p.acked ? 'fa-check text-success' : 'fa-clock-o text-warning' }} me-2"/><t t-esc="p.name"/> <small class="text-muted">v<t t-esc="p.version"/></small></div>
+                    <div t-if="!j.policies.length" class="o_pp_empty">No policies published.</div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_onboarding.Mine">
+        <div class="o_ob_grid">
+            <div class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-check-square-o"/>My tasks</div>
+                <div t-foreach="state.mine" t-as="t" t-key="t.id" t-attf-class="o_ob_task {{ t.overdue ? 'late' : '' }}">
+                    <button class="o_ob_check" t-att-disabled="!t.can_do" t-on-click="() => this.toggle(t)"><i class="fa fa-square-o"/></button>
+                    <div class="flex-grow-1"><b t-esc="t.name"/><div class="small text-muted"><t t-esc="t.employee.name"/> · <t t-esc="t.role_label"/> · due <t t-esc="t.due_ec"/></div></div>
+                    <button class="btn btn-link btn-sm" t-on-click="() => this.open(t.journey_id)">Checklist</button>
+                </div>
+                <div t-if="!state.mine.length" class="o_pp_empty"><i class="fa fa-check text-success me-1"/>Nothing to do.</div>
+            </div>
+            <div class="o_pp_card" t-if="state.pol">
+                <div class="o_pp_card_head"><i class="fa fa-book"/>Policies to read</div>
+                <div t-foreach="state.pol.policies" t-as="p" t-key="p.id" class="o_ob_pol d-flex align-items-center gap-2">
+                    <i t-attf-class="fa {{ p.acked ? 'fa-check text-success' : 'fa-exclamation-circle text-warning' }}"/>
+                    <span class="flex-grow-1"><t t-esc="p.name"/> <small class="text-muted">v<t t-esc="p.version"/></small></span>
+                    <button t-if="!p.acked and state.pol.me" class="btn btn-sm btn-primary" t-on-click="() => this.go('policies')">Read</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_onboarding.Policies">
+        <t t-set="pl" t-value="state.pol"/>
+        <div class="o_pp_toolbar" t-if="pl.is_hr"><span class="small text-muted me-auto">Publish a policy; everyone acknowledges it in the app. A new version asks for it again.</span>
+            <button class="btn btn-primary btn-sm" t-on-click="() => this.editPolicy(false)"><i class="fa fa-plus me-1"/>Policy</button></div>
+        <div t-if="state.polEdit" class="o_pp_card o_pp_panel">
+            <t t-set="pe" t-value="state.polEdit"/>
+            <div class="o_pp_card_head"><i class="fa fa-book"/>Policy</div>
+            <div class="o_pp_formgrid">
+                <label class="wide">Name<input class="form-control" t-model="pe.name"/></label>
+                <label>Version<input class="form-control" t-model="pe.version"/></label>
+                <label>Document (PDF)<input type="file" class="form-control" t-on-change="onFile"/></label>
+                <label class="wide">Text<textarea class="form-control" rows="5" t-model="pe.body"/></label>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.polEdit = null">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="!pe.name" t-on-click="savePolicy">Publish</button></div>
+        </div>
+        <div class="o_pp_grid">
+            <div t-foreach="pl.policies" t-as="p" t-key="p.id" class="o_pp_card">
+                <div class="o_pp_card_head"><i class="fa fa-book"/><t t-esc="p.name"/> <small class="text-muted ms-1">v<t t-esc="p.version"/></small>
+                    <button t-if="pl.is_hr" class="btn btn-link btn-sm ms-auto" t-on-click="() => this.editPolicy(p)">Edit</button></div>
+                <div class="o_ob_body" t-out="p.html"/>
+                <div class="o_pp_panel_foot">
+                    <a t-if="p.file" t-att-href="'/web/content/' + p.file.id + '?download=true'" class="small"><i class="fa fa-paperclip me-1"/><t t-esc="p.file.name"/></a>
+                    <span t-if="pl.is_hr" class="small text-muted ms-2"><t t-esc="p.count"/> of <t t-esc="pl.headcount"/> acknowledged</span>
+                    <span class="ms-auto"/>
+                    <span t-if="p.acked" class="small text-success"><i class="fa fa-check me-1"/>Acknowledged</span>
+                    <button t-elif="pl.me" class="btn btn-primary btn-sm" t-on-click="() => this.ack(p)">I have read and accept</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_onboarding.Setup">
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-users"/>Who does the IT, finance, store and HR tasks</div>
+            <div class="o_pp_formgrid">
+                <t t-foreach="[['hr','HR'],['it','IT'],['finance','Finance'],['store','Store']]" t-as="r" t-key="r[0]">
+                    <label><t t-esc="r[1]"/><select class="form-select" t-on-change="(ev) => this.setOwner(r[0], ev.target.value)">
+                        <option value="">—</option><option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == state.owners[r[0]]" t-esc="p.name"/></select></label>
+                </t>
+            </div>
+            <div class="o_pp_panel_foot"><span class="small text-muted me-auto">Manager tasks go to each person's manager; employee tasks to the person.</span>
+                <button class="btn btn-primary" t-on-click="saveOwners">Save</button></div>
+        </div>
+        <div t-if="state.tplEdit" class="o_pp_card o_pp_panel">
+            <t t-set="te" t-value="state.tplEdit"/>
+            <div class="o_pp_card_head"><i class="fa fa-list-ol"/><input class="form-control form-control-sm" t-model="te.name"/></div>
+            <div class="px-3 py-2">
+                <div t-foreach="te.tasks" t-as="x" t-key="x_index" class="d-flex gap-2 mb-1 flex-wrap">
+                    <input class="form-control form-control-sm" style="min-width: 18rem; flex: 1" t-model="x.name"/>
+                    <select class="form-select form-select-sm" style="max-width: 9rem" t-model="x.role"><option t-foreach="ctx.roles" t-as="r" t-key="r.id" t-att-value="r.id" t-esc="r.name"/></select>
+                    <input type="number" class="form-control form-control-sm" style="max-width: 6rem" t-model="x.offset" title="Days from the first / last day"/>
+                    <input class="form-control form-control-sm" style="max-width: 9rem" t-model="x.legal_ref" placeholder="Article"/>
+                    <button class="btn btn-link text-danger p-0" t-on-click="() => this.removeTask(x_index)"><i class="fa fa-trash"/></button>
+                </div>
+                <button class="btn btn-link btn-sm px-0" t-on-click="addTask"><i class="fa fa-plus me-1"/>Task</button>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-light border ms-auto" t-on-click="() => state.tplEdit = null">Cancel</button>
+                <button class="btn btn-primary" t-on-click="saveTpl">Save checklist</button></div>
+        </div>
+        <div class="o_pp_grid">
+            <div t-foreach="state.tpl" t-as="t" t-key="t.id" class="o_pp_card">
+                <div class="o_pp_card_head"><i t-attf-class="fa {{ t.kind === 'onboarding' ? 'fa-sign-in' : 'fa-sign-out' }}"/><t t-esc="t.name"/>
+                    <button class="btn btn-link btn-sm ms-auto" t-on-click="() => this.editTpl(t)">Edit</button></div>
+                <div t-foreach="t.tasks" t-as="x" t-key="x.id" class="o_ob_pol small"><span class="o_ob_off" t-esc="(x.offset &gt; 0 ? '+' : '') + x.offset + 'd'"/> <i t-attf-class="fa {{ roleIcon(x.role) }} mx-1 text-muted"/><t t-esc="x.name"/></div>
+            </div>
+        </div>
+    </t>
+</templates>

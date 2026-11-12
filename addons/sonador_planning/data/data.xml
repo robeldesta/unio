@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="cat_0" model="sb.plan.category"><field name="name">Sales and collections</field><field name="sequence">0</field></record>
+    <record id="cat_1" model="sb.plan.category"><field name="name">Customers and marketing</field><field name="sequence">1</field></record>
+    <record id="cat_2" model="sb.plan.category"><field name="name">Finance and accounting</field><field name="sequence">2</field></record>
+    <record id="cat_3" model="sb.plan.category"><field name="name">Procurement and logistics</field><field name="sequence">3</field></record>
+    <record id="cat_4" model="sb.plan.category"><field name="name">Production</field><field name="sequence">4</field></record>
+    <record id="cat_5" model="sb.plan.category"><field name="name">Quality and research</field><field name="sequence">5</field></record>
+    <record id="cat_6" model="sb.plan.category"><field name="name">People and HR</field><field name="sequence">6</field></record>
+    <record id="cat_7" model="sb.plan.category"><field name="name">IT and systems</field><field name="sequence">7</field></record>
+    <record id="cat_8" model="sb.plan.category"><field name="name">Administration and compliance</field><field name="sequence">8</field></record>
+    <record id="cat_9" model="sb.plan.category"><field name="name">Projects and improvement</field><field name="sequence">9</field></record>
+    <record id="ind_document" model="sb.plan.indicator"><field name="name">Document</field><field name="code">document</field><field name="sequence">1</field><field name="requires_document" eval="True"/><field name="uses_progress" eval="False"/></record>
+    <record id="ind_direct" model="sb.plan.indicator"><field name="name">Direct observation</field><field name="code">direct_observation</field><field name="sequence">2</field><field name="uses_progress" eval="False"/></record>
+    <record id="ind_system" model="sb.plan.indicator"><field name="name">System record</field><field name="code">system_observation</field><field name="sequence">3</field><field name="uses_progress" eval="False"/></record>
+    <record id="ind_activity" model="sb.plan.indicator"><field name="name">Activity review</field><field name="code">activity_review</field><field name="sequence">4</field></record>
+    <record id="ind_report" model="sb.plan.indicator"><field name="name">Report</field><field name="code">report</field><field name="sequence">5</field><field name="requires_document" eval="True"/><field name="uses_progress" eval="False"/></record>
+    <record id="ind_count" model="sb.plan.indicator"><field name="name">Count or amount</field><field name="code">non_monetary</field><field name="sequence">6</field></record>
+</odoo>

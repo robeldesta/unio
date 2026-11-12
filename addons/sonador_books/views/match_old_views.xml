@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sb_match_old_form" model="ir.ui.view">
+        <field name="name">sb.match.old.form</field>
+        <field name="model">sb.match.old</field>
+        <field name="arch" type="xml">
+            <form string="Match old items">
+                <header>
+                    <button name="action_preview" type="object" string="Preview" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_match" type="object" string="Match" invisible="state != 'draft' or not line_ids"
+                            confirm="Match the items listed? Nothing is posted or written off; the items are linked to each other."/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert" invisible="state != 'draft'">
+                        Open credits (receipts, advances, credit notes) are set against open invoices of the same customer or
+                        vendor on the same account, oldest first. Nothing is posted and nothing is written off: balances stay
+                        the same, only the open items are linked. Press Preview, check the list, then Match.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="kind" readonly="state != 'draft'"/>
+                            <field name="partner_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="partner_count"/>
+                            <field name="match_count"/>
+                            <field name="amount_total"/>
+                            <field name="done_by" invisible="state != 'done'"/>
+                            <field name="done_at" invisible="state != 'done'"/>
+                        </group>
+                    </group>
+                    <field name="skipped_note" invisible="not skipped_note" nolabel="1"/>
+                    <field name="line_ids">
+                        <list>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="partner_id"/>
+                            <field name="account_id" optional="show"/>
+                            <field name="debit_doc"/>
+                            <field name="debit_date"/>
+                            <field name="credit_doc"/>
+                            <field name="credit_date"/>
+                            <field name="amount" sum="Total"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sb_match_old_list" model="ir.ui.view">
+        <field name="name">sb.match.old.list</field>
+        <field name="model">sb.match.old</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="state"/>
+                <field name="match_count"/>
+                <field name="amount_total"/>
+                <field name="done_by"/>
+                <field name="done_at"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_sb_match_old" model="ir.actions.act_window">
+        <field name="name">Match Old Items</field>
+        <field name="res_model">sb.match.old</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_sb_match_old" name="Match Old Items" parent="menu_sb_gl" action="action_sb_match_old" sequence="18"
+              groups="sonador_books.group_sb_accountant"/>
+</odoo>

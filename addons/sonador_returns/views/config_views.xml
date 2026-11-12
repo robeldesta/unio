@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_company_settings_returns" model="ir.ui.view">
+        <field name="name">res.company.form.sb.settings.returns</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_company_settings_inventory"/>
+        <field name="arch" type="xml">
+            <field name="sb_recost_entries" position="after">
+                <field name="sb_sales_return_account_id" options="{'no_create': True}"/>
+                <field name="sb_return_cost_account"/>
+                <field name="sb_return_needs_invoice"/>
+                <field name="sb_returns_always_damaged"/>
+                <field name="sb_return_approval"/>
+                <field name="sb_return_approver_id" invisible="not sb_return_approval" options="{'no_create': True}"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="sb_category_form_returns" model="ir.ui.view">
+        <field name="name">product.category.form.sb.returns</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="product.product_category_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Damaged stock">
+                    <field name="sb_damaged_categ_id" options="{'no_create': True}"/>
+                    <field name="sb_damaged_prefix"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_item_form_returns" model="ir.ui.view">
+        <field name="name">product.template.form.sb.returns</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="sonador_inventory.sb_item_form"/>
+        <field name="arch" type="xml">
+            <field name="categ_id" position="after">
+                <field name="sb_damaged_product_id" invisible="not is_storable" options="{'no_create': True}"
+                       placeholder="Made the first time the item is damaged"/>
+            </field>
+        </field>
+    </record>
+</odoo>

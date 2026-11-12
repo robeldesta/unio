@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_driver" model="res.groups">
+        <field name="name">Fleet: driver</field>
+        <field name="comment">Drivers: request and log fuel, start and end trips, ask for per diem, for their own vehicle.</field>
+    </record>
+    <record id="group_user" model="res.groups">
+        <field name="name">Fleet: officer</field>
+        <field name="implied_ids" eval="[(4, ref('group_driver'))]"/>
+        <field name="comment">Fleet officers: all vehicles, fuel, trips, maintenance and documents.</field>
+    </record>
+    <record id="group_manager" model="res.groups">
+        <field name="name">Fleet: manager</field>
+        <field name="implied_ids" eval="[(4, ref('group_user'))]"/>
+        <field name="comment">Approves fuel and per diem, sees costs and settings.</field>
+        <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+    </record>
+</odoo>

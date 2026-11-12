@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.AppsBar" t-inherit="muk_web_appsbar.AppsBar" t-inherit-mode="extension">
+        <xpath expr="//a[hasclass('nav-link')]" position="attributes">
+            <attribute name="t-att-data-tooltip">sbCollapsed ? app.label : false</attribute>
+            <attribute name="data-tooltip-position">right</attribute>
+        </xpath>
+        <xpath expr="//ul[hasclass('mk_apps_sidebar_menu')]" position="after">
+            <div class="o_sb_sidebar_foot">
+                <button type="button" class="o_sb_sidebar_toggle" t-on-click="sbToggleSidebar"
+                        t-att-data-tooltip="(sbCollapsed ? 'Expand menu (' : 'Collapse menu (') + sbShortcut + ')'"
+                        data-tooltip-position="right">
+                    <i t-attf-class="fa {{ sbCollapsed ? 'fa-angle-double-right' : 'fa-angle-double-left' }}"/>
+                    <span class="mk_apps_sidebar_name">Collapse</span>
+                </button>
+            </div>
+        </xpath>
+    </t>
+</templates>

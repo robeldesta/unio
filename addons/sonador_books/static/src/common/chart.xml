@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.SbChart">
+        <div class="o_sb_chart" t-attf-style="height: {{ props.height || 220 }}px; position: relative;">
+            <canvas t-ref="canvas"/>
+        </div>
+    </t>
+</templates>

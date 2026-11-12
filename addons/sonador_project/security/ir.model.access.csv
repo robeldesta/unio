@@ -1,0 +1,21 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_job_user,sb_job user,model_sb_job,group_user,1,0,0,0
+access_sb_job_mgr,sb_job mgr,model_sb_job,group_manager,1,1,1,1
+access_sb_job_phase_user,sb_job_phase user,model_sb_job_phase,group_user,1,0,0,0
+access_sb_job_phase_mgr,sb_job_phase mgr,model_sb_job_phase,group_manager,1,1,1,1
+access_sb_cost_code_user,sb_cost_code user,model_sb_cost_code,group_user,1,0,0,0
+access_sb_cost_code_mgr,sb_cost_code mgr,model_sb_cost_code,group_manager,1,1,1,1
+access_sb_job_budget_user,sb_job_budget user,model_sb_job_budget,group_user,1,0,0,0
+access_sb_job_budget_mgr,sb_job_budget mgr,model_sb_job_budget,group_manager,1,1,1,1
+access_sb_job_task_user,sb_job_task user,model_sb_job_task,group_user,1,1,1,0
+access_sb_job_task_mgr,sb_job_task mgr,model_sb_job_task,group_manager,1,1,1,1
+access_sb_job_boq_user,sb_job_boq user,model_sb_job_boq,group_user,1,0,0,0
+access_sb_job_boq_mgr,sb_job_boq mgr,model_sb_job_boq,group_manager,1,1,1,1
+access_sb_job_bill_user,sb_job_bill user,model_sb_job_bill,group_user,1,0,0,0
+access_sb_job_bill_mgr,sb_job_bill mgr,model_sb_job_bill,group_manager,1,1,1,1
+access_sb_job_bill_line_user,sb_job_bill_line user,model_sb_job_bill_line,group_user,1,0,0,0
+access_sb_job_bill_line_mgr,sb_job_bill_line mgr,model_sb_job_bill_line,group_manager,1,1,1,1
+access_sb_job_sub_user,sb_job_sub user,model_sb_job_sub,group_user,1,0,0,0
+access_sb_job_sub_mgr,sb_job_sub mgr,model_sb_job_sub,group_manager,1,1,1,1
+access_sb_timesheet_user,sb_timesheet user,model_sb_timesheet,group_user,1,1,1,1
+access_sb_timesheet_mgr,sb_timesheet mgr,model_sb_timesheet,group_manager,1,1,1,1

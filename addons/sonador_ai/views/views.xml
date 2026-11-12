@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_chat_own" model="ir.rule">
+        <field name="name">AI conversations: one's own</field>
+        <field name="model_id" ref="model_sb_ai_chat"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
+    <record id="action_ai" model="ir.actions.client">
+        <field name="name">Unio AI</field>
+        <field name="tag">sonador_ai.chat</field>
+    </record>
+
+    <record id="rule_memory_company" model="ir.rule">
+        <field name="name">AI memory: this company</field>
+        <field name="model_id" ref="model_sb_ai_memory"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="view_memory_list" model="ir.ui.view">
+        <field name="name">sb.ai.memory.list</field>
+        <field name="model">sb.ai.memory</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" string="What Unio AI remembers">
+                <field name="sequence" widget="handle"/>
+                <field name="text"/>
+                <field name="source" readonly="1" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_memory" model="ir.actions.act_window">
+        <field name="name">What Unio AI remembers</field>
+        <field name="res_model">sb.ai.memory</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Facts and house rules the assistant always knows</p>
+            <p>One line each: "We are VAT registered", "Petty cash is account 1101-0002", "Ethio Telecom bills: telecom expense plus excise,
+            disaster fund levy to taxes and levies, VAT on the rest". The assistant also offers to remember what you teach it.</p></field>
+    </record>
+    <menuitem id="menu_memory" name="Unio AI memory" parent="base.menu_administration" action="action_memory" sequence="2"
+              groups="base.group_erp_manager"/>
+
+    <!-- My Preferences: a few lines about one's own work, for the assistant -->
+    <record id="view_users_preferences_ai" model="ir.ui.view">
+        <field name="name">res.users.preferences.unio.ai</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form_simple_modif"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='preferences_page']" position="after">
+                <page string="Unio AI" name="unio_ai">
+                    <field name="sb_ai_about" readonly="0" placeholder="e.g. I am the junior accountant: I post vouchers, pay suppliers and reconcile the Stanbic account every month."/>
+                    <p class="text-muted small">The assistant reads this with every question, beside your job and the apps you use.</p>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

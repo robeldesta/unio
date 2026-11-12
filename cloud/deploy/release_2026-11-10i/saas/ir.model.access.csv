@@ -1,0 +1,20 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_saas_plan_user,saas.plan,model_saas_plan,base.group_user,1,0,0,0
+access_saas_plan_mgr,saas.plan manager,model_saas_plan,sonador_books.group_sb_manager,1,1,1,1
+access_saas_tenant_user,saas.tenant,model_saas_tenant,base.group_user,1,0,0,0
+access_saas_tenant_mgr,saas.tenant manager,model_saas_tenant,sonador_books.group_sb_manager,1,1,1,1
+access_saas_usage_user,saas.usage,model_saas_usage,base.group_user,1,0,0,0
+access_saas_usage_mgr,saas.usage manager,model_saas_usage,sonador_books.group_sb_manager,1,1,1,1
+access_saas_signup_mgr,saas.signup manager,model_saas_signup,sonador_books.group_sb_manager,1,1,0,1
+access_saas_payment_mgr,saas.payment manager,model_saas_payment,sonador_books.group_sb_manager,1,1,1,0
+access_saas_snapshot_mgr,saas.snapshot manager,model_saas_snapshot,sonador_books.group_sb_manager,1,1,1,1
+access_saas_metric_mgr,saas.server.metric manager,model_saas_server_metric,sonador_books.group_sb_manager,1,1,1,1
+access_saas_event_mgr,saas.server.event manager,model_saas_server_event,sonador_books.group_sb_manager,1,1,1,1
+access_saas_article_mgr,saas.article manager,model_saas_article,sonador_books.group_sb_manager,1,1,1,1
+access_saas_article_user,saas.article user,model_saas_article,base.group_user,1,0,0,0
+access_saas_help_search_mgr,saas.help.search manager,model_saas_help_search,sonador_books.group_sb_manager,1,1,1,1
+access_saas_ticket_mgr,saas.ticket manager,model_saas_ticket,sonador_books.group_sb_manager,1,1,1,1
+access_saas_ai_usage_mgr,saas.ai.usage manager,model_saas_ai_usage,sonador_books.group_sb_manager,1,1,1,1
+access_saas_tour_event_mgr,saas.tour.event manager,model_saas_tour_event,sonador_books.group_sb_manager,1,1,1,1
+access_saas_ai_client_sys,saas.ai.client,model_saas_ai_client,base.group_system,1,1,1,1
+access_saas_ai_reply_sys,saas.ai.reply,model_saas_ai_reply,base.group_system,1,1,1,1

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tenant_list" model="ir.ui.view">
+        <field name="name">saas.tenant.list</field>
+        <field name="model">saas.tenant</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state in ('cancelled', 'failed')" decoration-danger="state in ('overdue', 'suspended')">
+                <field name="name"/>
+                <field name="subdomain"/>
+                <field name="country"/>
+                <field name="plan_id"/>
+                <field name="state" widget="badge"/>
+                <field name="trial_end"/>
+                <field name="paid_users"/>
+                <field name="light_users" optional="show"/>
+                <field name="monthly_amount"/>
+                <field name="currency"/>
+                <field name="email" optional="hide"/>
+                <field name="create_date" string="Signed up" optional="show"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_tenant_form" model="ir.ui.view">
+        <field name="name">saas.tenant.form</field>
+        <field name="model">saas.tenant</field>
+        <field name="arch" type="xml">
+            <form>
+                <header><field name="state" widget="statusbar" options="{'clickable': '1'}"/></header>
+                <sheet>
+                    <h1><field name="name"/></h1>
+                    <group>
+                        <group>
+                            <field name="subdomain" readonly="1"/>
+                            <field name="url" widget="url"/>
+                            <field name="country"/>
+                            <field name="plan_id"/>
+                            <field name="trial_end"/>
+                        </group>
+                        <group>
+                            <field name="contact_name"/>
+                            <field name="email"/>
+                            <field name="phone"/>
+                            <field name="partner_id"/>
+                            <field name="referrer_id"/>
+                            <field name="industry"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Users">
+                            <field name="paid_users"/>
+                            <field name="light_users"/>
+                            <field name="counted_on"/>
+                        </group>
+                        <group string="Billing">
+                            <field name="currency"/>
+                            <field name="monthly_amount"/>
+                            <field name="paid_months"/>
+                            <field name="billing"/>
+                            <field name="paid_until"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Referrals">
+                            <field name="referral_code"/>
+                            <field name="referred_by_id"/>
+                            <field name="credit_months"/>
+                        </group>
+                        <group string="Companies it referred">
+                            <field name="referral_ids" nolabel="1" colspan="2" readonly="1"><list><field name="name"/><field name="state"/><field name="ref_rewarded" string="Paying"/></list></field>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Invoices"><field name="invoice_ids" readonly="1"><list><field name="name"/><field name="date"/><field name="amount_total"/><field name="state"/><field name="amount_currency_id" column_invisible="1"/></list></field></page>
+                        <page string="User counts"><field name="usage_ids" readonly="1"><list><field name="date"/><field name="paid_users"/><field name="light_users"/></list></field></page>
+                        <page string="Notes"><field name="note"/></page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_plan_list" model="ir.ui.view">
+        <field name="name">saas.plan.list</field>
+        <field name="model">saas.plan</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/><field name="code"/>
+                <field name="price_usd"/><field name="price_etb"/><field name="price_ugx"/><field name="price_kes"/>
+                <field name="discount_step"/><field name="discount_cap"/>
+                <field name="free_users"/><field name="max_users"/><field name="trial_days"/><field name="light_users_free"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_tenants" model="ir.actions.act_window">
+        <field name="name">Customer companies</field>
+        <field name="res_model">saas.tenant</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_plans" model="ir.actions.act_window">
+        <field name="name">Plans</field>
+        <field name="res_model">saas.plan</field>
+        <field name="view_mode">list</field>
+    </record>
+    <record id="action_hq" model="ir.actions.client">
+        <field name="name">Unio HQ</field>
+        <field name="tag">sonador_saas.hq</field>
+    </record>
+    <menuitem id="menu_root" name="Unio HQ" sequence="1" web_icon="sonador_saas,static/description/icon.png" groups="sonador_books.group_sb_manager" action="action_hq"/>
+    <menuitem id="menu_hq" name="HQ" parent="menu_root" action="action_hq" sequence="1"/>
+    <menuitem id="menu_tenants" name="Customer companies" parent="menu_root" action="action_tenants" sequence="10"/>
+    <menuitem id="menu_plans" name="Plans" parent="menu_root" action="action_plans" sequence="20"/>
+
+    <record id="view_signup_list" model="ir.ui.view">
+        <field name="name">saas.signup list</field>
+        <field name="model">saas.signup</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" decoration-success="state == 'done'" decoration-muted="state == 'expired'">
+                <field name="create_date" string="When"/>
+                <field name="company"/>
+                <field name="subdomain"/>
+                <field name="email"/>
+                <field name="country"/>
+                <field name="industry"/>
+                <field name="ip"/>
+                <field name="sent_count" string="Emails"/>
+                <field name="state" widget="badge"/>
+                <field name="tenant_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_signups" model="ir.actions.act_window">
+        <field name="name">Sign-ups</field>
+        <field name="res_model">saas.signup</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html"><p>Sign-ups appear here when the form is sent; the system is made when the email is confirmed.</p></field>
+    </record>
+    <menuitem id="menu_signups" name="Sign-ups" parent="menu_root" action="action_signups" sequence="15"/>
+
+    <record id="view_payment_list" model="ir.ui.view">
+        <field name="name">saas.payment list</field>
+        <field name="model">saas.payment</field>
+        <field name="arch" type="xml">
+            <list create="0" decoration-success="state == 'confirmed'" decoration-muted="state == 'rejected'" decoration-warning="state == 'waiting'">
+                <field name="create_date" string="When"/>
+                <field name="tenant_id"/>
+                <field name="method"/>
+                <field name="reference"/>
+                <field name="amount"/>
+                <field name="currency"/>
+                <field name="users"/>
+                <field name="checked"/>
+                <field name="state" widget="badge"/>
+                <button name="action_confirm" type="object" string="Confirm" icon="fa-check" class="btn-link text-success" invisible="state != 'waiting'"/>
+                <button name="action_reject" type="object" string="Reject" icon="fa-times" class="btn-link text-danger" invisible="state != 'waiting'"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_payments" model="ir.actions.act_window">
+        <field name="name">Payments</field>
+        <field name="res_model">saas.payment</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_waiting': 1}</field>
+        <field name="help" type="html"><p>telebirr payments sent from the subscribe page appear here; confirming one makes the subscription active.</p></field>
+    </record>
+    <record id="view_payment_search" model="ir.ui.view">
+        <field name="name">saas.payment search</field>
+        <field name="model">saas.payment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="tenant_id"/>
+                <field name="reference"/>
+                <filter name="waiting" string="To check" domain="[('state', '=', 'waiting')]"/>
+            </search>
+        </field>
+    </record>
+    <menuitem id="menu_payments" name="Payments" parent="menu_root" action="action_payments" sequence="12"/>
+    <record id="view_article_list" model="ir.ui.view">
+        <field name="name">saas.article list</field>
+        <field name="model">saas.article</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="title"/>
+                <field name="app"/>
+                <field name="views"/>
+                <field name="helpful"/>
+                <field name="not_helpful"/>
+                <field name="published" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_article_form" model="ir.ui.view">
+        <field name="name">saas.article form</field>
+        <field name="model">saas.article</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <h1><field name="title" placeholder="How to ..."/></h1>
+                    <group><group><field name="app"/><field name="keywords"/></group><group><field name="published"/><field name="views"/></group></group>
+                    <field name="body"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_articles" model="ir.actions.act_window">
+        <field name="name">Help articles</field>
+        <field name="res_model">saas.article</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_articles" name="Help articles" parent="menu_root" action="action_articles" sequence="40"/>
+
+    <!-- every company has its referral code (also those that signed up before referrals existed) -->
+    <function model="saas.tenant" name="_ensure_codes"/>
+    <function model="saas.article" name="_set_tours"/>
+    <function model="saas.tenant" name="_ensure_paid_until"/>
+</odoo>

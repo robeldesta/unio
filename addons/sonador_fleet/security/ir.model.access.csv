@@ -1,0 +1,22 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_vehicle_driver,sb_vehicle driver,model_sb_vehicle,group_driver,1,0,0,0
+access_sb_vehicle_user,sb_vehicle officer,model_sb_vehicle,group_user,1,1,1,0
+access_sb_vehicle_manager,sb_vehicle manager,model_sb_vehicle,group_manager,1,1,1,1
+access_sb_vehicle_doc_driver,sb_vehicle_doc driver,model_sb_vehicle_doc,group_driver,1,0,0,0
+access_sb_vehicle_doc_user,sb_vehicle_doc officer,model_sb_vehicle_doc,group_user,1,1,1,0
+access_sb_vehicle_doc_manager,sb_vehicle_doc manager,model_sb_vehicle_doc,group_manager,1,1,1,1
+access_sb_vehicle_reading_driver,sb_vehicle_reading driver,model_sb_vehicle_reading,group_driver,1,0,0,0
+access_sb_vehicle_reading_user,sb_vehicle_reading officer,model_sb_vehicle_reading,group_user,1,1,1,0
+access_sb_vehicle_reading_manager,sb_vehicle_reading manager,model_sb_vehicle_reading,group_manager,1,1,1,1
+access_sb_fuel_driver,sb_fuel driver,model_sb_fuel,group_driver,1,0,0,0
+access_sb_fuel_user,sb_fuel officer,model_sb_fuel,group_user,1,1,1,0
+access_sb_fuel_manager,sb_fuel manager,model_sb_fuel,group_manager,1,1,1,1
+access_sb_trip_driver,sb_trip driver,model_sb_trip,group_driver,1,0,0,0
+access_sb_trip_user,sb_trip officer,model_sb_trip,group_user,1,1,1,0
+access_sb_trip_manager,sb_trip manager,model_sb_trip,group_manager,1,1,1,1
+access_sb_vehicle_service_driver,sb_vehicle_service driver,model_sb_vehicle_service,group_driver,1,0,0,0
+access_sb_vehicle_service_user,sb_vehicle_service officer,model_sb_vehicle_service,group_user,1,1,1,0
+access_sb_vehicle_service_manager,sb_vehicle_service manager,model_sb_vehicle_service,group_manager,1,1,1,1
+access_sb_vehicle_schedule_driver,sb_vehicle_schedule driver,model_sb_vehicle_schedule,group_driver,1,0,0,0
+access_sb_vehicle_schedule_user,sb_vehicle_schedule officer,model_sb_vehicle_schedule,group_user,1,1,1,0
+access_sb_vehicle_schedule_manager,sb_vehicle_schedule manager,model_sb_vehicle_schedule,group_manager,1,1,1,1

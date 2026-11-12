@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="plan_standard" model="saas.plan">
+        <field name="name">Standard</field>
+        <field name="code">standard</field>
+        <field name="sequence">10</field>
+        <field name="note">All apps. 5% off per user for each user after the first, up to 30%.</field>
+    </record>
+    <record id="plan_free" model="saas.plan">
+        <field name="name">Free</field>
+        <field name="code">free</field>
+        <field name="sequence">5</field>
+        <field name="free_users">1</field>
+        <field name="max_users">1</field>
+        <field name="trial_days">0</field>
+        <field name="note">One user, all apps, free forever.</field>
+    </record>
+    <record id="param_domain" model="ir.config_parameter">
+        <field name="key">saas.domain</field>
+        <field name="value">unio.localhost:8569</field>
+    </record>
+    <record id="param_origins" model="ir.config_parameter">
+        <field name="key">saas.site_origins</field>
+        <field name="value">http://localhost:8580,https://getunio.io,https://www.getunio.io</field>
+    </record>
+    <record id="cron_telebirr_settle" model="ir.cron">
+        <field name="name">Cloud: ask telebirr about open payments</field>
+        <field name="model_id" ref="model_saas_payment"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_settle()</field>
+        <field name="interval_number">10</field>
+        <field name="interval_type">minutes</field>
+    </record>
+    <record id="cron_hq_ingest" model="ir.cron">
+        <field name="name">HQ: read the server agent's reports</field>
+        <field name="model_id" ref="model_saas_hq"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_hq()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+    </record>
+    <record id="cron_hq_measure" model="ir.cron">
+        <field name="name">HQ: measure the customer companies</field>
+        <field name="model_id" ref="model_saas_hq"/>
+        <field name="state">code</field>
+        <field name="code">model.measure()</field>
+        <field name="interval_number">6</field>
+        <field name="interval_type">hours</field>
+    </record>
+    <record id="cron_nightly" model="ir.cron">
+        <field name="name">Cloud: count users, trials</field>
+        <field name="model_id" ref="model_saas_service"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_nightly()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="cron_books_monthly" model="ir.cron">
+        <field name="name">Unio: last month's AI cost into the company books</field>
+        <field name="model_id" ref="model_saas_books"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_monthly()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="nextcall" eval="(DateTime.today().replace(day=1) + relativedelta(months=1)).strftime('%Y-%m-%d 06:00:00')"/>
+    </record>
+</odoo>

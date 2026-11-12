@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_saas_client.Status">
+        <t t-set="s" t-value="state.s"/>
+        <div t-if="s and s.cloud and isAdmin" class="d-flex align-items-center">
+            <button class="btn btn-link px-2 o_saas_refer_btn" title="Refer a business, earn free months" t-on-click="refer"><i class="fa fa-gift"/></button>
+        </div>
+        <div t-if="s and s.cloud and (s.locked or s.trial or s.overdue or (s.renew_in !== null and s.renew_in !== undefined))" class="o_saas_status d-flex align-items-center">
+            <a t-att-href="s.subscribe_url" target="_blank" t-attf-class="badge rounded-pill {{ s.locked or s.overdue ? 'text-bg-danger' : ((s.trial and s.days_left &lt;= 5) or s.renew_in !== null ? 'text-bg-warning' : 'text-bg-light border') }} text-decoration-none">
+                <t t-if="s.locked">Read-only · Subscribe</t>
+                <t t-elif="s.overdue">Payment due · Renew</t>
+                <t t-elif="s.trial and s.days_left &gt;= 0">Trial: <t t-esc="s.days_left"/> days left · Subscribe</t>
+                <t t-elif="s.renew_in !== null and s.renew_in !== undefined">Renews in <t t-esc="s.renew_in"/> day(s) · Renew</t>
+            </a>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="sonador_school.App">
+    <div class="o_sch" t-if="state.c">
+        <t t-set="c" t-value="state.c"/>
+        <header class="o_sch_top">
+            <div class="o_sch_title">
+                <h1>School</h1>
+                <div class="o_sch_sub" t-if="!c.setup"><t t-esc="c.year.name"/> · <t t-esc="c.today_ec"/></div>
+            </div>
+            <nav class="o_sch_tabs" t-if="!c.setup">
+                <button t-if="c.office" t-attf-class="{{ state.tab === 'overview' ? 'on' : '' }}" t-on-click="() => this.go('overview')"><i class="fa fa-th-large"/> Overview</button>
+                <button t-attf-class="{{ state.tab === 'students' ? 'on' : '' }}" t-on-click="() => this.go('students')"><i class="fa fa-users"/> Students</button>
+                <button t-attf-class="{{ state.tab === 'classes' ? 'on' : '' }}" t-on-click="() => this.go('classes')"><i class="fa fa-book"/> Classes</button>
+                <button t-if="c.office" t-attf-class="{{ state.tab === 'fees' ? 'on' : '' }}" t-on-click="() => this.go('fees')"><i class="fa fa-money"/> Fees</button>
+            </nav>
+        </header>
+
+        <!-- ============================================================ setup -->
+        <section t-if="state.tab === 'setup'" class="o_sch_card o_sch_setup">
+            <t t-if="c.office">
+                <h2>Open the academic year</h2>
+                <p class="text-muted">Two semesters, and a section for every grade you teach. You can add sections and teachers later.</p>
+                <div class="o_sch_form3">
+                    <div><label>Year</label><input class="form-control" placeholder="2019 E.C." t-model="state.setup.name"/></div>
+                    <div><label>First day</label><input type="date" class="form-control" t-model="state.setup.start"/></div>
+                    <div><label>Last day</label><input type="date" class="form-control" t-model="state.setup.end"/></div>
+                </div>
+                <label class="mt-3">Grades taught</label>
+                <div class="o_sch_chips">
+                    <button t-foreach="allGrades" t-as="g" t-key="g.id" t-attf-class="o_sch_chip {{ state.setup.grades[g.id] ? 'on' : '' }}" t-on-click="() => this.toggleGrade(g.id)" t-esc="g.name"/>
+                </div>
+                <div class="d-flex gap-2 align-items-center mt-3">
+                    <label class="m-0">Sections per grade</label>
+                    <input type="number" min="1" max="8" class="form-control" style="width:80px" t-model.number="state.setup.per"/>
+                    <button class="btn btn-primary ms-auto" t-att-disabled="state.busy" t-on-click="startYear">Open the year</button>
+                </div>
+            </t>
+            <p t-else="">The school office has not opened the academic year yet.</p>
+        </section>
+
+        <!-- ============================================================ overview -->
+        <t t-if="state.tab === 'overview' and state.ov">
+            <t t-set="o" t-value="state.ov"/>
+            <div class="o_sch_kpis">
+                <div class="o_sch_kpi"><span>Students</span><b t-esc="o.students"/><small><t t-esc="o.girls"/> girls · <t t-esc="o.students - o.girls"/> boys</small></div>
+                <div class="o_sch_kpi"><span>Fees collected this year</span><b><t t-esc="o.collected_pct"/>%</b><small><t t-esc="whole(o.collected)"/> of <t t-esc="whole(o.billed)"/> <t t-esc="c.currency"/></small></div>
+                <div class="o_sch_kpi warn"><span>Still owed</span><b t-esc="whole(o.owed)"/><small><t t-esc="o.families_owing"/> families</small></div>
+                <div class="o_sch_kpi"><span>Attendance today</span><b><t t-if="o.attendance_today !== null"><t t-esc="o.attendance_today"/>%</t><t t-else="">–</t></b><small><t t-esc="o.registers_today"/> of <t t-esc="o.sections"/> registers taken</small></div>
+                <div class="o_sch_kpi"><span>Applicants</span><b t-esc="o.applicants"/><small>waiting for a class</small></div>
+            </div>
+            <div class="o_sch_grid">
+                <section class="o_sch_card">
+                    <h2>Students by grade</h2>
+                    <div t-foreach="o.grades" t-as="g" t-key="g.name" class="o_sch_bar_row">
+                        <span class="o_sch_bar_l" t-esc="g.name"/>
+                        <div class="o_sch_bar"><i class="f" t-attf-style="width: {{ barW(g.f) }}%"/><i class="m" t-attf-style="width: {{ barW(g.m) }}%"/></div>
+                        <span class="o_sch_bar_n" t-esc="g.m + g.f"/>
+                    </div>
+                    <div class="o_sch_legend"><span><i class="f"/> girls</span><span><i class="m"/> boys</span></div>
+                </section>
+                <section class="o_sch_card">
+                    <h2>Families who owe most</h2>
+                    <p t-if="!o.top_owing.length" class="text-muted">Nobody owes anything.</p>
+                    <div t-foreach="o.top_owing" t-as="f" t-key="f.id" class="o_sch_line o_sch_click" t-on-click="() => this.gotoFamily(f.id)">
+                        <div><b t-esc="f.name"/><div class="o_sch_muted" t-esc="f.children"/></div>
+                        <div class="text-end text-nowrap"><b t-esc="money(f.owed)"/><div class="o_sch_muted" t-esc="f.phone"/></div>
+                    </div>
+                </section>
+            </div>
+        </t>
+
+        <!-- ============================================================ students -->
+        <t t-if="state.tab === 'students'">
+            <div class="o_sch_split">
+                <section class="o_sch_card o_sch_list">
+                    <div class="o_sch_toolbar">
+                        <input class="form-control" placeholder="Name, number or parent" t-att-value="state.search" t-on-input="onSearch"/>
+                        <button t-if="c.office" class="btn btn-primary" t-on-click="newStudent"><i class="fa fa-plus"/> Admit</button>
+                    </div>
+                    <div class="o_sch_seg">
+                        <button t-attf-class="{{ state.filter === 'enrolled' ? 'on' : '' }}" t-on-click="() => this.setFilter('enrolled')">Enrolled</button>
+                        <button t-if="c.office" t-attf-class="{{ state.filter === 'applicants' ? 'on' : '' }}" t-on-click="() => this.setFilter('applicants')">Applicants</button>
+                        <button t-if="c.office" t-attf-class="{{ state.filter === 'left' ? 'on' : '' }}" t-on-click="() => this.setFilter('left')">Left</button>
+                        <select class="form-select form-select-sm" t-model="state.sectionFilter" t-on-change="loadStudents">
+                            <option value="">All classes</option>
+                            <option t-foreach="c.sections" t-as="s" t-key="s.id" t-att-value="s.id" t-esc="s.name"/>
+                        </select>
+                    </div>
+                    <div class="o_sch_muted mb-1"><t t-esc="state.students.length"/> students</div>
+                    <div t-foreach="state.students" t-as="s" t-key="s.id" t-attf-class="o_sch_stu {{ state.student and state.student.id === s.id ? 'on' : '' }}" t-on-click="() => this.openStudent(s.id)">
+                        <img t-if="s.photo" t-att-src="s.photo" alt=""/>
+                        <span t-else="" t-attf-class="o_sch_av {{ s.sex }}" t-esc="s.name.slice(0, 1)"/>
+                        <div class="o_sch_stu_b"><b t-esc="s.name"/><div class="o_sch_muted"><t t-esc="s.no"/> · <t t-esc="s.class"/></div></div>
+                        <div class="o_sch_muted text-end small" t-esc="s.payer"/>
+                    </div>
+                </section>
+
+                <section class="o_sch_card o_sch_detail" t-if="state.form">
+                    <t t-set="f" t-value="state.form"/>
+                    <h2 t-if="f.id">Edit <t t-esc="f.name"/></h2><h2 t-else="">Admit a student</h2>
+                    <div class="o_sch_form2">
+                        <div><label>Full name</label><input class="form-control" t-model="f.name"/></div>
+                        <div><label>Name in Amharic</label><input class="form-control" t-model="f.name_am"/></div>
+                        <div><label>Sex</label><select class="form-select" t-model="f.sex"><option value="m">Male</option><option value="f">Female</option></select></div>
+                        <div><label>Date of birth</label><input type="date" class="form-control" t-model="f.birth_date"/></div>
+                        <div><label>Applying for</label><select class="form-select" t-model="f.applied_grade_id"><option value="">–</option><option t-foreach="allGrades" t-as="g" t-key="g.id" t-att-value="g.id" t-esc="g.name"/></select></div>
+                        <div><label>Class</label><select class="form-select" t-model="f.section_id"><option value="">Not placed yet</option><option t-foreach="sectionsOf(f.applied_grade_id)" t-as="s" t-key="s.id" t-att-value="s.id" t-esc="s.name"/></select></div>
+                        <div><label>Parent who pays</label><input class="form-control" t-model="f.payer_name" t-att-readonly="f.payer_id"/></div>
+                        <div><label>Parent's phone</label><input class="form-control" t-model="f.payer_phone" t-att-readonly="f.payer_id"/></div>
+                        <div><label>Second guardian</label><input class="form-control" t-model="f.second_guardian"/></div>
+                        <div><label>Their phone</label><input class="form-control" t-model="f.second_phone"/></div>
+                        <div><label>Scholarship %</label><input type="number" class="form-control" t-model="f.scholarship_pct"/></div>
+                        <div class="d-flex align-items-end"><label class="d-flex gap-2 align-items-center"><input type="checkbox" class="form-check-input m-0" t-model="f.transport"/> Uses school transport</label></div>
+                        <div><label>Previous school</label><input class="form-control" t-model="f.previous_school"/></div>
+                        <div><label>Medical notes</label><input class="form-control" t-model="f.medical"/></div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="saveStudent">Save</button>
+                        <button class="btn btn-light border" t-on-click="() => this.state.form = null">Cancel</button>
+                    </div>
+                </section>
+
+                <section class="o_sch_card o_sch_detail" t-elif="state.student">
+                    <t t-set="s" t-value="state.student"/>
+                    <div class="o_sch_stu_head">
+                        <img t-if="s.photo" t-att-src="s.photo" alt=""/>
+                        <span t-else="" t-attf-class="o_sch_av big {{ s.sex }}" t-esc="s.name.slice(0, 1)"/>
+                        <div class="flex-grow-1">
+                            <h2 class="o_sch_name" t-esc="s.name"/>
+                            <div t-if="s.name_am" class="o_sch_am" t-esc="s.name_am"/>
+                            <div class="o_sch_muted"><t t-esc="s.no"/> · <t t-esc="s.class"/> · <span t-attf-class="o_sch_pill {{ s.state }}" t-esc="stateLabel(s.state)"/></div>
+                        </div>
+                        <button t-if="c.office" class="btn btn-light border btn-sm" t-on-click="editStudent"><i class="fa fa-pencil"/> Edit</button>
+                    </div>
+                    <div t-if="c.office and s.state !== 'enrolled' and s.state !== 'left'" class="o_sch_note">
+                        Place in a class:
+                        <button t-foreach="sectionsOf(s.applied_grade_id)" t-as="x" t-key="x.id" class="btn btn-sm btn-primary ms-1" t-on-click="() => this.setState('enrolled', x.id)"><t t-esc="x.name"/> (<t t-esc="x.count"/>)</button>
+                    </div>
+                    <div class="o_sch_facts">
+                        <div><span>Born</span><b t-esc="s.birth_ec or '–'"/></div>
+                        <div><span>Parent</span><b t-esc="s.payer or '–'"/><small t-esc="s.phone"/></div>
+                        <div t-if="s.second_guardian"><span>Second guardian</span><b t-esc="s.second_guardian"/><small t-esc="s.second_phone"/></div>
+                        <div><span>Days absent</span><b t-esc="s.attendance.absent"/><small><t t-esc="s.attendance.late"/> late · <t t-esc="s.attendance.days"/> days marked</small></div>
+                        <div t-if="s.scholarship"><span>Scholarship</span><b><t t-esc="s.scholarship"/>%</b></div>
+                        <div t-if="s.transport"><span>Transport</span><b>School bus</b></div>
+                    </div>
+                    <div t-if="s.medical" class="o_sch_note warn"><i class="fa fa-medkit"/> <t t-esc="s.medical"/></div>
+                    <div t-if="s.siblings.length" class="mt-2"><span class="o_sch_muted">Siblings: </span>
+                        <a t-foreach="s.siblings" t-as="x" t-key="x.id" href="#" class="me-2" t-on-click.prevent="() => this.openStudent(x.id)"><t t-esc="x.name"/> (<t t-esc="x.class"/>)</a></div>
+                    <t t-if="s.family">
+                        <h2 class="mt-3">Family account <span class="o_sch_muted">· <t t-esc="s.family.code"/></span></h2>
+                        <div class="o_sch_line"><span>Owed</span><b t-attf-class="{{ s.family.owed > 0 ? 'text-danger' : 'text-success' }}"><t t-esc="money(s.family.owed)"/> <t t-esc="c.currency"/></b></div>
+                        <div t-foreach="s.family.bills.slice(0, 6)" t-as="b" t-key="b.id" class="o_sch_line small">
+                            <span><t t-esc="b.period"/> · <t t-esc="b.student"/></span><span><t t-esc="money(b.amount)"/><t t-if="b.residual > 0"> · <span class="text-danger">owes <t t-esc="money(b.residual)"/></span></t><t t-else=""> · <span class="text-success">paid</span></t></span>
+                        </div>
+                        <button class="btn btn-sm btn-light border mt-2" t-on-click="() => this.gotoFamily(s.family.id)">Open the family account</button>
+                    </t>
+                    <div t-if="c.office and s.state === 'enrolled'" class="mt-3 d-flex gap-2">
+                        <button class="btn btn-sm btn-light border" t-on-click="() => this.printOne(s.id)"><i class="fa fa-print"/> Report card</button>
+                        <button class="btn btn-sm btn-light border text-danger" t-on-click="() => this.setState('left')">Left the school</button>
+                    </div>
+                </section>
+                <section class="o_sch_card o_sch_detail o_sch_empty" t-else="">Pick a student.</section>
+            </div>
+        </t>
+
+        <!-- ============================================================ classes -->
+        <t t-if="state.tab === 'classes' and state.classes">
+            <div class="o_sch_split">
+                <section class="o_sch_card o_sch_list">
+                    <div class="o_sch_toolbar"><h2 class="m-0 flex-grow-1">Classes</h2>
+                        <button t-if="c.office" class="btn btn-sm btn-light border" t-on-click="() => this.editSection()"><i class="fa fa-plus"/> Section</button></div>
+                    <p t-if="!state.classes.sections.length" class="text-muted">No classes are assigned to you.</p>
+                    <div t-foreach="state.classes.sections" t-as="s" t-key="s.id" t-attf-class="o_sch_sec {{ state.sec === s.id ? 'on' : '' }}" t-on-click="() => this.openSection(s.id)">
+                        <b t-esc="s.name"/>
+                        <span class="o_sch_muted flex-grow-1 ms-2 text-truncate" t-esc="s.homeroom"/>
+                        <span class="o_sch_muted"><t t-esc="s.boys + s.girls"/></span>
+                        <i t-if="c.office" class="fa fa-pencil ms-2 o_sch_muted" t-on-click.stop="() => this.editSection(s)"/>
+                    </div>
+                    <div t-if="state.editSection" class="o_sch_form1 mt-2">
+                        <t t-set="e" t-value="state.editSection"/>
+                        <div t-if="!e.id"><label>Grade</label><select class="form-select" t-model.number="e.grade_id"><option t-foreach="allGrades" t-as="g" t-key="g.id" t-att-value="g.id" t-esc="g.name"/></select></div>
+                        <div><label>Section</label><input class="form-control" placeholder="A" t-model="e.name"/></div>
+                        <div><label>Homeroom teacher</label><select class="form-select" t-model="e.homeroom_id"><option value="">–</option><option t-foreach="state.classes.staff" t-as="x" t-key="x.id" t-att-value="x.id" t-esc="x.name"/></select></div>
+                        <div><label>Room</label><input class="form-control" t-model="e.room"/></div>
+                        <div class="d-flex gap-2"><button class="btn btn-sm btn-primary" t-on-click="saveSection">Save</button><button class="btn btn-sm btn-light border" t-on-click="() => this.state.editSection = null">Cancel</button></div>
+                    </div>
+                </section>
+
+                <section class="o_sch_card o_sch_detail" t-if="section">
+                    <div class="o_sch_toolbar">
+                        <h2 class="m-0 flex-grow-1"><t t-esc="section.name"/> <span class="o_sch_muted">· <t t-esc="section.boys"/> boys, <t t-esc="section.girls"/> girls</span></h2>
+                        <div class="o_sch_seg m-0">
+                            <button t-attf-class="{{ state.mode === 'register' ? 'on' : '' }}" t-on-click="() => this.openMode('register')"><i class="fa fa-check-square-o"/> Attendance</button>
+                            <button t-attf-class="{{ state.mode === 'marks' ? 'on' : '' }}" t-on-click="() => this.openMode('marks')"><i class="fa fa-pencil-square-o"/> Marks</button>
+                            <button t-attf-class="{{ state.mode === 'results' ? 'on' : '' }}" t-on-click="() => this.openMode('results')"><i class="fa fa-trophy"/> Results</button>
+                        </div>
+                    </div>
+
+                    <!-- attendance -->
+                    <t t-if="state.mode === 'register' and state.reg">
+                        <t t-set="r" t-value="state.reg"/>
+                        <div class="o_sch_toolbar">
+                            <input type="date" class="form-control" style="max-width:170px" t-att-value="state.day" t-on-change="setDay"/>
+                            <span class="o_sch_muted" t-esc="r.date_ec"/>
+                            <span t-if="r.taken" class="o_sch_pill enrolled">Taken</span>
+                            <span class="ms-auto o_sch_muted"><t t-esc="regCounts.present"/> present · <t t-esc="regCounts.absent"/> absent · <t t-esc="regCounts.late"/> late</span>
+                            <button class="btn btn-sm btn-light border" t-on-click="allPresent">All present</button>
+                        </div>
+                        <div class="o_sch_reg">
+                            <div t-foreach="r.rows" t-as="row" t-key="row.id" t-attf-class="o_sch_reg_row {{ row.status }}">
+                                <span class="o_sch_reg_n" t-esc="row_index + 1"/>
+                                <b class="flex-grow-1 text-truncate" t-esc="row.name"/>
+                                <button t-foreach="statuses" t-as="st" t-key="st[0]" t-attf-class="o_sch_st {{ st[0] }} {{ row.status === st[0] ? 'on' : '' }}" t-att-title="st[1]" t-on-click="() => this.mark(row, st[0])" t-esc="st[2]"/>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary mt-3" t-att-disabled="state.busy" t-on-click="saveRegister">Save the register</button>
+                    </t>
+
+                    <!-- marks -->
+                    <t t-if="state.mode === 'marks' and state.marks">
+                        <t t-set="m" t-value="state.marks"/>
+                        <div class="o_sch_toolbar">
+                            <select class="form-select" style="max-width:160px" t-on-change="setTerm"><option t-foreach="c.terms" t-as="t" t-key="t.id" t-att-value="t.id" t-att-selected="t.id === state.termId" t-esc="t.name"/></select>
+                            <div class="o_sch_chips m-0">
+                                <button t-foreach="m.subjects" t-as="x" t-key="x.id" t-attf-class="o_sch_chip {{ state.subjectId === x.id ? 'on' : '' }}" t-on-click="() => this.setSubject(x.id)" t-esc="x.name"/>
+                            </div>
+                        </div>
+                        <div class="o_sch_scroll">
+                            <table class="o_sch_table o_sch_marks">
+                                <thead><tr><th>#</th><th class="text-start">Student</th><th t-foreach="m.assessments" t-as="a" t-key="a.id"><t t-esc="a.name"/><small> /<t t-esc="a.max"/></small></th><th>Total</th></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="m.rows" t-as="row" t-key="row.id">
+                                        <td class="o_sch_muted" t-esc="row_index + 1"/>
+                                        <td class="text-start text-nowrap" t-esc="row.name"/>
+                                        <td t-foreach="m.assessments" t-as="a" t-key="a.id"><input class="form-control form-control-sm" inputmode="decimal" t-att-value="row.scores[a.id] === null ? '' : row.scores[a.id]" t-on-change="(ev) => this.setScore(row, a.id, ev)"/></td>
+                                        <td t-attf-class="fw-bold {{ rowTotal(row) !== '' and rowTotal(row) &lt; 50 ? 'text-danger' : '' }}" t-esc="rowTotal(row)"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-primary mt-3" t-att-disabled="state.busy" t-on-click="saveMarks">Save marks</button>
+                    </t>
+
+                    <!-- results -->
+                    <t t-if="state.mode === 'results' and state.res">
+                        <t t-set="x" t-value="state.res"/>
+                        <div class="o_sch_toolbar">
+                            <select class="form-select" style="max-width:160px" t-on-change="setTerm"><option t-foreach="c.terms" t-as="t" t-key="t.id" t-att-value="t.id" t-att-selected="t.id === state.termId" t-esc="t.name"/></select>
+                            <span class="o_sch_muted">Class average <b t-esc="x.class_average === null ? '–' : x.class_average"/></span>
+                            <button class="btn btn-sm btn-light border ms-auto" t-on-click="saveConduct">Save conduct and comments</button>
+                            <button class="btn btn-sm btn-primary" t-on-click="printCards"><i class="fa fa-print"/> Report cards</button>
+                        </div>
+                        <div class="o_sch_scroll">
+                            <table class="o_sch_table">
+                                <thead><tr><th>Rank</th><th class="text-start">Student</th><th t-foreach="x.subjects" t-as="sub" t-key="sub.id" class="o_sch_vert"><span t-esc="sub.name"/></th><th>Total</th><th>Average</th><th>Absent</th><th>Conduct</th><th class="text-start">Comment</th></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="x.rows" t-as="row" t-key="row.id">
+                                        <td class="fw-bold"><t t-esc="row.rank or ''"/></td>
+                                        <td class="text-start text-nowrap"><t t-esc="row.name"/><i t-if="!row.complete" class="fa fa-exclamation-circle text-warning ms-1" title="Some marks are missing"/></td>
+                                        <td t-foreach="x.subjects" t-as="sub" t-key="sub.id" t-attf-class="{{ row.marks[sub.id] !== null and row.marks[sub.id] &lt; 50 ? 'text-danger' : '' }}" t-esc="row.marks[sub.id] === null ? '–' : row.marks[sub.id]"/>
+                                        <td t-esc="row.total"/>
+                                        <td t-attf-class="fw-bold {{ row.result === 'Fail' ? 'text-danger' : '' }}" t-esc="row.average === null ? '–' : row.average"/>
+                                        <td t-esc="row.absent"/>
+                                        <td><select class="form-select form-select-sm" t-model="row.conduct"><option value="">–</option><option>A</option><option>B</option><option>C</option><option>D</option></select></td>
+                                        <td><input class="form-control form-control-sm" style="min-width:200px" t-model="row.comment"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+                </section>
+            </div>
+        </t>
+
+        <!-- ============================================================ fees -->
+        <t t-if="state.tab === 'fees' and state.fees">
+            <t t-set="fs" t-value="state.fees"/>
+            <div class="o_sch_split">
+                <section class="o_sch_card o_sch_list">
+                    <div class="o_sch_toolbar">
+                        <input class="form-control" placeholder="Find a family" t-att-value="state.arrearsSearch" t-on-input="searchArrears"/>
+                    </div>
+                    <h2>Owing <span class="o_sch_muted">· <t t-esc="state.arrears.length"/> families</span></h2>
+                    <p t-if="!state.arrears.length" class="text-muted">Nobody owes anything.</p>
+                    <div t-foreach="state.arrears" t-as="a" t-key="a.id" t-attf-class="o_sch_line o_sch_click {{ state.family and state.family.id === a.id ? 'on' : '' }}" t-on-click="() => this.openFamily(a.id)">
+                        <div class="min-w-0"><b t-esc="a.name"/><div class="o_sch_muted text-truncate" t-esc="a.children"/></div>
+                        <div class="text-end text-nowrap"><b t-esc="money(a.owed)"/><div t-attf-class="small {{ a.days > 60 ? 'text-danger' : 'o_sch_muted' }}"><t t-esc="a.days"/> days</div></div>
+                    </div>
+                </section>
+
+                <div class="o_sch_detail d-flex flex-column gap-3">
+                    <section class="o_sch_card" t-if="state.family">
+                        <t t-set="fam" t-value="state.family"/>
+                        <div class="o_sch_toolbar">
+                            <div class="flex-grow-1"><h2 class="o_sch_name m-0" t-esc="fam.name"/><div class="o_sch_muted">Family code <b t-esc="fam.code"/> · <t t-esc="fam.phone"/></div></div>
+                            <div class="text-end"><div class="o_sch_muted small">Owed</div><b t-attf-class="fs-4 {{ fam.owed > 0 ? 'text-danger' : 'text-success' }}" t-esc="money(fam.owed)"/></div>
+                        </div>
+                        <div class="o_sch_muted mb-2">Children: <t t-foreach="fam.children" t-as="k" t-key="k.id"><a href="#" t-on-click.prevent="() => this.gotoStudent(k.id)" t-esc="k.name"/> (<t t-esc="k.class"/>)<t t-if="!k_last">, </t></t></div>
+                        <div t-if="state.payForm" class="o_sch_form4 o_sch_payform">
+                            <t t-set="p" t-value="state.payForm"/>
+                            <div><label>Amount</label><input type="number" class="form-control" t-model="p.amount"/></div>
+                            <div><label>Into</label><select class="form-select" t-model.number="p.account_id"><option t-foreach="fs.banks" t-as="b" t-key="b.id" t-att-value="b.id" t-esc="b.name"/></select></div>
+                            <div><label>Slip / telebirr ref.</label><input class="form-control" t-model="p.reference"/></div>
+                            <div><label>Date</label><input type="date" class="form-control" t-model="p.day"/></div>
+                            <div class="o_sch_span"><button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="pay">Post receipt</button>
+                                <button class="btn btn-light border ms-2" t-on-click="() => this.state.payForm = null">Cancel</button></div>
+                        </div>
+                        <button t-else="" class="btn btn-primary mb-2" t-on-click="startPay"><i class="fa fa-plus"/> Record a payment</button>
+                        <div class="o_sch_cols">
+                            <div>
+                                <h3>Bills</h3>
+                                <div t-foreach="fam.bills" t-as="b" t-key="b.id" class="o_sch_line small">
+                                    <span><t t-esc="b.period"/> · <t t-esc="b.student"/></span>
+                                    <span class="text-nowrap"><t t-esc="money(b.amount)"/><t t-if="b.residual > 0"> · <span class="text-danger"><t t-esc="money(b.residual)"/></span></t><i t-else="" class="fa fa-check text-success ms-1"/></span>
+                                </div>
+                            </div>
+                            <div>
+                                <h3>Payments</h3>
+                                <p t-if="!fam.payments.length" class="o_sch_muted small">None yet.</p>
+                                <div t-foreach="fam.payments" t-as="v" t-key="v.id" class="o_sch_line small">
+                                    <span><t t-esc="v.date"/> · <t t-esc="v.name"/><t t-if="v.ref"> · <t t-esc="v.ref"/></t></span><b t-esc="money(v.amount)"/>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="o_sch_card">
+                        <div class="o_sch_toolbar"><h2 class="m-0 flex-grow-1">Bill the fees</h2>
+                            <button t-if="!state.run" class="btn btn-primary btn-sm" t-on-click="startRun"><i class="fa fa-file-text-o"/> New bill run</button></div>
+                        <div t-if="state.run" class="o_sch_form4 mb-3">
+                            <t t-set="r" t-value="state.run"/>
+                            <div><label>Period</label><input class="form-control" placeholder="Tikimt 2019" t-model="r.period"/></div>
+                            <div><label>Bill date</label><input type="date" class="form-control" t-model="r.day"/></div>
+                            <div><label>Due</label><input type="date" class="form-control" t-model="r.due"/></div>
+                            <div class="d-flex flex-column justify-content-end gap-1">
+                                <label class="d-flex gap-2 align-items-center m-0"><input type="checkbox" class="form-check-input m-0" t-model="r.monthly"/> Monthly fees</label>
+                                <label class="d-flex gap-2 align-items-center m-0"><input type="checkbox" class="form-check-input m-0" t-model="r.term"/> Semester fees</label>
+                                <label class="d-flex gap-2 align-items-center m-0"><input type="checkbox" class="form-check-input m-0" t-model="r.annual"/> Yearly fees</label>
+                            </div>
+                            <div class="o_sch_span o_sch_muted small">Every enrolled student is billed once for the period; the 2nd child of a family gets <t t-esc="fs.sibling.second"/>% off, the 3rd and later <t t-esc="fs.sibling.third"/>%, plus any scholarship.</div>
+                            <div class="o_sch_span"><button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="doRun">Bill now</button>
+                                <button class="btn btn-light border ms-2" t-on-click="() => this.state.run = null">Cancel</button></div>
+                        </div>
+                        <h3>Fee amounts by grade</h3>
+                        <div class="o_sch_scroll">
+                            <table class="o_sch_table o_sch_feegrid">
+                                <thead><tr><th class="text-start">Fee</th><th t-foreach="fs.grades" t-as="g" t-key="g.id" t-esc="g.name"/></tr></thead>
+                                <tbody>
+                                    <tr t-foreach="fs.items" t-as="it" t-key="it.id">
+                                        <td class="text-start text-nowrap"><b t-esc="it.name"/><div class="o_sch_muted small"><t t-esc="kindLabel(it.kind)"/><t t-if="it.transport_only"> · bus users</t></div></td>
+                                        <td t-foreach="fs.grades" t-as="g" t-key="g.id"><input class="form-control form-control-sm" inputmode="decimal" t-att-value="it.amounts[g.id]" t-on-change="(ev) => this.saveFee(it, g.id, ev)"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </t>
+    </div>
+</t>
+</templates>

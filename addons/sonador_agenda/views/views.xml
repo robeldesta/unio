@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_agenda_app" model="ir.actions.client">
+        <field name="name">Agenda</field>
+        <field name="tag">sonador_agenda.app</field>
+    </record>
+
+    <record id="view_agenda_todo_list" model="ir.ui.view">
+        <field name="name">agenda.todo.list</field>
+        <field name="model">agenda.todo</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" decoration-muted="done">
+                <field name="done" widget="boolean_toggle"/>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="priority"/>
+                <field name="note" optional="hide"/>
+                <field name="done_on" optional="hide"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_agenda_todo_search" model="ir.ui.view">
+        <field name="name">agenda.todo.search</field>
+        <field name="model">agenda.todo</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="user_id"/>
+                <filter name="open" string="Open" domain="[('done', '=', False)]"/>
+                <filter name="mine" string="Mine" domain="[('user_id', '=', uid)]"/>
+                <filter name="given" string="Given to others" domain="[('create_uid', '=', uid), ('user_id', '!=', uid)]"/>
+                <filter name="done" string="Done" domain="[('done', '=', True)]"/>
+                <group><filter name="by_user" string="Who" context="{'group_by': 'user_id'}"/></group>
+            </search>
+        </field>
+    </record>
+    <record id="action_agenda_todos" model="ir.actions.act_window">
+        <field name="name">To-dos</field>
+        <field name="res_model">agenda.todo</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+    <record id="view_agenda_rule_list" model="ir.ui.view">
+        <field name="name">agenda.rule.list</field>
+        <field name="model">agenda.rule</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="country_code"/>
+                <field name="name"/>
+                <field name="area"/>
+                <field name="every"/>
+                <field name="due"/>
+                <field name="value"/>
+                <field name="note"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_agenda_rules" model="ir.actions.act_window">
+        <field name="name">Deadlines</field>
+        <field name="res_model">agenda.rule</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <record id="view_company_agenda" model="ir.ui.view">
+        <field name="name">res.company.agenda</field>
+        <field name="model">res.company</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="Agenda settings">
+                <sheet>
+                    <group>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="agenda_min_amount"/>
+                        <field name="agenda_horizon"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_agenda_settings" model="ir.actions.server">
+        <field name="name">Settings</field>
+        <field name="model_id" ref="base.model_res_company"/>
+        <field name="state">code</field>
+        <field name="code">action = {'type': 'ir.actions.act_window', 'res_model': 'res.company', 'res_id': env.company.id,
+    'views': [(env.ref('sonador_agenda.view_company_agenda').id, 'form')], 'target': 'current', 'name': 'Agenda settings'}</field>
+    </record>
+
+    <menuitem id="menu_root" name="Agenda" sequence="2" web_icon="sonador_agenda,static/description/icon.png"
+              action="action_agenda_app" groups="base.group_user"/>
+    <menuitem id="menu_agenda" name="Agenda" parent="menu_root" action="action_agenda_app" sequence="1"/>
+    <menuitem id="menu_todos" name="To-dos" parent="menu_root" action="action_agenda_todos" sequence="2"/>
+    <menuitem id="menu_config" name="Configuration" parent="menu_root" sequence="9" groups="sonador_books.group_sb_manager"/>
+    <menuitem id="menu_rules" name="Deadlines" parent="menu_config" action="action_agenda_rules" sequence="1"/>
+    <menuitem id="menu_settings" name="Settings" parent="menu_config" action="action_agenda_settings" sequence="2"/>
+</odoo>

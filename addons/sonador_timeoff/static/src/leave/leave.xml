@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_timeoff.App">
+        <div class="o_pp o_to o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker">People · Labour Proclamation 1156/2019</div>
+                        <h1 class="o_pp_title"><i class="fa fa-calendar-check-o me-2"/>Leave Requests</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="state.page === 'mine' ? 'active' : ''" t-on-click="() => this.go('mine')"><i class="fa fa-user"/> Leave &amp; balance</button>
+                        <button t-if="ctx.is_manager or ctx.is_hr" t-att-class="state.page === 'approvals' ? 'active' : ''" t-on-click="() => this.go('approvals')"><i class="fa fa-inbox"/> Approvals</button>
+                        <button t-att-class="state.page === 'calendar' ? 'active' : ''" t-on-click="() => this.go('calendar')"><i class="fa fa-calendar"/> Calendar</button>
+                        <button t-if="ctx.is_hr" t-att-class="state.page === 'balances' ? 'active' : ''" t-on-click="() => this.go('balances')"><i class="fa fa-balance-scale"/> Balances</button>
+                        <button t-att-class="state.page === 'holidays' ? 'active' : ''" t-on-click="() => this.go('holidays')"><i class="fa fa-flag"/> Holidays</button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'mine'" t-call="sonador_timeoff.Mine"/>
+                <t t-if="state.page === 'approvals'" t-call="sonador_timeoff.Approvals"/>
+                <t t-if="state.page === 'calendar' and state.cal.data" t-call="sonador_timeoff.Calendar"/>
+                <t t-if="state.page === 'balances' and state.bal" t-call="sonador_timeoff.Balances"/>
+                <t t-if="state.page === 'holidays'" t-call="sonador_timeoff.Holidays"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_timeoff.Mine">
+        <t t-set="o" t-value="state.ov"/>
+        <div class="o_pp_toolbar">
+            <select t-if="ctx.people.length &gt; 1" class="form-select w-auto" t-model="state.who" t-on-change="pickWho">
+                <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/>
+            </select>
+            <button t-if="o and o.employee" class="btn btn-primary ms-auto" t-on-click="newRequest"><i class="fa fa-plus me-1"/>Request leave</button>
+        </div>
+        <div t-if="!o or !o.employee" class="o_pp_card o_pp_empty p-4">Your login is not linked to an employee.</div>
+        <t t-else="">
+            <t t-if="state.form" t-call="sonador_timeoff.Form"/>
+            <div class="o_pp_kpis">
+                <div class="o_pp_kpi"><span>Annual leave available</span><b t-attf-class="{{ o.annual.available &lt; 0 ? 'o_pp_badtxt' : 'o_pp_good' }}"><t t-esc="num(o.annual.available)"/> <small>days</small></b>
+                    <small t-if="o.annual.no_start" class="text-danger">no start date on the record</small>
+                    <small t-else="">year <t t-esc="(o.annual.service_years or 0) + 1"/> of service: <t t-esc="o.annual.this_year"/> days a year</small></div>
+                <div class="o_pp_kpi"><span>Taken (all time)</span><b t-esc="num(o.annual.taken)"/><small>lapsed <t t-esc="num(o.annual.lapsed)"/> (over 2 years, art. 79(4))</small></div>
+                <div class="o_pp_kpi"><span>Expiring in 3 months</span>
+                    <b t-attf-class="{{ o.annual.expiring.length ? 'o_pp_badtxt' : '' }}" t-esc="num(o.annual.expiring.reduce((a, x) =&gt; a + x.days, 0))"/>
+                    <small t-foreach="o.annual.expiring" t-as="x" t-key="x_index"><t t-esc="num(x.days)"/> on <t t-esc="x.ec"/> </small></div>
+                <div class="o_pp_kpi"><span>Sick leave, last 12 months</span><b><t t-esc="num(o.sick.used, 0)"/> <small>/ 180 days</small></b>
+                    <small t-esc="o.sick.used &lt; 30 ? 'next day: full pay' : o.sick.used &lt; 90 ? 'next day: half pay (art. 86)' : 'next day: unpaid (art. 86)'"/></div>
+            </div>
+            <div class="o_pp_grid">
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-list"/>Requests</div>
+                    <div class="o_pp_list" style="max-height: 32rem">
+                        <div t-foreach="o.leaves" t-as="l" t-key="l.id" class="o_to_req">
+                            <span class="o_to_dot" t-attf-style="background: {{ l.color }}"/>
+                            <div class="flex-grow-1"><b t-esc="l.type"/> · <t t-esc="num(l.days)"/> <t t-esc="l.unit === 'working' ? 'working days' : 'days'"/>
+                                <div class="small text-muted"><t t-esc="l.from_ec"/> → <t t-esc="l.to_ec"/><t t-if="l.reason"> · <t t-esc="l.reason"/></t></div>
+                                <div t-if="l.pay and (l.pay.half or l.pay.unpaid)" class="small text-danger">Pay: <t t-esc="l.pay.full"/> full, <t t-esc="l.pay.half"/> half, <t t-esc="l.pay.unpaid"/> unpaid</div>
+                                <div t-if="l.refuse_reason" class="small text-danger" t-esc="l.refuse_reason"/></div>
+                            <span t-attf-class="o_pf_state {{ l.state === 'approved' ? 'closed' : l.state === 'submitted' or l.state === 'manager' ? 'calibration' : 'draft' }}" t-esc="stateLabel(l.state)"/>
+                            <button t-if="l.can_cancel" class="btn btn-link btn-sm text-danger" t-on-click="() => this.cancel(l)">Cancel</button>
+                        </div>
+                        <div t-if="!o.leaves.length" class="o_pp_empty">No leave yet.</div>
+                    </div>
+                </div>
+                <div class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-hourglass-half"/>Annual leave by service year</div>
+                    <table class="o_pp_table">
+                        <thead><tr><th>Earned for</th><th class="num">Days</th><th class="num">Used</th><th class="num">Left</th><th>Use by</th></tr></thead>
+                        <tbody>
+                            <tr t-foreach="o.annual.lots" t-as="lot" t-key="lot_index" t-attf-class="{{ lot.lapsed ? 'left' : '' }}">
+                                <td><b t-esc="lot.label"/><div class="small text-muted"><t t-esc="lot.from"/> → <t t-esc="lot.to"/><t t-if="lot.current"> (so far)</t></div></td>
+                                <td class="num" t-esc="num(lot.earned, 2)"/><td class="num" t-esc="num(lot.used, 2)"/>
+                                <td class="num"><t t-esc="num(lot.remaining, 2)"/><span t-if="lot.lapsed" class="o_pp_badge bad ms-1">lapsed <t t-esc="num(lot.lapsed, 2)"/></span></td>
+                                <td t-esc="lot.expires_ec"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div t-if="!o.annual.lots.length" class="o_pp_empty">Set the start date in People to work out annual leave.</div>
+                    <div class="small text-muted px-3 py-2">16 working days for the first year of service, plus one for every additional two years (art. 77); a part year earns in proportion; leave can be postponed at most two years (art. 79(4)); the oldest leave is used first.</div>
+                </div>
+                <div t-if="o.can_manage and ctx.is_hr" class="o_pp_card">
+                    <div class="o_pp_card_head"><i class="fa fa-sliders"/>Adjust annual leave (HR)</div>
+                    <div class="o_pp_formgrid">
+                        <label>Days (+ adds, − removes)<input type="number" step="0.5" class="form-control" t-model="state.adj.days"/></label>
+                        <label>Date<input type="date" class="form-control" t-model="state.adj.date"/></label>
+                        <label class="wide">Why<input class="form-control" t-model="state.adj.note" placeholder="e.g. Opening balance brought forward"/></label>
+                    </div>
+                    <div class="o_pp_panel_foot"><button class="btn btn-primary ms-auto" t-att-disabled="!state.adj.days or !state.adj.note" t-on-click="saveAdjust">Adjust</button></div>
+                    <div t-foreach="o.adjustments" t-as="a" t-key="a.id" class="px-3 py-1 small border-top"><b t-esc="(a.days &gt; 0 ? '+' : '') + a.days"/> on <t t-esc="a.date"/>: <t t-esc="a.note"/></div>
+                </div>
+            </div>
+        </t>
+    </t>
+
+    <t t-name="sonador_timeoff.Form">
+        <t t-set="f" t-value="state.form"/>
+        <t t-set="p" t-value="state.preview"/>
+        <div class="o_pp_card o_pp_panel">
+            <div class="o_pp_card_head"><i class="fa fa-paper-plane-o"/>Request leave</div>
+            <div class="o_pp_formgrid">
+                <label>Type<select class="form-select" t-model="f.type_id" t-on-change="refresh">
+                    <option t-foreach="myTypes" t-as="t" t-key="t.id" t-att-value="t.id" t-esc="t.name + (t.ref ? ' (' + t.ref + ')' : '')"/></select></label>
+                <label>From<input type="date" class="form-control" t-model="f.date_from" t-on-change="refresh"/></label>
+                <label>To<input type="date" class="form-control" t-model="f.date_to" t-on-change="refresh"/></label>
+                <label>Reason<input class="form-control" t-model="f.reason"/></label>
+                <label t-if="formType and formType.needs_document">Document (e.g. medical certificate)<input type="file" class="form-control" t-on-change="onFile"/></label>
+            </div>
+            <div t-if="p" class="px-3 pb-2">
+                <div class="o_to_days"><b t-esc="num(p.days)"/> <t t-esc="formType and formType.unit === 'working' ? 'working days' : 'days'"/>
+                    <t t-if="formType and formType.unit === 'working'"> (weekly rest days and public holidays not counted)</t></div>
+                <div t-foreach="p.holidays" t-as="h" t-key="h_index" class="small text-muted"><i class="fa fa-flag me-1"/><t t-esc="h"/></div>
+                <div t-foreach="p.warnings" t-as="w" t-key="w_index" class="small text-warning"><i class="fa fa-exclamation-triangle me-1"/><t t-esc="w"/></div>
+                <div t-if="p.error" class="small text-danger"><i class="fa fa-ban me-1"/><t t-esc="p.error"/></div>
+            </div>
+            <div class="o_pp_panel_foot">
+                <button class="btn btn-light border ms-auto" t-on-click="() => state.form = null">Cancel</button>
+                <button t-if="ctx.is_hr" class="btn btn-light border" t-att-disabled="p and p.error" t-on-click="() => this.submit(true)">Record as approved</button>
+                <button class="btn btn-primary" t-att-disabled="!p or p.error" t-on-click="() => this.submit(false)"><i class="fa fa-paper-plane me-1"/>Send for approval</button>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_timeoff.Approvals">
+        <div class="o_pp_card">
+            <div t-foreach="state.approvals" t-as="l" t-key="l.id" class="o_to_req">
+                <img class="o_pp_av sm" t-att-src="l.employee.avatar"/>
+                <div class="flex-grow-1"><b t-esc="l.employee.name"/> · <span t-esc="l.type"/> · <b t-esc="num(l.days)"/> <t t-esc="l.unit === 'working' ? 'working days' : 'days'"/>
+                    <div class="small text-muted"><t t-esc="l.from_ec"/> → <t t-esc="l.to_ec"/><t t-if="l.reason"> · <t t-esc="l.reason"/></t>
+                        <t t-if="l.balance !== undefined"> · balance <b t-esc="num(l.balance)"/></t>
+                        <a t-if="l.file" t-att-href="'/web/content/' + l.file.id + '?download=true'" class="ms-1"><i class="fa fa-paperclip"/></a></div></div>
+                <input class="form-control form-control-sm w-auto" placeholder="Reason if refusing" t-att-value="state.refuse[l.id] or ''" t-on-input="(ev) => this.setRefuse(l.id, ev.target.value)"/>
+                <button class="btn btn-light border btn-sm text-danger" t-on-click="() => this.decide(l, false)">Refuse</button>
+                <button class="btn btn-primary btn-sm" t-on-click="() => this.decide(l, true)">Approve</button>
+            </div>
+            <div t-if="!state.approvals.length" class="o_pp_empty p-4"><i class="fa fa-check text-success me-1"/>Nothing waiting for approval.</div>
+        </div>
+    </t>
+
+    <t t-name="sonador_timeoff.Calendar">
+        <t t-set="c" t-value="state.cal.data"/>
+        <div class="o_pp_toolbar">
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.moveMonth(-1)"><i class="fa fa-chevron-left"/></button>
+            <b class="mx-2" t-esc="monthLabel"/>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.moveMonth(1)"><i class="fa fa-chevron-right"/></button>
+            <div class="btn-group btn-group-sm ms-3">
+                <button t-attf-class="btn {{ state.cal.scope === 'team' ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => this.setScope('team')">My team</button>
+                <button t-attf-class="btn {{ state.cal.scope === 'all' ? 'btn-dark' : 'btn-outline-secondary' }}" t-on-click="() => this.setScope('all')">Everyone on leave</button>
+            </div>
+        </div>
+        <div class="o_pp_card o_to_calwrap">
+            <table class="o_to_cal">
+                <thead><tr><th class="name"/>
+                    <th t-foreach="c.days" t-as="d" t-key="d.date" t-attf-class="{{ d.weekend ? 'we' : '' }} {{ d.holiday ? 'hol' : '' }} {{ d.date === c.today ? 'today' : '' }}" t-att-title="d.ec + (d.holiday ? ' · ' + d.holiday : '')">
+                        <div t-esc="d.dow"/><div t-esc="d.day"/></th></tr></thead>
+                <tbody>
+                    <tr t-foreach="c.rows" t-as="r" t-key="r.employee.id">
+                        <td class="name"><img class="o_pp_av xs" t-att-src="r.employee.avatar"/> <t t-esc="r.employee.name"/></td>
+                        <td t-foreach="c.days" t-as="d" t-key="d.date" t-attf-class="{{ d.weekend ? 'we' : '' }} {{ d.holiday ? 'hol' : '' }}">
+                            <div t-if="r.cells[d.date]" t-attf-class="o_to_cell {{ r.cells[d.date].pending ? 'pending' : '' }}" t-attf-style="background: {{ r.cells[d.date].color }}" t-att-title="r.cells[d.date].type"/>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div t-if="!c.rows.length" class="o_pp_empty p-3">No one on leave this month.</div>
+        </div>
+        <div class="d-flex flex-wrap gap-3 small mt-2">
+            <span t-foreach="ctx.types" t-as="t" t-key="t.id"><span class="o_to_dot" t-attf-style="background: {{ t.color }}"/> <t t-esc="t.name"/></span>
+            <span><span class="o_to_dot hol"/> Public holiday</span><span><span class="o_to_dot pend"/> Waiting approval</span>
+        </div>
+    </t>
+
+    <t t-name="sonador_timeoff.Balances">
+        <t t-set="b" t-value="state.bal"/>
+        <div class="o_pp_kpis">
+            <div class="o_pp_kpi"><span>Annual leave owed</span><b><t t-esc="num(b.total_days)"/> <small>days</small></b><small>all current staff</small></div>
+            <div class="o_pp_kpi"><span>Leave liability</span><b t-esc="num(b.total_liability, 0)"/><small>ETB at basic salary ÷ 30 a day (art. 77(4))</small></div>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>Employee</th><th>Since</th><th class="num">Years</th><th class="num">This year</th><th class="num">Earned</th><th class="num">Taken</th><th class="num">Lapsed</th><th class="num">Available</th><th class="num">Expiring 3m</th><th class="num">Liability</th></tr></thead>
+                <tbody>
+                    <tr t-foreach="b.rows" t-as="r" t-key="r.employee.id" class="o_pf_click" t-on-click="() => this.openPerson(r.employee.id)">
+                        <td><b t-esc="r.employee.name"/><div class="small text-muted" t-esc="r.employee.department"/></td><td t-esc="r.start_ec or '—'"/>
+                        <td class="num" t-esc="r.years === null ? '—' : r.years"/><td class="num" t-esc="r.this_year === null ? '—' : r.this_year"/><td class="num" t-esc="num(r.earned)"/>
+                        <td class="num" t-esc="num(r.taken)"/><td class="num" t-esc="num(r.lapsed)"/>
+                        <td class="num"><b t-esc="num(r.available)"/></td><td t-attf-class="num {{ r.expiring ? 'text-danger' : '' }}" t-esc="r.expiring ? num(r.expiring) : ''"/>
+                        <td class="num" t-esc="num(r.liability, 0)"/>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+
+    <t t-name="sonador_timeoff.Holidays">
+        <div class="o_pp_toolbar">
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.moveYear(-1)"><i class="fa fa-chevron-left"/></button>
+            <b class="mx-2" t-esc="state.hol.year"/>
+            <button class="btn btn-light border btn-sm" t-on-click="() => this.moveYear(1)"><i class="fa fa-chevron-right"/></button>
+            <span class="small text-muted ms-3">Paid public holidays (art. 73); work on one is paid at 2.5× (art. 68). Muslim holidays follow the moon: confirm the date each year.</span>
+        </div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th>Holiday</th><th>Date</th><th>Local date</th><th>Day</th><th/></tr></thead>
+                <tbody>
+                    <tr t-foreach="state.hol.list" t-as="h" t-key="h.id">
+                        <td><b t-esc="h.name"/></td><td t-esc="h.date"/><td t-esc="h.ec"/><td t-esc="h.weekday"/>
+                        <td><t t-if="!h.confirmed"><span class="o_pp_badge warn me-2">to confirm</span>
+                            <t t-if="ctx.is_hr"><input type="date" class="form-control form-control-sm d-inline-block w-auto" t-att-value="state.hol.move[h.id] or h.date" t-on-input="(ev) => this.setMove(h.id, ev.target.value)"/>
+                                <button class="btn btn-sm btn-light border ms-1" t-on-click="() => this.confirmHoliday(h)">Confirm</button></t></t>
+                            <i t-else="" class="fa fa-check text-success"/></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </t>
+</templates>

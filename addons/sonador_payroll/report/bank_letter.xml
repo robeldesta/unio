@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Salary transfer letter to the bank: printed, signed and stamped, taken to the bank (as Eco Green sent it) -->
+    <record id="action_report_bank_letter" model="ir.actions.report">
+        <field name="name">Salary transfer letter</field>
+        <field name="model">sb.payroll.run</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_payroll.report_bank_letter</field>
+        <field name="binding_type">report</field>
+    </record>
+    <template id="report_bank_letter">
+        <t t-call="web.html_container">
+            <t t-set="o" t-value="docs[:1]"/>
+            <t t-call="web.external_layout">
+                <div class="page" style="font-size: 13px; position: relative">
+                    <div t-if="d['draft']" style="position:absolute; top:40%; left:0; right:0; text-align:center; transform:rotate(-30deg); -webkit-transform:rotate(-30deg); font-size:90px; font-weight:bold; color:rgba(0,0,0,0.06)">DRAFT</div>
+                    <table style="width:100%; margin-bottom:18px">
+                        <tr>
+                            <td style="vertical-align:top">
+                                <div><b>To: <t t-esc="d['bank']"/></b></div>
+                                <div t-if="d['branch']"><b t-esc="d['branch']"/></div>
+                                <div t-if="d['city']"><b t-esc="d['city']"/></div>
+                            </td>
+                            <td style="vertical-align:top; text-align:right">
+                                <div><b>Date: <u t-esc="d['date']"/></b></div>
+                                <div><b>Reference: <u t-esc="d['reference']"/></b></div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div style="font-size:15px; font-weight:bold; border-bottom:1px solid #1F2D36; padding-bottom:4px; margin-bottom:12px">Subject: Account to Accounts Transfer</div>
+                    <p style="line-height:1.6">
+                        Our company <b t-esc="d['company']"/> formally requests a transfer of <b t-esc="d['total']"/>
+                        (<b t-esc="d['words']"/>) from our account <b t-esc="d['account']"/> to the accounts listed below,
+                        S/N 1 through <t t-esc="d['count']"/>, for salaries of <t t-esc="d['period']"/>.
+                        Kindly transfer the specified amounts to their respective accounts.
+                    </p>
+                    <table class="table table-sm" style="font-size:12px; width:100%; border-collapse:collapse">
+                        <thead>
+                            <tr>
+                                <th style="background:#1F2D36; color:#fff; width:8%; padding:4px">S/N</th><th style="background:#1F2D36; color:#fff; padding:4px">Full name</th>
+                                <th style="background:#1F2D36; color:#fff; width:28%; padding:4px">Bank account number</th><th style="background:#1F2D36; color:#fff; width:20%; padding:4px; text-align:right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="d['rows']" t-as="r" style="border-bottom:1px solid #ddd; page-break-inside:avoid">
+                                <td style="padding:3px 4px" t-esc="r['n']"/><td style="padding:3px 4px" t-esc="r['name']"/>
+                                <td style="padding:3px 4px" t-esc="r['acc']"/><td style="padding:3px 4px; text-align:right" t-esc="r['amount']"/>
+                            </tr>
+                            <tr style="border-top:2px solid #1F2D36; font-weight:bold; font-size:14px">
+                                <td colspan="3" style="padding:5px 4px; text-align:right">Total</td>
+                                <td style="padding:5px 4px; text-align:right" t-esc="d['total']"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table style="width:100%; margin-top:48px; page-break-inside:avoid">
+                        <tr>
+                            <td style="width:33%; padding-right:20px; vertical-align:bottom"><div style="border-top:1px solid #000; padding-top:4px">Prepared by</div></td>
+                            <td style="width:33%; padding-right:20px; vertical-align:bottom"><div style="border-top:1px solid #000; padding-top:4px">Checked by</div></td>
+                            <td style="width:33%; vertical-align:bottom"><div style="border-top:1px solid #000; padding-top:4px">Approved by (signature and stamp)</div></td>
+                        </tr>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

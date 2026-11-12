@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_planning" model="ir.actions.client">
+        <field name="name">Planning</field>
+        <field name="tag">sonador_planning.app</field>
+        <field name="params" eval="{'page': 'week'}"/>
+    </record>
+    <record id="action_planning_month" model="ir.actions.client">
+        <field name="name">My month</field>
+        <field name="tag">sonador_planning.app</field>
+        <field name="params" eval="{'page': 'month'}"/>
+    </record>
+    <record id="action_planning_team" model="ir.actions.client">
+        <field name="name">My team</field>
+        <field name="tag">sonador_planning.app</field>
+        <field name="params" eval="{'page': 'team'}"/>
+    </record>
+    <menuitem id="menu_planning_root" name="Planning" sequence="22" web_icon="sonador_planning,static/description/icon.png"
+              action="action_planning"/>
+</odoo>

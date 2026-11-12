@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_factory.App">
+        <div class="o_pp o_fc o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="ctx.company"/> · <t t-esc="ctx.today_ec"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-industry me-2"/>Production</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-att-class="state.page === 'board' ? 'active' : ''" t-on-click="() => this.go('board')"><i class="fa fa-th"/> Board</button>
+                        <button t-att-class="state.page === 'materials' ? 'active' : ''" t-on-click="() => this.go('materials')"><i class="fa fa-cubes"/> Materials</button>
+                        <button t-att-class="state.page === 'analytics' ? 'active' : ''" t-on-click="() => this.go('analytics')"><i class="fa fa-line-chart"/> Analytics</button>
+                        <button t-if="ctx.is_manager" t-att-class="state.page === 'setup' ? 'active' : ''" t-on-click="() => this.go('setup')"><i class="fa fa-cog"/></button>
+                    </nav>
+                    <span t-if="state.busy" class="o_pp_busy"><i class="fa fa-circle-o-notch fa-spin"/></span>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body">
+                <t t-if="state.page === 'board' and state.board" t-call="sonador_factory.Board"/>
+                <t t-if="state.page === 'materials' and state.short" t-call="sonador_factory.Materials"/>
+                <t t-if="state.page === 'analytics' and state.an" t-call="sonador_factory.Analytics"/>
+                <t t-if="state.page === 'setup' and state.set" t-call="sonador_factory.Setup"/>
+            </div>
+            <t t-if="state.ord" t-call="sonador_factory.Order"/>
+        </div>
+    </t>
+
+    <!-- ============================================================ board -->
+    <t t-name="sonador_factory.Board">
+        <t t-set="B" t-value="state.board"/>
+        <div class="o_pp_toolbar">
+            <div class="btn-group"><button class="btn btn-light border btn-sm" t-on-click="() => this.shift(-1)"><i class="fa fa-chevron-left"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="thisWeek">This week</button>
+                <button class="btn btn-light border btn-sm" t-on-click="() => this.shift(1)"><i class="fa fa-chevron-right"/></button></div>
+            <b t-esc="B.label"/>
+            <span t-if="B.late" class="o_pp_badge bad"><t t-esc="B.late"/> late</span>
+            <div class="o_fc_legend small ms-auto"><span class="planned">Planned</span><span class="running">Running</span><span class="paused">Paused</span><span class="done">Done</span></div>
+            <button t-if="ctx.is_manager" class="btn btn-primary btn-sm" t-on-click="() => this.newOrder()"><i class="fa fa-plus me-1"/>Production order</button>
+        </div>
+        <div t-if="!ctx.lines.length" class="o_pp_warn mb-3">No machines yet: add them in <a href="#" t-on-click.prevent="() => this.go('setup')">Setup</a>.</div>
+        <div class="o_pp_card o_fc_boardwrap">
+            <table class="o_fc_board">
+                <thead><tr><th class="line">Machine / line</th><th t-foreach="B.days" t-as="d" t-key="d.date" t-att-class="d.today ? 'today' : ''"><t t-esc="d.name"/><div class="small" t-esc="d.ec"/></th></tr></thead>
+                <tbody>
+                    <tr t-foreach="ctx.lines" t-as="l" t-key="l.id">
+                        <td class="line"><b t-esc="l.name"/><div class="small text-muted"><t t-if="l.speed"><t t-esc="n(l.speed)"/> <t t-esc="l.unit"/>/h</t></div></td>
+                        <td t-foreach="B.days" t-as="d" t-key="d.date" t-att-class="'o_fc_cell ' + (d.today ? 'today' : '')" t-on-dragover.prevent="noop" t-on-drop="() => this.dropOn(l.id, d.date)"
+                            t-on-dblclick="() => ctx.is_manager and this.newOrder(l.id, d.date)">
+                            <t t-foreach="cell(l.id, d.date)" t-as="o" t-key="o.id"><t t-call="sonador_factory.Card"/></t>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="o_pp_card mt-3" t-on-dragover.prevent="noop" t-on-drop="() => this.dropOn(false, false)">
+            <div class="o_pp_card_head"><i class="fa fa-inbox"/>Not scheduled yet (<t t-esc="unscheduled.length"/>)<span class="small text-muted ms-2">drag onto a machine and day</span></div>
+            <div class="o_fc_unsched"><t t-foreach="unscheduled" t-as="o" t-key="o.id"><t t-call="sonador_factory.Card"/></t>
+                <div t-if="!unscheduled.length" class="o_pp_empty">Nothing waiting.</div></div>
+        </div>
+        <div class="small text-muted mt-2">Drag a card to move it; double-click an empty cell to plan an order there.</div>
+    </t>
+
+    <t t-name="sonador_factory.Card">
+        <div t-att-class="'o_fc_card ' + o.state + (o.late ? ' late' : '') + (o.priority ? ' urgent' : '')" t-att-draggable="ctx.is_manager and o.state !== 'done' ? 'true' : 'false'"
+             t-on-dragstart="() => this.dragStart(o)" t-on-click="() => this.openOrder(o.id)">
+            <div class="d-flex"><b class="me-auto" t-esc="o.product"/><i t-if="o.priority" class="fa fa-bolt text-danger" title="Urgent"/></div>
+            <div class="small"><t t-esc="n(o.qty)"/> <t t-esc="o.uom"/><t t-if="o.shift"> · <t t-esc="o.shift"/></t></div>
+            <div t-if="o.good" class="o_fc_bar"><div t-att-style="'width:' + Math.min(o.pct, 100) + '%'"/></div>
+            <div class="d-flex small text-muted"><span class="me-auto" t-esc="o.name"/><span t-if="o.short.length" class="o_pp_badtxt" t-att-title="'Short: ' + o.short.join(', ')"><i class="fa fa-exclamation-triangle"/> short</span>
+                <span t-elif="o.good"><t t-esc="o.pct"/>%</span></div>
+            <div t-if="o.customer" class="small text-muted text-truncate" t-esc="o.customer"/>
+        </div>
+    </t>
+
+    <!-- ============================================================ order drawer -->
+    <t t-name="sonador_factory.Order">
+        <t t-set="O" t-value="state.ord"/>
+        <div class="o_fc_shade" t-on-click="closeOrder"/>
+        <div class="o_fc_drawer">
+            <div class="o_fc_dhead">
+                <div class="me-auto min-w-0">
+                    <h3 class="m-0"><t t-esc="O.id ? O.product : 'New production order'"/></h3>
+                    <div t-if="O.id" class="small"><t t-esc="O.name"/> · <t t-esc="n(O.qty)"/> <t t-esc="O.uom"/> · <t t-esc="O.line or 'no machine'"/><t t-if="O.date"> · <t t-esc="O.date"/></t><t t-if="O.lot"> · lot <t t-esc="O.lot"/></t>
+                        <span t-att-class="'o_fc_st ms-1 ' + O.state" t-esc="stateLabel(O.state)"/></div>
+                </div>
+                <button t-if="O.id and O.can_manage and !state.edit and O.state !== 'done'" class="btn btn-light border btn-sm me-1" t-on-click="editOrder"><i class="fa fa-pencil"/></button>
+                <button class="btn btn-light border btn-sm" t-on-click="closeOrder"><i class="fa fa-times"/></button>
+            </div>
+            <div class="o_fc_dbody">
+                <t t-if="state.edit">
+                    <t t-set="E" t-value="state.edit"/>
+                    <div class="o_pp_formgrid o_pp_card mb-3">
+                        <label class="wide">Product<select class="form-select" t-on-change="(ev) => this.setE('product_id', ev.target.value)">
+                            <option t-foreach="ctx.products" t-as="p" t-key="p.id" t-att-value="p.id" t-att-selected="p.id == E.product_id" t-esc="p.name"/></select></label>
+                        <label>Quantity to make<input type="number" class="form-control" t-att-value="E.qty_planned" t-on-change="(ev) => this.setE('qty_planned', ev.target.value)"/></label>
+                        <label>Machine / line<select class="form-select" t-on-change="(ev) => this.setE('line_id', ev.target.value)"><option value="">Not scheduled</option>
+                            <option t-foreach="ctx.lines" t-as="l" t-key="l.id" t-att-value="l.id" t-att-selected="l.id == E.line_id" t-esc="l.name"/></select></label>
+                        <label>Day<input type="date" class="form-control" t-att-value="E.date_planned" t-on-change="(ev) => this.setE('date_planned', ev.target.value)"/></label>
+                        <label>Shift<select class="form-select" t-on-change="(ev) => this.setE('shift_id', ev.target.value)"><option value="">Any</option>
+                            <option t-foreach="ctx.shifts" t-as="s" t-key="s.id" t-att-value="s.id" t-att-selected="s.id == E.shift_id" t-esc="s.name"/></select></label>
+                        <label>Batch / lot<input class="form-control" t-att-value="E.lot_name" t-on-change="(ev) => this.setE('lot_name', ev.target.value)"/></label>
+                        <label class="d-flex flex-row align-items-center gap-2 pt-4"><input type="checkbox" t-att-checked="E.priority" t-on-change="(ev) => this.setE('priority', ev.target.checked)"/> Urgent</label>
+                        <label class="wide">Note<input class="form-control" t-att-value="E.note" t-on-change="(ev) => this.setE('note', ev.target.value)"/></label>
+                        <div class="d-flex gap-2"><button class="btn btn-primary btn-sm" t-on-click="saveOrder">Save</button><button class="btn btn-light border btn-sm" t-on-click="cancelEdit">Cancel</button></div>
+                    </div>
+                </t>
+                <t t-if="O.id">
+                    <!-- big floor buttons -->
+                    <div class="o_fc_actions">
+                        <button t-if="O.state === 'planned' or O.state === 'draft' or O.state === 'paused'" class="go" t-on-click="() => this.act('start')"><i class="fa fa-play"/> <t t-esc="O.state === 'paused' ? 'Resume' : 'Start'"/></button>
+                        <button t-if="O.state === 'running'" class="pause" t-on-click="() => this.act('pause')"><i class="fa fa-pause"/> Pause</button>
+                        <button t-if="(O.state === 'running' or O.state === 'paused') and O.can_manage" class="finish" t-on-click="finish"><i class="fa fa-flag-checkered"/> Finish and post</button>
+                        <button t-if="O.voucher" class="ghost" t-on-click="openVoucher"><i class="fa fa-file-text-o"/> <t t-esc="O.voucher.name"/></button>
+                    </div>
+                    <t t-set="S" t-value="O.summary"/>
+                    <div class="o_fc_kpis">
+                        <div><span>Good output</span><b><t t-esc="n(S.good)"/> <small>/ <t t-esc="n(O.qty)"/></small></b><div class="o_fc_bar"><div t-att-style="'width:' + Math.min(O.pct, 100) + '%'"/></div></div>
+                        <div><span>Rejects</span><b t-att-class="S.waste ? 'o_pp_badtxt' : ''"><t t-esc="n(S.waste)"/></b><small t-if="S.waste_kg"><t t-esc="n(S.waste_kg, 1)"/> kg trim / broke</small></div>
+                        <div><span>OEE</span><b t-esc="S.oee === null ? '–' : S.oee + '%'"/><small>A <t t-esc="S.availability === null ? '–' : S.availability"/> · P <t t-esc="S.performance === null ? '–' : S.performance"/> · Q <t t-esc="S.quality === null ? '–' : S.quality"/></small></div>
+                        <div><span>Yield (kg)</span><b t-esc="S.yield === null ? '–' : S.yield + '%'"/><small t-if="S.kg_in"><t t-esc="n(S.kg_out, 1)"/> out of <t t-esc="n(S.kg_in, 1)"/> kg</small></div>
+                        <div><span>Running / stopped</span><b><t t-esc="n(S.run / 60, 1)"/> h</b><small><t t-esc="n(S.down)"/> min stopped</small></div>
+                        <div><span>Cost per unit</span><b t-esc="O.voucher ? n(O.voucher.unit_cost, 2) : (S.unit_cost_est === null ? '–' : '≈ ' + n(S.unit_cost_est, 2))"/><small t-esc="O.voucher ? 'posted' : 'estimate'"/></div>
+                    </div>
+
+                    <!-- record a shift -->
+                    <div t-if="O.state === 'running' or O.state === 'paused'" class="o_pp_card o_fc_rec mb-3">
+                        <div class="o_pp_card_head"><i class="fa fa-pencil-square-o"/>Record a shift</div>
+                        <t t-set="R" t-value="state.rec"/>
+                        <div class="p-3">
+                            <div class="o_fc_recgrid">
+                                <label>Day<input type="date" class="form-control" t-att-value="R.date" t-on-change="(ev) => this.setR('date', ev.target.value)"/></label>
+                                <label>Shift<select class="form-select" t-on-change="(ev) => this.setR('shift_id', ev.target.value)">
+                                    <option t-foreach="ctx.shifts" t-as="s" t-key="s.id" t-att-value="s.id" t-att-selected="s.id == R.shift_id" t-esc="s.name"/></select></label>
+                                <label>Supervisor / operator<select class="form-select" t-on-change="(ev) => this.setR('employee_id', ev.target.value)"><option value="">—</option>
+                                    <option t-foreach="ctx.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                                <label class="big">Good output (<t t-esc="O.uom"/>)<input type="number" inputmode="decimal" class="form-control form-control-lg" t-att-value="R.good_qty" t-on-change="(ev) => this.setR('good_qty', ev.target.value)"/></label>
+                                <label>Minutes running<input type="number" class="form-control" t-att-placeholder="autoMinutes + ' (shift minus stops)'" t-att-value="R.minutes_run" t-on-change="(ev) => this.setR('minutes_run', ev.target.value)"/></label>
+                            </div>
+                            <div class="o_fc_losses">
+                                <div>
+                                    <div class="o_fc_sub">Waste</div>
+                                    <div t-foreach="R.waste" t-as="w" t-key="w_index" class="d-flex gap-1 mb-1">
+                                        <select class="form-select form-select-sm" t-on-change="(ev) => this.setRow(w, 'reason_id', ev.target.value)"><option value="">Reason…</option>
+                                            <option t-foreach="wasteReasons" t-as="r" t-key="r.id" t-att-value="r.id" t-esc="r.name"/></select>
+                                        <input type="number" class="form-control form-control-sm" style="width:6rem" t-att-placeholder="w.in_kg ? 'kg' : O.uom" t-att-value="w.qty" t-on-change="(ev) => this.setRow(w, 'qty', ev.target.value)"/>
+                                        <label class="d-flex align-items-center gap-1 small m-0"><input type="checkbox" t-att-checked="w.in_kg" t-on-change="(ev) => this.setRow(w, 'in_kg', ev.target.checked)"/>kg</label>
+                                    </div>
+                                    <button class="btn btn-link btn-sm p-0" t-on-click="() => this.addLoss('waste')">+ waste</button>
+                                </div>
+                                <div>
+                                    <div class="o_fc_sub">Stops</div>
+                                    <div t-foreach="R.down" t-as="d" t-key="d_index" class="d-flex gap-1 mb-1">
+                                        <select class="form-select form-select-sm" t-on-change="(ev) => this.setRow(d, 'reason_id', ev.target.value)"><option value="">Reason…</option>
+                                            <option t-foreach="downReasons" t-as="r" t-key="r.id" t-att-value="r.id"><t t-esc="r.name"/><t t-if="r.planned"> (planned)</t></option></select>
+                                        <input type="number" class="form-control form-control-sm" style="width:6rem" placeholder="minutes" t-att-value="d.minutes" t-on-change="(ev) => this.setRow(d, 'minutes', ev.target.value)"/>
+                                    </div>
+                                    <button class="btn btn-link btn-sm p-0" t-on-click="() => this.addLoss('down')">+ stop</button>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-2"><input class="form-control form-control-sm" placeholder="Note (optional)" t-att-value="R.note" t-on-change="(ev) => this.setR('note', ev.target.value)"/>
+                                <button class="btn btn-primary" t-on-click="saveRec"><i class="fa fa-check me-1"/>Save shift</button></div>
+                        </div>
+                    </div>
+
+                    <div t-if="O.entries.length" class="o_pp_card mb-3">
+                        <div class="o_pp_card_head"><i class="fa fa-list"/>Shift records</div>
+                        <table class="o_pp_table"><thead><tr><th>Day</th><th>Shift</th><th>Who</th><th class="text-end">Good</th><th class="text-end">Run</th><th>Losses</th><th/></tr></thead>
+                            <tbody><tr t-foreach="O.entries" t-as="e" t-key="e.id">
+                                <td class="small" t-esc="e.ec"/><td class="small" t-esc="e.shift"/><td class="small" t-esc="e.who"/>
+                                <td class="text-end"><b t-esc="n(e.good)"/></td><td class="text-end small"><t t-esc="n(e.run / 60, 1)"/> h</td>
+                                <td class="small"><span t-foreach="e.losses" t-as="l" t-key="l_index" t-att-class="'o_fc_loss ' + l.kind"><t t-esc="l.reason"/>: <t t-esc="l.kind === 'downtime' ? l.minutes + ' min' : n(l.qty, 1) + (l.kg ? ' kg' : '')"/></span>
+                                    <div t-if="e.note" class="text-muted" t-esc="e.note"/></td>
+                                <td><button t-if="O.state !== 'done'" class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.removeEntry(e)"><i class="fa fa-trash-o"/></button></td>
+                            </tr></tbody></table>
+                    </div>
+
+                    <div class="o_pp_card mb-3">
+                        <div class="o_pp_card_head"><i class="fa fa-cubes"/>Materials<span class="small text-muted ms-2" t-esc="O.bom"/>
+                            <button t-if="O.state !== 'done' and O.good" class="btn btn-link btn-sm ms-auto p-0" t-on-click="fillExpected">Fill recipe quantities for the output</button></div>
+                        <table class="o_pp_table"><thead><tr><th>Material</th><th class="text-end">For the order</th><th class="text-end">For the output so far</th><th class="text-end">In stock</th><th style="width:9rem">Used</th><th style="width:12rem">Lots / roll numbers</th></tr></thead>
+                            <tbody><tr t-foreach="O.materials" t-as="m" t-key="m.id">
+                                <td><b t-esc="m.product"/></td><td class="text-end"><t t-esc="n(m.required, 2)"/> <t t-esc="m.uom"/></td>
+                                <td class="text-end" t-esc="n(m.expected, 2)"/>
+                                <td t-att-class="'text-end ' + (m.onhand &lt; m.required - m.consumed ? 'o_pp_badtxt' : '')" t-esc="n(m.onhand, 2)"/>
+                                <td><input t-if="O.state !== 'done'" type="number" class="form-control form-control-sm" t-att-value="state.mats[m_index].consumed" t-on-change="(ev) => this.setM(m_index, 'consumed', ev.target.value)"/><t t-else="" t-esc="n(m.consumed, 2)"/></td>
+                                <td><input t-if="O.state !== 'done'" class="form-control form-control-sm" placeholder="e.g. JR-2231, JR-2232" t-att-value="state.mats[m_index].lots" t-on-change="(ev) => this.setM(m_index, 'lots', ev.target.value)"/><t t-else="" t-esc="m.lots"/></td>
+                            </tr><tr t-if="!O.materials.length"><td colspan="6" class="o_pp_empty">The product has no recipe: add one under Accounting › Inventory › Recipes.</td></tr></tbody></table>
+                        <div t-if="O.state !== 'done' and O.materials.length" class="o_pp_panel_foot"><button class="btn btn-light border btn-sm" t-on-click="saveMats">Save material use</button></div>
+                    </div>
+
+                    <div t-if="O.checks.length" class="o_pp_card mb-3">
+                        <div class="o_pp_card_head"><i class="fa fa-check-square-o"/>Quality checks</div>
+                        <div t-foreach="O.checks" t-as="c" t-key="c.id" t-att-class="'o_fc_check ' + c.result">
+                            <div class="me-auto"><b t-esc="c.name"/><span t-if="c.kind === 'number' and (c.min or c.max)" class="small text-muted ms-2"><t t-esc="c.min"/> – <t t-esc="c.max"/> <t t-esc="c.unit"/></span>
+                                <span t-if="c.blocking" class="small text-muted ms-2">must pass</span><div t-if="c.by" class="small text-muted">by <t t-esc="c.by"/></div></div>
+                            <t t-if="O.state !== 'done'">
+                                <input t-if="c.kind === 'number'" type="number" step="any" class="form-control form-control-sm" style="width:7rem" t-att-value="c.result !== 'pending' ? c.value : ''" t-on-change="(ev) => this.saveCheck(c, ev.target.value)"/>
+                                <div t-else="" class="btn-group btn-group-sm"><button t-att-class="'btn border ' + (c.result === 'pass' ? 'btn-success' : 'btn-light')" t-on-click="() => this.saveCheck(c, 'pass')">Pass</button>
+                                    <button t-att-class="'btn border ' + (c.result === 'fail' ? 'btn-danger' : 'btn-light')" t-on-click="() => this.saveCheck(c, 'fail')">Fail</button></div>
+                            </t>
+                            <span t-att-class="'o_fc_res ' + c.result" t-esc="c.result === 'pending' ? 'not done' : c.result"/>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <!-- ============================================================ materials -->
+    <t t-name="sonador_factory.Materials">
+        <div class="o_pp_toolbar"><span class="small text-muted">What open production orders still need, against stock.</span>
+            <button t-if="state.short.can_buy and ctx.is_manager" class="btn btn-primary btn-sm ms-auto" t-att-disabled="!sChosen.length" t-on-click="buy"><i class="fa fa-shopping-cart me-1"/>Draft purchase orders</button></div>
+        <div class="o_pp_card">
+            <table class="o_pp_table">
+                <thead><tr><th style="width:2rem"/><th>Material</th><th class="text-end">Needed</th><th class="text-end">In stock</th><th class="text-end">Short</th><th>Usual vendor</th><th>For orders</th></tr></thead>
+                <tbody><tr t-foreach="state.short.rows" t-as="r" t-key="r.product_id">
+                    <td><input t-if="r.short" type="checkbox" t-att-checked="state.ssel[r.product_id]" t-on-change="() => this.toggleS(r.product_id)"/></td>
+                    <td><b t-esc="r.product"/></td><td class="text-end"><t t-esc="n(r.need, 2)"/> <t t-esc="r.uom"/></td><td class="text-end" t-esc="n(r.onhand, 2)"/>
+                    <td class="text-end"><b t-att-class="r.short ? 'o_pp_badtxt' : 'o_pp_good'" t-esc="r.short ? n(r.short, 2) : 'enough'"/></td>
+                    <td class="small"><t t-esc="r.vendor or '—'"/><t t-if="r.lead"> · <t t-esc="r.lead"/> days</t></td>
+                    <td class="small text-muted" t-esc="r.orders.join(', ')"/>
+                </tr><tr t-if="!state.short.rows.length"><td colspan="7" class="o_pp_empty">No open orders need material.</td></tr></tbody>
+            </table>
+        </div>
+    </t>
+
+    <!-- ============================================================ analytics -->
+    <t t-name="sonador_factory.Analytics">
+        <t t-set="A" t-value="state.an"/>
+        <div class="o_pp_toolbar">
+            <input type="date" class="form-control form-control-sm w-auto" t-att-value="state.af.from" t-on-change="(ev) => this.setAf('from', ev.target.value)"/>
+            <input type="date" class="form-control form-control-sm w-auto" t-att-value="state.af.to" t-on-change="(ev) => this.setAf('to', ev.target.value)"/>
+            <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setAf('line', ev.target.value)"><option value="">All machines</option>
+                <option t-foreach="ctx.lines" t-as="l" t-key="l.id" t-att-value="l.id" t-esc="l.name"/></select>
+            <span class="small text-muted" t-esc="A.range"/>
+        </div>
+        <div class="o_pp_card mb-3">
+            <div class="o_pp_card_head"><i class="fa fa-tachometer"/>OEE by machine (availability × performance × quality)</div>
+            <table class="o_pp_table"><thead><tr><th>Machine</th><th class="text-end">Running</th><th class="text-end">Stopped</th><th class="text-end">Good</th><th class="text-end">Rejects</th><th class="text-end">Trim/broke kg</th>
+                <th class="text-end">Availability</th><th class="text-end">Performance</th><th class="text-end">Quality</th><th class="text-end">OEE</th></tr></thead>
+                <tbody><tr t-foreach="A.lines" t-as="l" t-key="l.id"><td><b t-esc="l.name"/></td><td class="text-end"><t t-esc="l.run_h"/> h</td><td class="text-end"><t t-esc="l.down_h"/> h</td>
+                    <td class="text-end" t-esc="n(l.good)"/><td class="text-end" t-esc="n(l.waste)"/><td class="text-end" t-esc="n(l.waste_kg, 1)"/>
+                    <td class="text-end"><t t-esc="l.availability"/>%</td><td class="text-end"><t t-esc="l.performance"/>%</td><td class="text-end"><t t-esc="l.quality"/>%</td>
+                    <td class="text-end"><b t-att-class="l.oee &gt;= 75 ? 'o_pp_good' : (l.oee &lt; 55 ? 'o_pp_badtxt' : '')"><t t-esc="l.oee"/>%</b></td></tr>
+                    <tr t-if="!A.lines.length"><td colspan="10" class="o_pp_empty">No shift records in this period.</td></tr></tbody></table>
+        </div>
+        <div class="o_pp_grid mb-3">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-bar-chart"/>Good output per day</div><div class="p-3"><SbChart type="'bar'" labels="dayChart.labels" series="dayChart.series" height="220"/></div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-pause-circle-o"/>Why the machines stopped (minutes)</div>
+                <div class="p-3"><SbChart t-if="A.downtime.length" type="'bar'" labels="downChart.labels" series="downChart.series" height="220"/><div t-else="" class="o_pp_empty">No stops recorded.</div></div></div>
+        </div>
+        <div class="o_pp_grid mb-3">
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-trash-o"/>Waste by reason</div>
+                <div t-foreach="A.waste" t-as="w" t-key="w_index" class="o_pp_li"><span t-esc="w.reason"/><b class="ms-auto" t-esc="n(w.qty, 1)"/></div>
+                <div t-if="!A.waste.length" class="o_pp_empty">No waste recorded.</div></div>
+            <div class="o_pp_card"><div class="o_pp_card_head"><i class="fa fa-balance-scale"/>Yield: kg out against kg of material in</div>
+                <table class="o_pp_table"><thead><tr><th>Order</th><th>Product</th><th class="text-end">kg in</th><th class="text-end">kg out</th><th class="text-end">Yield</th></tr></thead>
+                    <tbody><tr t-foreach="A.yields" t-as="y" t-key="y_index"><td t-esc="y.order"/><td t-esc="y.product"/><td class="text-end" t-esc="n(y.kg_in, 1)"/><td class="text-end" t-esc="n(y.kg_out, 1)"/>
+                        <td class="text-end"><b t-att-class="y.yield &lt; 90 ? 'o_pp_badtxt' : 'o_pp_good'"><t t-esc="y.yield"/>%</b></td></tr>
+                        <tr t-if="!A.yields.length"><td colspan="5" class="o_pp_empty">Finished orders with material in kg and a product weight show here.</td></tr></tbody></table></div>
+        </div>
+        <div class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-calculator"/>Cost of production (posted Finished Product Receipts)</div>
+            <table class="o_pp_table"><thead><tr><th>Product</th><th class="text-end">Made</th><th class="text-end">Materials</th><th class="text-end">Labour</th><th class="text-end">Overhead</th><th class="text-end">Total</th><th class="text-end">Per unit</th></tr></thead>
+                <tbody><tr t-foreach="A.costs" t-as="c" t-key="c_index"><td><b t-esc="c.product"/></td><td class="text-end" t-esc="n(c.qty)"/><td class="text-end" t-esc="n(c.material, 2)"/><td class="text-end" t-esc="n(c.labour, 2)"/>
+                    <td class="text-end" t-esc="n(c.overhead, 2)"/><td class="text-end" t-esc="n(c.total, 2)"/><td class="text-end"><b t-esc="n(c.unit, 2)"/></td></tr>
+                    <tr t-if="!A.costs.length"><td colspan="7" class="o_pp_empty">Nothing posted in this period.</td></tr></tbody></table>
+        </div>
+    </t>
+
+    <!-- ============================================================ setup -->
+    <t t-name="sonador_factory.Setup">
+        <t t-set="S" t-value="state.set"/>
+        <div class="o_pp_tabs">
+            <button t-foreach="[['lines', 'Machines / lines'], ['shifts', 'Shifts'], ['reasons', 'Stop and waste reasons'], ['checks', 'Quality checks'], ['weights', 'Product weights']]" t-as="k" t-key="k[0]"
+                    t-att-class="state.setTab === k[0] ? 'active' : ''" t-on-click="() => this.state.setTab = k[0]" t-esc="k[1]"/>
+        </div>
+        <div t-if="state.setEdit" class="o_pp_card o_pp_panel mb-3">
+            <t t-set="V" t-value="state.setEdit.vals"/>
+            <div class="o_pp_formgrid">
+                <label>Name<input class="form-control" t-att-value="V.name" t-on-change="(ev) => this.setS('name', ev.target.value)"/></label>
+                <t t-if="state.setEdit.kind === 'line'">
+                    <label>Code<input class="form-control" t-att-value="V.code" t-on-change="(ev) => this.setS('code', ev.target.value)"/></label>
+                    <label>Rated output per hour<input type="number" class="form-control" t-att-value="V.rated_speed" t-on-change="(ev) => this.setS('rated_speed', ev.target.value)"/></label>
+                    <label>Unit (packs, rolls, kg…)<input class="form-control" t-att-value="V.speed_unit" t-on-change="(ev) => this.setS('speed_unit', ev.target.value)"/></label>
+                    <label>Labour cost per running hour<input type="number" class="form-control" t-att-value="V.labour_rate" t-on-change="(ev) => this.setS('labour_rate', ev.target.value)"/></label>
+                    <label>Overhead per running hour<input type="number" class="form-control" t-att-value="V.overhead_rate" t-on-change="(ev) => this.setS('overhead_rate', ev.target.value)"/></label>
+                    <label>People per shift<input type="number" class="form-control" t-att-value="V.crew" t-on-change="(ev) => this.setS('crew', ev.target.value)"/></label>
+                </t>
+                <t t-if="state.setEdit.kind === 'shift'">
+                    <label>Starts (hour)<input type="number" step="0.5" class="form-control" t-att-value="V.hour_from" t-on-change="(ev) => this.setS('hour_from', ev.target.value)"/></label>
+                    <label>Ends (hour)<input type="number" step="0.5" class="form-control" t-att-value="V.hour_to" t-on-change="(ev) => this.setS('hour_to', ev.target.value)"/></label>
+                </t>
+                <t t-if="state.setEdit.kind === 'reason'">
+                    <label>Kind<select class="form-select" t-on-change="(ev) => this.setS('kind', ev.target.value)"><option value="downtime" t-att-selected="V.kind === 'downtime'">Stop (downtime)</option><option value="waste" t-att-selected="V.kind === 'waste'">Waste</option></select></label>
+                    <label class="d-flex flex-row align-items-center gap-2 pt-4"><input type="checkbox" t-att-checked="V.planned" t-on-change="(ev) => this.setS('planned', ev.target.checked)"/> Planned stop (not counted against availability)</label>
+                </t>
+                <t t-if="state.setEdit.kind === 'check'">
+                    <label>Kind<select class="form-select" t-on-change="(ev) => this.setS('kind', ev.target.value)"><option value="number" t-att-selected="V.kind === 'number'">Measured value</option><option value="pass" t-att-selected="V.kind === 'pass'">Pass / fail</option></select></label>
+                    <label>Min<input type="number" step="any" class="form-control" t-att-value="V.min_value" t-on-change="(ev) => this.setS('min_value', ev.target.value)"/></label>
+                    <label>Max<input type="number" step="any" class="form-control" t-att-value="V.max_value" t-on-change="(ev) => this.setS('max_value', ev.target.value)"/></label>
+                    <label>Unit<input class="form-control" t-att-value="V.unit" t-on-change="(ev) => this.setS('unit', ev.target.value)"/></label>
+                    <label class="d-flex flex-row align-items-center gap-2 pt-4"><input type="checkbox" t-att-checked="V.blocking" t-on-change="(ev) => this.setS('blocking', ev.target.checked)"/> Must pass to finish</label>
+                    <div class="wide small">For: <t t-foreach="ctx.products" t-as="p" t-key="p.id"><span t-att-class="'o_fc_tag ' + (V.products.includes(p.id) ? 'on' : '')" t-on-click="() => this.toggleCheckProduct(p.id)" t-esc="p.name"/></t>
+                        <span class="text-muted ms-1">(none selected = every product)</span></div>
+                </t>
+            </div>
+            <div class="o_pp_panel_foot"><button class="btn btn-primary btn-sm" t-on-click="saveSetup">Save</button><button class="btn btn-light border btn-sm" t-on-click="() => this.state.setEdit = null">Cancel</button></div>
+        </div>
+        <div t-if="state.setTab === 'lines'" class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-cogs"/>Machines / lines<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.editSetup('line')"><i class="fa fa-plus"/> Machine</button></div>
+            <table class="o_pp_table"><thead><tr><th>Name</th><th class="text-end">Rated / hour</th><th class="text-end">Labour / h</th><th class="text-end">Overhead / h</th><th class="text-end">Crew</th><th/></tr></thead>
+                <tbody><tr t-foreach="S.lines" t-as="l" t-key="l.id"><td><b t-esc="l.name"/> <span class="small text-muted" t-esc="l.code"/></td><td class="text-end"><t t-esc="n(l.speed)"/> <t t-esc="l.unit"/></td>
+                    <td class="text-end" t-esc="n(l.labour, 2)"/><td class="text-end" t-esc="n(l.overhead, 2)"/><td class="text-end" t-esc="l.crew"/>
+                    <td class="text-nowrap"><button class="btn btn-link btn-sm p-0 me-2" t-on-click="() => this.editSetup('line', {id: l.id, name: l.name, code: l.code, rated_speed: l.speed, speed_unit: l.unit, labour_rate: l.labour, overhead_rate: l.overhead, crew: l.crew})">Edit</button>
+                        <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.archiveSetup('line', l.id)">Remove</button></td></tr></tbody></table>
+        </div>
+        <div t-if="state.setTab === 'shifts'" class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-clock-o"/>Shifts<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.editSetup('shift')"><i class="fa fa-plus"/> Shift</button></div>
+            <div t-foreach="S.shifts" t-as="s" t-key="s.id" class="o_pp_li"><b t-esc="s.name"/><span class="text-muted"><t t-esc="s.from"/>:00 – <t t-esc="s.to"/>:00 (<t t-esc="s.minutes"/> min)</span>
+                <button class="btn btn-link btn-sm p-0 ms-auto" t-on-click="() => this.editSetup('shift', {id: s.id, name: s.name, hour_from: s.from, hour_to: s.to})">Edit</button>
+                <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.archiveSetup('shift', s.id)">Remove</button></div>
+        </div>
+        <div t-if="state.setTab === 'reasons'" class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-list"/>Reasons<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.editSetup('reason')"><i class="fa fa-plus"/> Reason</button></div>
+            <div t-foreach="S.reasons" t-as="r" t-key="r.id" class="o_pp_li"><span t-att-class="'o_fc_loss ' + r.kind" t-esc="r.kind === 'downtime' ? 'Stop' : 'Waste'"/><b t-esc="r.name"/><span t-if="r.planned" class="small text-muted">planned</span>
+                <button class="btn btn-link btn-sm p-0 ms-auto" t-on-click="() => this.editSetup('reason', {id: r.id, name: r.name, kind: r.kind, planned: r.planned})">Edit</button>
+                <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.archiveSetup('reason', r.id)">Remove</button></div>
+        </div>
+        <div t-if="state.setTab === 'checks'" class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-check-square-o"/>Quality checks on every order of the products<button class="btn btn-link btn-sm ms-auto p-0" t-on-click="() => this.editSetup('check')"><i class="fa fa-plus"/> Check</button></div>
+            <div t-foreach="S.checks" t-as="c" t-key="c.id" class="o_pp_li"><b t-esc="c.name"/><span class="small text-muted"><t t-if="c.kind === 'number'"><t t-esc="c.min"/> – <t t-esc="c.max"/> <t t-esc="c.unit"/></t><t t-else="">pass / fail</t><t t-if="c.blocking"> · must pass</t></span>
+                <button class="btn btn-link btn-sm p-0 ms-auto" t-on-click="() => this.editSetup('check', {id: c.id, name: c.name, kind: c.kind, min_value: c.min, max_value: c.max, unit: c.unit, blocking: c.blocking, products: c.products})">Edit</button>
+                <button class="btn btn-link btn-sm p-0 text-danger" t-on-click="() => this.archiveSetup('check', c.id)">Remove</button></div>
+            <div t-if="!S.checks.length" class="o_pp_empty">No checks yet (e.g. GSM, ply, roll weight, sheets per roll, carton seal).</div>
+        </div>
+        <div t-if="state.setTab === 'weights'" class="o_pp_card">
+            <div class="o_pp_card_head"><i class="fa fa-balance-scale"/>Net weight per unit, for yield (kg out against kg of material in)</div>
+            <div t-foreach="ctx.products" t-as="p" t-key="p.id" class="o_pp_li"><span t-esc="p.name"/><span class="small text-muted">per <t t-esc="p.uom"/></span>
+                <input type="number" step="any" class="form-control form-control-sm ms-auto" style="width:8rem" t-att-value="p.weight or ''" placeholder="kg" t-on-change="(ev) => this.setWeight(p, ev.target.value)"/></div>
+        </div>
+    </t>
+</templates>

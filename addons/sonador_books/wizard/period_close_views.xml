@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_period_wizard_form_close" model="ir.ui.view">
+        <field name="name">sb.period.wizard.form.close</field>
+        <field name="model">sb.period.wizard</field>
+        <field name="inherit_id" ref="sb_period_wizard_form"/>
+        <field name="arch" type="xml">
+            <field name="line_ids" position="before">
+                <field name="close_to" invisible="1"/>
+                <field name="close_open_count" invisible="1"/>
+                <div class="border rounded p-3 mb-3 bg-light" invisible="not close_to">
+                    <h4 class="mb-1">Month-end checklist: close through <field name="close_name" class="d-inline" nolabel="1"/></h4>
+                    <p class="text-muted mb-2">Closing stops anyone posting into this period and every earlier one.</p>
+                    <field name="close_checklist" nolabel="1"/>
+                    <div class="mt-2">
+                        <button name="action_close_confirm" type="object" string="Close the period" class="btn-primary" icon="fa-lock"
+                                invisible="close_open_count" groups="account.group_account_manager"/>
+                        <button name="action_close_confirm" type="object" string="Close anyway" class="btn-warning" icon="fa-lock"
+                                invisible="not close_open_count" groups="account.group_account_manager"
+                                confirm="Some checks are still open. Close the period anyway? The close is logged with what was open." confirm-label="Close the period"/>
+                        <button name="action_close_cancel" type="object" string="Not now" class="btn-link"/>
+                    </div>
+                </div>
+                <field name="reopen_from" invisible="1"/>
+                <div class="border rounded p-3 mb-3 bg-light" invisible="not reopen_from">
+                    <h4 class="mb-1">Reopen <field name="reopen_name" class="d-inline" nolabel="1"/> and every later period</h4>
+                    <p class="text-muted mb-2">Anyone with posting rights can then post into these periods again. The reason is kept
+                        in the period close log.</p>
+                    <div class="o_row">
+                        <label for="reopen_reason" string="Reason"/>
+                        <field name="reopen_reason" placeholder="e.g. late supplier bill for Meskerem" style="min-width: 28rem"/>
+                    </div>
+                    <div class="mt-2">
+                        <button name="action_reopen_confirm" type="object" string="Reopen the period" class="btn-warning" icon="fa-unlock"
+                                groups="account.group_account_manager"/>
+                        <button name="action_close_cancel" type="object" string="Not now" class="btn-link"/>
+                    </div>
+                </div>
+            </field>
+        </field>
+    </record>
+</odoo>

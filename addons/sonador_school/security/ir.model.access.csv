@@ -1,0 +1,25 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+a_year_t,year teacher,model_school_year,group_teacher,1,0,0,0
+a_year_o,year office,model_school_year,group_office,1,1,1,1
+a_term_t,term teacher,model_school_term,group_teacher,1,0,0,0
+a_term_o,term office,model_school_term,group_office,1,1,1,1
+a_grade_t,grade teacher,model_school_grade,group_teacher,1,0,0,0
+a_grade_o,grade office,model_school_grade,group_office,1,1,1,1
+a_subj_t,subject teacher,model_school_subject,group_teacher,1,0,0,0
+a_subj_o,subject office,model_school_subject,group_office,1,1,1,1
+a_sec_t,section teacher,model_school_section,group_teacher,1,0,0,0
+a_sec_o,section office,model_school_section,group_office,1,1,1,1
+a_sect_t,section teacher t,model_school_section_teacher,group_teacher,1,0,0,0
+a_sect_o,section teacher o,model_school_section_teacher,group_office,1,1,1,1
+a_stu_t,student teacher,model_school_student,group_teacher,1,0,0,0
+a_stu_o,student office,model_school_student,group_office,1,1,1,1
+a_fee_o,fee office,model_school_fee_item,group_office,1,1,1,1
+a_feep_o,fee price office,model_school_fee_price,group_office,1,1,1,1
+a_bill_o,bill office,model_school_bill,group_office,1,1,1,0
+a_billl_o,bill line office,model_school_bill_line,group_office,1,1,1,1
+a_att_t,attendance teacher,model_school_attendance,group_teacher,1,1,1,0
+a_attl_t,attendance line teacher,model_school_attendance_line,group_teacher,1,1,1,1
+a_ass_t,assessment teacher,model_school_assessment,group_teacher,1,0,0,0
+a_ass_o,assessment office,model_school_assessment,group_office,1,1,1,1
+a_mark_t,mark teacher,model_school_mark,group_teacher,1,1,1,1
+a_res_t,result teacher,model_school_term_result,group_teacher,1,1,1,1

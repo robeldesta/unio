@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="sonador_audit.Room">
+    <div class="o_aud o_action h-100 overflow-auto">
+        <t t-if="state.report"><t t-call="sonador_audit.Report"/></t>
+        <t t-elif="d">
+            <div class="o_aud_top">
+                <div class="o_aud_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_aud_kicker">Internal audit · <t t-esc="d.company"/></div>
+                        <h1 class="o_aud_title">Audit Room</h1>
+                    </div>
+                    <t t-if="v">
+                        <span class="o_aud_live"><span class="o_aud_pulse"/>Visit in progress · <t t-esc="elapsed()"/></span>
+                        <button class="btn btn-light" t-on-click="() => this.newFinding()"><i class="fa fa-flag me-1"/>Raise a finding</button>
+                    </t>
+                    <button t-elif="d.is_auditor" class="btn btn-primary btn-lg" t-att-disabled="state.busy" t-on-click="start">
+                        <i class="fa fa-play me-1"/>Start a visit</button>
+                </div>
+                <div class="o_aud_inner o_aud_tabs">
+                    <button t-foreach="tabs()" t-as="t" t-key="t.key" t-attf-class="o_aud_tab {{ state.tab === t.key ? 'on' : '' }}"
+                            t-on-click="() => this.state.tab = t.key">
+                        <t t-esc="t.label"/><span t-if="t.badge" class="o_aud_badge" t-esc="t.badge"/>
+                    </button>
+                </div>
+            </div>
+
+            <div class="o_aud_inner o_aud_body">
+                <t t-if="state.tab === 'visit'">
+                    <t t-if="v"><t t-call="sonador_audit.Visit"/></t>
+                    <t t-else=""><t t-call="sonador_audit.Welcome"/></t>
+                </t>
+                <t t-if="state.tab === 'mine'"><t t-call="sonador_audit.Mine"/></t>
+                <t t-if="state.tab === 'findings'">
+                    <div class="o_aud_lead">Findings not yet closed. The auditor closes a finding after checking it on a visit.</div>
+                    <div t-if="!d.findings.length" class="o_aud_empty"><i class="fa fa-check-circle"/> No open findings.</div>
+                    <t t-foreach="d.findings" t-as="f" t-key="f.id"><t t-call="sonador_audit.FindingCard"/></t>
+                </t>
+                <t t-if="state.tab === 'visits'"><t t-call="sonador_audit.Visits"/></t>
+                <t t-if="state.tab === 'auditors'"><t t-call="sonador_audit.Auditors"/></t>
+            </div>
+        </t>
+        <t t-if="state.form"><t t-call="sonador_audit.Form"/></t>
+    </div>
+</t>
+
+<!-- ============================================================ no visit open -->
+<t t-name="sonador_audit.Welcome">
+    <div class="o_aud_hero">
+        <div class="o_aud_hero_text">
+            <h2><t t-esc="greeting()"/>, <t t-esc="firstName()"/>.</h2>
+            <p t-if="d.last">The last visit was on <b t-esc="d.last.when"/> by <t t-esc="d.last.auditor"/>
+                (<t t-esc="d.last.days"/> days ago) and found the books <b t-esc="d.last.verdict.toLowerCase()"/>.</p>
+            <p t-else="">This is the first visit. The checks will look at the last 30 days.</p>
+            <p>When you start, the Audit Room works out everything entered or changed since then: voids, edits, journals,
+                large and round payments, new vendors, late entries, banks below zero and unreconciled, and the cash to count.</p>
+            <button class="btn btn-primary btn-lg mt-2" t-att-disabled="state.busy" t-on-click="start"><i class="fa fa-play me-2"/>Start today's visit</button>
+        </div>
+        <div class="o_aud_hero_stats">
+            <div><b t-esc="d.counts.open"/><span>waiting for an answer</span></div>
+            <div><b t-esc="d.counts.answered"/><span>answered</span></div>
+            <div><b t-esc="d.counts.fixed"/><span>fixed, for you to verify</span></div>
+            <div t-attf-class="{{ d.counts.overdue ? 'bad' : '' }}"><b t-esc="d.counts.overdue"/><span>overdue</span></div>
+        </div>
+    </div>
+</t>
+
+<!-- ============================================================ the visit -->
+<t t-name="sonador_audit.Visit">
+    <div class="o_aud_strip">
+        <div><span>Started</span><b t-esc="v.started"/></div>
+        <div><span>Changes since</span><b t-esc="v.since"/><small t-if="v.previous">last visit, <t t-esc="v.previous.auditor"/></small><small t-else="">first visit: 30 days</small></div>
+        <div><span>Checks looked at</span><b><t t-esc="v.looked"/> <small>of <t t-esc="v.total"/></small></b></div>
+        <div><span>Findings raised</span><b t-esc="v.findings.length"/></div>
+        <button class="btn btn-link ms-auto" t-att-disabled="state.busy" t-on-click="refresh" title="Work the checks out again from the books"><i class="fa fa-refresh me-1"/>Refresh</button>
+    </div>
+    <div class="o_aud_progress"><div t-attf-style="width: {{ v.total ? Math.round(100 * v.looked / v.total) : 0 }}%"/></div>
+
+    <h3 class="o_aud_step"><span>1</span>What changed since the last visit</h3>
+    <t t-foreach="checkGroups()" t-as="g" t-key="g.key">
+        <div class="o_aud_group d-flex align-items-center">
+            <span t-esc="g.label"/>
+            <button t-if="g.key === 'clear' and g.items.some((c) => c.state === 'todo')" class="btn btn-sm btn-link ms-auto"
+                    t-on-click="allClearOk">Mark all in order</button>
+        </div>
+        <div t-foreach="g.items" t-as="c" t-key="c.id" t-attf-class="o_aud_check {{ c.state }} {{ g.key }}">
+            <div class="o_aud_check_head" t-on-click="() => this.toggle(c.id)">
+                <span t-attf-class="o_aud_dot {{ c.state }}"/>
+                <div class="o_aud_check_main">
+                    <div class="o_aud_area" t-esc="c.area"/>
+                    <b t-esc="c.title"/>
+                    <small t-esc="c.why"/>
+                </div>
+                <div class="o_aud_check_res">
+                    <t t-if="c.cash">
+                        <span>Books</span><b t-esc="money(c.book)"/>
+                    </t>
+                    <t t-elif="c.count"><b t-esc="c.count"/><span t-if="c.amount"><t t-esc="d.currency"/> <t t-esc="money(c.amount)"/></span></t>
+                    <t t-else=""><span class="o_aud_none">None</span></t>
+                    <span class="o_aud_state" t-esc="checkResult(c)"/>
+                </div>
+            </div>
+            <div t-if="c.cash" class="o_aud_cash">
+                <label>Counted in the box<input type="text" inputmode="decimal" class="form-control" placeholder="0.00"
+                       t-att-value="c.counted === null ? '' : money(c.counted)" t-on-change="(ev) => this.count(c, ev)"/></label>
+                <div t-if="c.counted !== null" t-attf-class="o_aud_diff {{ Math.abs(c.diff) &lt; 0.005 ? 'ok' : 'bad' }}">
+                    <t t-if="Math.abs(c.diff) &lt; 0.005"><i class="fa fa-check me-1"/>Agrees with the books</t>
+                    <t t-else=""><i class="fa fa-exclamation-triangle me-1"/><t t-esc="c.diff &gt; 0 ? 'More' : 'Less'"/> than the books by <b t-esc="money(Math.abs(c.diff))"/></t>
+                </div>
+                <button t-if="c.counted !== null and Math.abs(c.diff) &gt;= 0.005 and !v.findings.some((f) =&gt; f.check_key === c.key)"
+                        class="btn btn-sm btn-danger" t-on-click="() => this.cashFinding(c)"><i class="fa fa-flag me-1"/>Raise a finding</button>
+            </div>
+            <div t-if="state.open[c.id] or (c.count and c.state === 'todo' and c.items.length &lt;= 5)" class="o_aud_items">
+                <div t-foreach="state.open[c.id] ? c.items : c.items.slice(0, 5)" t-as="it" t-key="it_index" class="o_aud_item" t-esc="it"/>
+                <div t-if="!state.open[c.id] and c.items.length &gt; 5" class="o_aud_more" t-on-click="() => this.toggle(c.id)">Show all <t t-esc="c.items.length"/></div>
+            </div>
+            <div class="o_aud_check_foot">
+                <input class="form-control form-control-sm o_aud_note" placeholder="Note (what you looked at, who you asked)"
+                       t-att-value="c.note" t-on-input="(ev) => this.state.notes[c.id] = ev.target.value" t-on-blur="() => this.saveNote(c)"/>
+                <button t-if="c.can_open and (c.count or c.cash)" class="btn btn-sm btn-light" t-on-click="() => this.look(c)"><i class="fa fa-external-link me-1"/>Open</button>
+                <div class="btn-group btn-group-sm">
+                    <button t-attf-class="btn {{ c.state === 'ok' ? 'btn-success' : 'btn-outline-secondary' }}" t-on-click="() => this.mark(c, 'ok')"><i class="fa fa-check me-1"/>In order</button>
+                    <button t-attf-class="btn {{ c.state === 'issue' ? 'btn-danger' : 'btn-outline-secondary' }}" t-on-click="() => this.mark(c, 'issue')"><i class="fa fa-flag me-1"/>Issue</button>
+                    <button t-attf-class="btn {{ c.state === 'na' ? 'btn-secondary' : 'btn-outline-secondary' }}" t-on-click="() => this.mark(c, 'na')">N/A</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <h3 class="o_aud_step"><span>2</span>Earlier findings to re-check</h3>
+    <div t-if="!v.rechecks.length" class="o_aud_empty"><i class="fa fa-check-circle"/> Nothing left open from earlier visits.</div>
+    <div t-foreach="v.rechecks" t-as="f" t-key="f.id" t-attf-class="o_aud_find {{ f.recheck ? 'done' : '' }}">
+        <t t-call="sonador_audit.FindingBody"/>
+        <div class="o_aud_check_foot">
+            <input class="form-control form-control-sm o_aud_note" placeholder="What you saw"
+                   t-att-value="f.recheck_note" t-on-input="(ev) => this.state.recheckNotes[f.id] = ev.target.value"/>
+            <div class="btn-group btn-group-sm">
+                <button t-attf-class="btn {{ f.recheck === 'closed' ? 'btn-success' : 'btn-outline-secondary' }}" t-on-click="() => this.recheck(f, 'closed')"><i class="fa fa-check me-1"/>Fixed, close it</button>
+                <button t-attf-class="btn {{ f.recheck === 'open' ? 'btn-warning' : 'btn-outline-secondary' }}" t-on-click="() => this.recheck(f, 'open')">Still open</button>
+                <button t-attf-class="btn {{ f.recheck === 'accepted' ? 'btn-secondary' : 'btn-outline-secondary' }}" t-on-click="() => this.recheck(f, 'accepted')"
+                        title="Management decided to live with it">Accept the risk</button>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="o_aud_step"><span>3</span>Findings raised on this visit
+        <button class="btn btn-sm btn-primary ms-3" t-on-click="() => this.newFinding()"><i class="fa fa-plus me-1"/>Raise a finding</button></h3>
+    <div t-if="!v.findings.length" class="o_aud_empty muted">None yet. Mark a check "Issue", or raise one yourself.</div>
+    <div t-foreach="v.findings" t-as="f" t-key="f.id" class="o_aud_find">
+        <t t-call="sonador_audit.FindingBody"/>
+        <div class="o_aud_check_foot"><button class="btn btn-sm btn-light ms-auto" t-on-click="() => this.editFinding(f)"><i class="fa fa-pencil me-1"/>Change</button></div>
+    </div>
+
+    <h3 class="o_aud_step"><span>4</span>Finish the visit</h3>
+    <div class="o_aud_end">
+        <div class="o_aud_warn" t-if="todoCount() or recheckTodo()"><i class="fa fa-info-circle me-1"/>
+            <t t-if="todoCount()"><t t-esc="todoCount()"/> check<t t-if="todoCount() !== 1">s</t> not looked at. </t>
+            <t t-if="recheckTodo()"><t t-esc="recheckTodo()"/> earlier finding<t t-if="recheckTodo() !== 1">s</t> not re-checked. </t>
+            You can still end the visit: they show as not looked at in the report.</div>
+        <label class="o_aud_label">How do the books look overall?</label>
+        <div class="o_aud_chips">
+            <button t-foreach="d.verdicts" t-as="vd" t-key="vd[0]" t-attf-class="o_aud_chip {{ vd[0] }} {{ state.end.verdict === vd[0] ? 'on' : '' }}"
+                    t-on-click="() => this.state.end.verdict = vd[0]" t-esc="vd[1]"/>
+        </div>
+        <label class="o_aud_label">Summary for management</label>
+        <textarea class="form-control" rows="3" placeholder="In a few sentences: what you looked at, what matters most, what you expect by the next visit."
+                  t-model="state.end.summary"/>
+        <button class="btn btn-primary btn-lg mt-3" t-att-disabled="state.busy or !state.end.verdict" t-on-click="endVisit">
+            <i class="fa fa-flag-checkered me-2"/>End the visit and send the report</button>
+    </div>
+</t>
+
+<!-- ============================================================ a finding -->
+<t t-name="sonador_audit.FindingBody">
+    <div class="o_aud_find_head">
+        <span t-attf-class="o_aud_sev {{ f.severity }}" t-esc="f.severity_label"/>
+        <div class="o_aud_find_main">
+            <div class="o_aud_area"><t t-esc="f.number"/> · <t t-esc="f.area"/> · raised <t t-esc="f.raised"/> by <t t-esc="f.auditor"/></div>
+            <b class="o_aud_find_title" t-esc="f.title"/>
+        </div>
+        <div class="o_aud_find_side">
+            <span t-attf-class="o_aud_status {{ f.state }}" t-esc="f.state_label"/>
+            <b t-if="f.amount" t-esc="money(f.amount)"/>
+        </div>
+    </div>
+    <div class="o_aud_find_text"><t t-esc="f.found"/></div>
+    <div t-if="f.recommendation" class="o_aud_find_text"><span class="o_aud_lbl">To do:</span> <t t-esc="f.recommendation"/></div>
+    <div class="o_aud_find_meta">
+        <span t-if="f.owner"><i class="fa fa-user me-1"/><t t-esc="f.owner"/></span>
+        <span t-else="" class="text-warning"><i class="fa fa-user-times me-1"/>Nobody asked to answer</span>
+        <span t-if="f.due" t-attf-class="{{ f.overdue ? 'text-danger fw-bold' : '' }}"><i class="fa fa-calendar me-1"/>answer by <t t-esc="f.due"/><t t-if="f.overdue"> (overdue)</t></span>
+        <span t-foreach="f.vouchers" t-as="vv" t-key="vv.id" class="o_aud_vch" t-on-click="() => this.openVoucher(vv)" t-esc="vv.name"/>
+        <a href="#" class="ms-auto" t-on-click.prevent="() => this.openFinding(f)">History</a>
+    </div>
+    <div t-if="f.response" class="o_aud_answer"><span class="o_aud_lbl"><t t-esc="f.response_by"/> answered, <t t-esc="f.response_at"/>:</span> <t t-esc="f.response"/></div>
+</t>
+
+<t t-name="sonador_audit.FindingCard">
+    <div class="o_aud_find"><t t-call="sonador_audit.FindingBody"/></div>
+</t>
+
+<!-- ============================================================ management: findings to answer -->
+<t t-name="sonador_audit.Mine">
+    <div class="o_aud_lead">The auditor asked you to answer these. Say what happened and what you did. When it is fixed,
+        say so: the auditor checks it on the next visit and closes it.</div>
+    <div t-if="!d.mine.length" class="o_aud_empty"><i class="fa fa-check-circle"/> Nothing waiting for you.</div>
+    <div t-foreach="d.mine" t-as="f" t-key="f.id" class="o_aud_find">
+        <t t-call="sonador_audit.FindingBody"/>
+        <textarea class="form-control mt-2" rows="3" placeholder="Your answer"
+                  t-att-value="state.answers[f.id] || ''" t-on-input="(ev) => this.state.answers[f.id] = ev.target.value"/>
+        <div class="o_aud_check_foot">
+            <button class="btn btn-sm btn-light ms-auto" t-att-disabled="state.busy" t-on-click="() => this.answer(f, false)">Send answer</button>
+            <button class="btn btn-sm btn-success" t-att-disabled="state.busy" t-on-click="() => this.answer(f, true)"><i class="fa fa-check me-1"/>It is fixed</button>
+        </div>
+    </div>
+</t>
+
+<!-- ============================================================ past visits -->
+<t t-name="sonador_audit.Visits">
+    <div t-if="!d.visits.length" class="o_aud_empty muted">No visits yet.</div>
+    <div class="o_aud_table" t-if="d.visits.length">
+        <div class="o_aud_tr head"><span>Date</span><span>Auditor</span><span>Time</span><span>Overall</span><span>New findings</span><span>Closed</span></div>
+        <div t-foreach="d.visits" t-as="x" t-key="x.id" class="o_aud_tr" t-on-click="() => this.showReport(x.id)">
+            <span t-esc="x.when"/><span t-esc="x.auditor"/><span t-esc="x.duration"/>
+            <span><span t-attf-class="o_aud_chip small on {{ x.verdict_key }}" t-esc="x.verdict"/></span>
+            <span><t t-esc="x.raised"/><t t-if="x.high"> <small class="text-danger">(<t t-esc="x.high"/> high)</small></t></span>
+            <span t-esc="x.closed"/>
+        </div>
+    </div>
+</t>
+
+<!-- ============================================================ auditors -->
+<t t-name="sonador_audit.Auditors">
+    <div class="o_aud_lead">Auditors sign in with their own email. They see the books and reports (read only) and this
+        room, nothing else, and cannot change any entry.</div>
+    <div class="o_aud_card">
+        <div t-if="!d.auditors.length" class="o_aud_empty muted">No auditors yet.</div>
+        <div t-foreach="d.auditors" t-as="u" t-key="u.id" class="o_aud_person">
+            <i class="fa fa-user-circle-o"/><b t-esc="u.name"/><span t-esc="u.login"/>
+            <button class="btn btn-sm btn-link text-danger ms-auto" t-on-click="() => this.removeAuditor(u)">Remove access</button>
+        </div>
+    </div>
+    <div class="o_aud_card o_aud_add">
+        <b>Add an auditor</b>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            <input class="form-control" placeholder="Full name" t-model="state.add.name"/>
+            <input class="form-control" type="email" placeholder="Email" t-model="state.add.email"/>
+            <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="addAuditor"><i class="fa fa-paper-plane me-1"/>Invite</button>
+        </div>
+    </div>
+</t>
+
+<!-- ============================================================ finding form -->
+<t t-name="sonador_audit.Form">
+    <t t-set="f" t-value="state.form"/>
+    <div class="o_aud_modal" t-on-click.self="() => this.state.form = null">
+        <div class="o_aud_dialog">
+            <div class="o_aud_dialog_head"><b t-esc="f.id ? 'Change the finding' : 'Raise a finding'"/>
+                <button class="btn-close" t-on-click="() => this.state.form = null"/></div>
+            <div class="o_aud_dialog_body">
+                <label class="o_aud_label">Title</label>
+                <input class="form-control" t-model="f.title" placeholder="In a few words, e.g. Petty cash short by 1,200"/>
+                <label class="o_aud_label">How serious?</label>
+                <div class="o_aud_chips">
+                    <button t-foreach="d.severities" t-as="s" t-key="s[0]" t-attf-class="o_aud_chip sev {{ s[0] }} {{ f.severity === s[0] ? 'on' : '' }}"
+                            t-on-click="() => f.severity = s[0]" t-esc="s[1]"/>
+                </div>
+                <div class="o_aud_hint" t-esc="sevHelp[f.severity]"/>
+                <label class="o_aud_label">What I found</label>
+                <textarea class="form-control" rows="4" t-model="f.found" placeholder="The facts: what, when, how much, who"/>
+                <label class="o_aud_label">What should be done</label>
+                <textarea class="form-control" rows="2" t-model="f.recommendation" placeholder="e.g. Recover the 1,200 from the cashier and count the box weekly"/>
+                <div class="o_aud_cols">
+                    <div><label class="o_aud_label">Area</label>
+                        <select class="form-select" t-model="f.area"><option t-foreach="d.areas" t-as="a" t-key="a[0]" t-att-value="a[0]" t-esc="a[1]"/></select></div>
+                    <div><label class="o_aud_label">Amount involved</label>
+                        <input class="form-control" type="number" step="0.01" t-model="f.amount" placeholder="0.00"/></div>
+                </div>
+                <label class="o_aud_label">Vouchers <small>(numbers, separated by commas)</small></label>
+                <input class="form-control" t-model="f.vouchers" placeholder="e.g. CPV/26-27/0004, JV/26-27/0013"/>
+                <div class="o_aud_cols">
+                    <div><label class="o_aud_label">Who answers</label>
+                        <select class="form-select" t-model="f.owner_id"><option value="">Nobody yet</option>
+                            <option t-foreach="d.owners" t-as="o" t-key="o.id" t-att-value="o.id" t-esc="o.name"/></select></div>
+                    <div><label class="o_aud_label">Answer by</label><input class="form-control" type="date" t-model="f.due"/></div>
+                </div>
+            </div>
+            <div class="o_aud_dialog_foot">
+                <span class="me-auto o_aud_hint" t-if="f.owner_id">They get a to-do with your finding and a reminder on the date.</span>
+                <button class="btn btn-light" t-on-click="() => this.state.form = null">Cancel</button>
+                <button class="btn btn-primary" t-att-disabled="state.busy" t-on-click="saveFinding"><i class="fa fa-flag me-1"/>Save the finding</button>
+            </div>
+        </div>
+    </div>
+</t>
+
+<!-- ============================================================ visit report -->
+<t t-name="sonador_audit.Report">
+    <t t-set="r" t-value="state.report"/>
+    <div class="o_aud_rep_bar d-print-none">
+        <button class="btn btn-light" t-on-click="closeReport"><i class="fa fa-arrow-left me-1"/>Back</button>
+        <button class="btn btn-primary ms-auto" t-on-click="print"><i class="fa fa-print me-1"/>Print</button>
+    </div>
+    <div class="o_aud_rep">
+        <div class="o_aud_rep_head">
+            <div><div class="o_aud_kicker" t-esc="r.company"/><h1>Internal audit visit report</h1></div>
+            <span t-if="r.verdict" t-attf-class="o_aud_chip on {{ r.verdict }}" t-esc="r.verdict_label"/>
+        </div>
+        <div class="o_aud_rep_meta">
+            <div><span>Auditor</span><b t-esc="r.auditor"/></div>
+            <div><span>Visit</span><b><t t-esc="r.started"/><t t-if="r.ended">–<t t-esc="r.ended"/></t></b><small t-esc="r.duration"/></div>
+            <div><span>Covers changes since</span><b t-esc="r.since"/></div>
+        </div>
+        <p t-if="r.summary" class="o_aud_rep_sum" t-esc="r.summary"/>
+
+        <h2>Findings raised (<t t-esc="r.findings.length"/>)</h2>
+        <p t-if="!r.findings.length" class="muted">None.</p>
+        <table t-else="" class="o_aud_rep_t">
+            <thead><tr><th>No.</th><th>Finding</th><th>Severity</th><th>Who answers</th><th>By</th><th class="num">Amount</th></tr></thead>
+            <tbody><t t-foreach="r.findings" t-as="f" t-key="f.id">
+                <tr><td class="text-nowrap" t-esc="f.number"/><td><b t-esc="f.title"/><div class="small" t-esc="f.found"/>
+                    <div class="small" t-if="f.recommendation"><i>To do:</i> <t t-esc="f.recommendation"/></div></td>
+                    <td t-esc="f.severity_label"/><td t-esc="f.owner"/><td t-esc="f.due"/><td class="num" t-esc="f.amount ? money(f.amount) : ''"/></tr>
+            </t></tbody>
+        </table>
+
+        <h2>Earlier findings re-checked (<t t-esc="r.rechecks.length"/>)</h2>
+        <p t-if="!r.rechecks.length" class="muted">None open from earlier visits.</p>
+        <table t-else="" class="o_aud_rep_t">
+            <thead><tr><th>No.</th><th>Finding</th><th>Management answer</th><th>Outcome</th></tr></thead>
+            <tbody><tr t-foreach="r.rechecks" t-as="f" t-key="f.id"><td class="text-nowrap" t-esc="f.number"/><td t-esc="f.title"/><td class="small" t-esc="f.response"/>
+                <td><t t-esc="{closed: 'Fixed, closed', open: 'Still open', accepted: 'Risk accepted'}[f.recheck] || 'Not re-checked'"/>
+                    <div class="small" t-esc="f.recheck_note"/></td></tr></tbody>
+        </table>
+
+        <h2>Checks</h2>
+        <table class="o_aud_rep_t">
+            <thead><tr><th>Check</th><th class="num">Found</th><th>Result</th><th>Note</th></tr></thead>
+            <tbody><tr t-foreach="r.checks" t-as="c" t-key="c.id">
+                <td t-esc="c.title"/>
+                <td class="num"><t t-if="c.cash">Books <t t-esc="money(c.book)"/></t><t t-else=""><t t-esc="c.count"/><t t-if="c.amount"> · <t t-esc="money(c.amount)"/></t></t></td>
+                <td t-esc="checkResult(c)"/><td class="small" t-esc="c.note"/></tr></tbody>
+        </table>
+
+        <div class="o_aud_sign">
+            <div><span/>Auditor: <t t-esc="r.auditor"/></div>
+            <div><span/>Management</div>
+        </div>
+    </div>
+</t>
+
+</templates>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_budget.App">
+        <div class="o_pp o_bg o_action h-100 overflow-auto">
+            <div class="o_pp_top">
+                <div class="o_pp_inner d-flex flex-wrap align-items-center gap-3">
+                    <div class="me-auto">
+                        <div class="o_pp_kicker"><t t-esc="state.ctx.company"/></div>
+                        <h1 class="o_pp_title"><i class="fa fa-bullseye me-2"/>Budgets</h1>
+                    </div>
+                    <nav class="o_pp_nav">
+                        <button t-foreach="state.ctx.years" t-as="y" t-key="y.fy" t-att-class="state.fy === y.fy ? 'active' : ''" t-on-click="() => this.open(y.fy)">
+                            <t t-esc="y.label"/><i t-if="y.budget_id" class="fa fa-circle ms-1 small text-success"/>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+            <div class="o_pp_inner o_pp_body" t-if="state.data">
+                <t t-set="D" t-value="state.data"/>
+                <div class="o_pp_kpis">
+                    <div class="o_pp_kpi"><span>Budgeted income</span><b t-esc="money(groupTotal('income'))"/></div>
+                    <div class="o_pp_kpi"><span>Budgeted expenses</span><b t-esc="money(groupTotal('expense'))"/></div>
+                    <div class="o_pp_kpi"><span>Budgeted profit</span><b t-att-class="profit(null) &lt; 0 ? 'o_pp_badtxt' : ''" t-esc="money(profit(null))"/></div>
+                    <div class="o_pp_kpi"><span>Actual profit so far</span><b t-esc="money(profit(null, 'actual'))"/></div>
+                    <div class="o_pp_kpi"><span>Status</span><b t-esc="D.state === 'approved' ? 'Approved' : 'Draft'"/><small t-if="D.approved_by">by <t t-esc="D.approved_by"/></small></div>
+                </div>
+                <div class="o_pp_toolbar">
+                    <input class="form-control form-control-sm w-auto" t-att-value="D.name" t-att-disabled="locked" t-on-change="(ev) => { D.name = ev.target.value; this.state.dirty = true; }"/>
+                    <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.state.show = ev.target.value">
+                        <option value="budget">Budget</option><option value="actual">Actual</option>
+                    </select>
+                    <span class="d-flex align-items-center gap-1 small" t-if="!locked">Last year +
+                        <input type="number" class="form-control form-control-sm" style="width:5rem" t-att-value="state.growth" t-on-change="(ev) => this.state.growth = ev.target.value"/>%
+                        <button class="btn btn-light border btn-sm" t-on-click="fill"><i class="fa fa-magic me-1"/>Fill</button></span>
+                    <span class="ms-auto"/>
+                    <button t-if="!locked" class="btn btn-primary btn-sm" t-att-disabled="!state.dirty" t-on-click="save"><i class="fa fa-save me-1"/>Save</button>
+                    <button t-if="!locked and D.id" class="btn btn-light border btn-sm" t-on-click="() => this.setState('approved')"><i class="fa fa-check me-1"/>Approve</button>
+                    <button t-if="locked" class="btn btn-light border btn-sm" t-on-click="() => this.setState('draft')"><i class="fa fa-unlock me-1"/>Reopen</button>
+                </div>
+                <div class="o_pp_card o_bg_wrap"><table class="o_pp_table o_bg_table">
+                    <thead><tr><th>Account</th><th class="text-end">Last year</th>
+                        <th t-foreach="D.months" t-as="m" t-key="m_index" class="text-end" t-esc="m"/><th class="text-end">Year</th><th/></tr></thead>
+                    <tbody>
+                        <t t-foreach="['income', 'expense']" t-as="g" t-key="g">
+                            <tr class="o_bg_group"><td t-att-colspan="16" t-esc="g === 'income' ? 'Income' : 'Expenses'"/></tr>
+                            <tr t-foreach="rows.filter((r) => r.group === g)" t-as="r" t-key="r.account_id">
+                                <td class="o_bg_acc"><span class="text-muted me-1" t-esc="r.code"/><t t-esc="r.name"/></td>
+                                <td class="text-end text-muted" t-esc="money(r.last_year)"/>
+                                <td t-foreach="r.budget" t-as="v" t-key="v_index" class="text-end">
+                                    <t t-if="state.show === 'actual' or locked"><t t-esc="money(state.show === 'actual' ? r.actual[v_index] : v)"/></t>
+                                    <input t-else="" class="o_bg_in" t-att-value="money(v)" t-on-change="(ev) => this.edit(r, v_index, ev)"/>
+                                </td>
+                                <td class="text-end fw-bold" t-esc="money(rowTotal(r, state.show))"/>
+                                <td><button t-if="!locked and state.show === 'budget'" class="btn btn-link btn-sm p-0" title="Spread the year evenly" t-on-click="() => this.spread(r)"><i class="fa fa-arrows-h"/></button></td>
+                            </tr>
+                            <tr class="o_bg_sub"><td>Total <t t-esc="g === 'income' ? 'income' : 'expenses'"/></td><td/>
+                                <td t-foreach="D.months" t-as="m" t-key="m_index" class="text-end" t-esc="money(colTotal(m_index, g, state.show))"/>
+                                <td class="text-end" t-esc="money(groupTotal(g, state.show))"/><td/></tr>
+                        </t>
+                        <tr class="o_bg_total"><td>Profit</td><td/>
+                            <td t-foreach="D.months" t-as="m" t-key="m_index" class="text-end" t-esc="money(profit(m_index, state.show))"/>
+                            <td class="text-end" t-esc="money(profit(null, state.show))"/><td/></tr>
+                    </tbody>
+                </table></div>
+            </div>
+        </div>
+    </t>
+</templates>

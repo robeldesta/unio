@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_sb_inv_docs" name="Stock" parent="sonador_books.menu_sb_inventory" sequence="2"/>
+    <menuitem id="menu_sb_grn" name="Goods Received" parent="menu_sb_inv_docs" action="action_sb_grn" sequence="10"/>
+    <menuitem id="menu_sb_giv" name="Goods Issued (GIV)" parent="menu_sb_inv_docs" action="action_sb_giv" sequence="20"/>
+    <menuitem id="menu_sb_trf" name="Stock Transfers" parent="menu_sb_inv_docs" action="action_sb_stock_transfer" sequence="30"/>
+    <menuitem id="menu_sb_count" name="Stock Counts and Adjustments" parent="menu_sb_inv_docs" action="action_sb_stock_count"
+              sequence="40" groups="sonador_books.group_sb_accountant"/>
+    <menuitem id="menu_sb_opening_stock" name="Opening Stock" parent="menu_sb_inv_docs" action="action_sb_opening_stock"
+              sequence="50" groups="sonador_books.group_sb_accountant"/>
+    <menuitem id="menu_sb_adjust_reasons" name="Adjustment Reasons" parent="sonador_books.menu_sb_inventory"
+              action="action_sb_adjust_reasons" sequence="15" groups="sonador_books.group_sb_accountant"/>
+    <menuitem id="menu_sb_warehouses" name="Warehouses and Stores" parent="sonador_books.menu_sb_inventory"
+              action="action_sb_warehouses" sequence="20" groups="sonador_books.group_sb_manager"/>
+</odoo>

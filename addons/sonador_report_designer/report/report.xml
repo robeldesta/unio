@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_pdf" model="ir.actions.report">
+        <field name="name">Report</field>
+        <field name="model">sb.rep.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sonador_report_designer.report_pdf</field>
+        <field name="print_report_name">object.name</field>
+    </record>
+    <template id="report_pdf">
+        <t t-call="web.html_container">
+            <t t-set="d" t-value="report"/>
+            <t t-set="o" t-value="docs[:1]"/>
+            <t t-call="web.external_layout">
+                <div class="page" style="font-size: 10.5pt; color: #1F2A37;">
+                    <style>
+                        .o_rdp h2 { color: #1F3A5F; } .o_rdp h4 { color: #1F3A5F; border-bottom: 1px solid #E6E9F0; padding-bottom: 3px; }
+                        .o_rdp table.o_rdp_t { width: 100%; border-collapse: collapse; margin-top: 4px; }
+                        .o_rdp table.o_rdp_t th { background: #E8EEF6; text-align: left; padding: 3px 6px; border: 1px solid #D5DCE6; }
+                        .o_rdp table.o_rdp_t td { padding: 3px 6px; border: 1px solid #E6E9F0; }
+                        .o_rdp .num { text-align: right; white-space: nowrap; } .o_rdp .muted { color: #6B7685; }
+                    </style>
+                    <div class="o_rdp">
+                    <h2 t-esc="d['name']"/>
+                    <p class="text-muted"><t t-esc="d['who']"/> · <t t-esc="d['period']"/></p>
+                    <t t-foreach="d['sections']" t-as="s">
+                        <h4 class="mt-4" t-esc="s['title']"/>
+                        <p t-if="s['narrative']" style="white-space: pre-line;" t-esc="s['narrative']"/>
+                        <t t-foreach="s['blocks']" t-as="code">
+                            <t t-set="b" t-value="d['blocks'].get(code) or {}"/>
+                            <div t-if="b" style="page-break-inside: avoid; margin: 8px 0 14px;">
+                                <b t-esc="b.get('title')"/>
+                                <p t-if="b.get('error')" class="text-muted" t-esc="b['error']"/>
+                                <p t-if="b.get('note')" class="text-muted small" t-esc="b['note']"/>
+                                <table t-if="b.get('kpis')" class="table table-sm" style="width: auto;">
+                                    <tr><td t-foreach="b['kpis']" t-as="k" style="padding-right: 24px;">
+                                        <div class="small text-muted" t-esc="k['label']"/>
+                                        <b t-esc="'{:,.2f}'.format(k['value']) if k.get('money') and isinstance(k['value'], (int, float)) else ('{:,}'.format(k['value']) if isinstance(k['value'], (int, float)) else k['value'])"/>
+                                    </td></tr>
+                                </table>
+                                <table t-if="b.get('table') and b['table'].get('rows')" class="o_rdp_t">
+                                    <thead><tr><th t-foreach="b['table']['columns']" t-as="c" t-att-class="'num' if isinstance(b['table']['rows'][0][c_index], (int, float)) else ''" t-esc="c"/></tr></thead>
+                                    <tbody>
+                                        <tr t-foreach="b['table']['rows']" t-as="r">
+                                            <td t-foreach="r" t-as="v" t-att-class="'num' if isinstance(v, (int, float)) else ''"
+                                                t-esc="'{:,.2f}'.format(v) if isinstance(v, float) else ('{:,}'.format(v) if isinstance(v, int) and not isinstance(v, bool) else v)"/>
+                                        </tr>
+                                        <tr t-if="b['table'].get('total')" style="font-weight: bold;">
+                                            <td t-foreach="b['table']['total']" t-as="v" t-att-class="'num' if isinstance(v, (int, float)) else ''"
+                                                t-esc="'{:,.2f}'.format(v) if isinstance(v, float) else ('{:,}'.format(v) if isinstance(v, int) and not isinstance(v, bool) else v)"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+                    </t>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

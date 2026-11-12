@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cron_close_days" model="ir.cron">
+        <field name="name">Attendance: settle yesterday (absences, missing check-outs)</field>
+        <field name="model_id" ref="model_sb_att_day"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_settle()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+</odoo>

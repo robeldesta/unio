@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="sonador_me.ConfirmationDialog">
+    <Dialog title="payload.title" size="'md'">
+        <div class="o_me_confirm o_me_confirm_dialog">
+            <div class="small text-muted mb-2"><t t-esc="payload.document"/> · <t t-esc="payload.action"/> · version <t t-esc="payload.version"/></div>
+            <div class="o_me_confirm_text" t-esc="payload.text"/>
+            <label class="o_me_confirm_tick"><input type="checkbox" t-model="state.ticked"/> <span>I have read this and I confirm it.</span></label>
+            <div class="o_me_sign">
+                <label class="o_me_sign_label">Sign here with your mouse, touchpad or finger</label>
+                <label t-if="payload.reuse_signature" class="o_me_confirm_reuse"><input type="checkbox" t-model="state.reuse"/> Use the signature I drew earlier in this session</label>
+                <t t-if="!state.reuse"><NameAndSignature signature="sig" noInputName="true" mode="'draw'" displaySignatureRatio="1.8"/>
+                    <button class="btn btn-link btn-sm p-0" t-on-click="() => this.sig.resetSignature and this.sig.resetSignature()">Clear</button></t>
+            </div>
+            <div t-if="payload.needs_phrase" class="o_me_confirm_field">
+                <label for="sb_confirm_phrase">Type <b t-esc="payload.phrase"/> (the amount is above <t t-esc="money(payload.phrase_amount)"/>)</label>
+                <input id="sb_confirm_phrase" class="form-control" autocomplete="off" t-model="state.phrase"/>
+            </div>
+            <div t-if="payload.needs_password" class="o_me_confirm_field">
+                <label for="sb_confirm_pw">Your password</label>
+                <input id="sb_confirm_pw" type="password" class="form-control" autocomplete="current-password" t-model="state.password"/>
+            </div>
+        </div>
+        <t t-set-slot="footer">
+            <button class="btn btn-primary" t-att-disabled="state.busy or !ready" t-on-click="confirm"><i class="fa fa-check me-1"/>Confirm and continue</button>
+            <button class="btn btn-secondary" t-on-click="() => this.props.close()">Cancel</button>
+        </t>
+    </Dialog>
+</t>
+</templates>

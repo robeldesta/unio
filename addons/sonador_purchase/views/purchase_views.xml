@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_order_form_sb" model="ir.ui.view">
+        <field name="name">purchase.order.form.sonador</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/field[@name='state']" position="before">
+                <button name="action_sb_receive" type="object" string="Receive (GRN)" class="btn-primary" icon="fa-sign-in"
+                        invisible="state != 'purchase' or sb_receipt_status in ('full', 'na')"
+                        groups="sonador_inventory.group_sb_store_user,sonador_books.group_sb_clerk"/>
+                <button name="action_sb_pay" type="object" string="Pay / Advance" icon="fa-upload"
+                        invisible="state != 'purchase' or sb_payment_status == 'paid'" groups="sonador_books.group_sb_clerk"/>
+                <button name="action_sb_bill" type="object" string="Bill" icon="fa-file-text"
+                        invisible="state != 'purchase' or sb_bill_status == 'full'" groups="sonador_books.group_sb_clerk"/>
+            </xpath>
+            <xpath expr="//button[@name='action_bill_matching']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//button[@name='action_view_invoice']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_sb_view_grns" type="object" class="oe_stat_button" icon="fa-sign-in" invisible="not sb_grn_count">
+                    <field name="sb_grn_count" widget="statinfo" string="GRNs"/>
+                </button>
+                <button name="action_sb_view_bills" type="object" class="oe_stat_button" icon="fa-file-text" invisible="not sb_bill_count">
+                    <field name="sb_bill_count" widget="statinfo" string="Bills"/>
+                </button>
+                <button name="action_sb_view_payments" type="object" class="oe_stat_button" icon="fa-upload" invisible="not sb_payment_count">
+                    <field name="sb_payment_count" widget="statinfo" string="Payments"/>
+                </button>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="float-end d-flex gap-1 mt-1" invisible="state != 'purchase'">
+                    <field name="sb_receipt_status" widget="badge" decoration-success="sb_receipt_status == 'full'"
+                           decoration-warning="sb_receipt_status == 'partial'" decoration-muted="sb_receipt_status == 'none'"/>
+                    <field name="sb_bill_status" widget="badge" decoration-success="sb_bill_status == 'full'"
+                           decoration-warning="sb_bill_status == 'partial'" decoration-muted="sb_bill_status == 'none'"/>
+                    <field name="sb_payment_status" widget="badge" decoration-success="sb_payment_status == 'paid'"
+                           decoration-info="sb_payment_status == 'advance'" decoration-warning="sb_payment_status == 'partial'"
+                           decoration-muted="sb_payment_status == 'none'"/>
+                </div>
+            </xpath>
+            <!-- Odoo's own received / billed quantities are not used: GRNs and bills are -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='qty_received']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='qty_invoiced']" position="attributes">
+                <attribute name="column_invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_qty']" position="after">
+                <field name="sb_is_goods" column_invisible="1"/>
+                <field name="sb_qty_received" column_invisible="parent.state != 'purchase'" invisible="not sb_is_goods" optional="show"
+                       options="{'hide_trailing_zeros': true}"/>
+                <field name="sb_qty_to_receive" column_invisible="parent.state != 'purchase'" invisible="not sb_is_goods"
+                       decoration-warning="sb_qty_to_receive &gt; 0" optional="show" options="{'hide_trailing_zeros': true}"/>
+                <field name="sb_qty_billed" column_invisible="parent.state != 'purchase'" optional="show"
+                       options="{'hide_trailing_zeros': true}"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_qty']" position="attributes">
+                <attribute name="options">{'hide_trailing_zeros': true}</attribute>
+            </xpath>
+            <!-- bills are entered as vouchers (the Bill button): no "Upload Bill" beside it -->
+            <xpath expr="//header/widget[@name='purchase_file_uploader']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
+                <attribute name="readonly">sb_qty_billed != 0 or sb_qty_received != 0</attribute>
+            </xpath>
+            <xpath expr="//notebook" position="before">
+                <group invisible="state != 'purchase'" class="mt-2">
+                    <group string="Money">
+                        <field name="company_currency_id" invisible="1"/>
+                        <field name="sb_amount_billed"/>
+                        <field name="sb_amount_paid"/>
+                        <field name="sb_amount_advance" invisible="not sb_amount_advance" decoration-warning="1"/>
+                        <field name="sb_amount_due" decoration-bf="1"/>
+                    </group>
+                    <group string="Deliveries">
+                        <field name="sb_grn_ids" widget="many2many_tags" readonly="1" string="GRNs"/>
+                        <field name="sb_late" invisible="1"/>
+                        <div colspan="2" class="text-danger" invisible="not sb_late"><i class="fa fa-clock-o me-1"/>Delivery is late.</div>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sb_purchase_order_list" model="ir.ui.view">
+        <field name="name">purchase.order.list.sonador</field>
+        <field name="model">purchase.order</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'cancel'" decoration-info="state in ('draft', 'sent')" sample="1">
+                <field name="name" string="Number" decoration-bf="1"/>
+                <field name="partner_ref" optional="hide"/>
+                <field name="date_order" string="Date" widget="date"/>
+                <field name="partner_id" string="Supplier"/>
+                <field name="date_planned" string="Expected" widget="date" optional="show"/>
+                <field name="user_id" optional="hide" widget="many2one_avatar_user"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_total" sum="Total" decoration-bf="1"/>
+                <field name="state" column_invisible="1"/>
+                <field name="sb_receipt_status" widget="badge" optional="show" decoration-success="sb_receipt_status == 'full'"
+                       decoration-warning="sb_receipt_status == 'partial'"/>
+                <field name="sb_bill_status" widget="badge" optional="show" decoration-success="sb_bill_status == 'full'"
+                       decoration-warning="sb_bill_status == 'partial'"/>
+                <field name="sb_payment_status" widget="badge" optional="show" decoration-success="sb_payment_status == 'paid'"
+                       decoration-info="sb_payment_status == 'advance'" decoration-warning="sb_payment_status == 'partial'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="sb_purchase_order_search" model="ir.ui.view">
+        <field name="name">purchase.order.search.sonador</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="sb_to_receive" string="Still to receive" domain="[('state', '=', 'purchase'), ('sb_receipt_status', 'in', ('none', 'partial'))]"/>
+                <filter name="sb_part_received" string="Partly received" domain="[('sb_receipt_status', '=', 'partial')]"/>
+                <filter name="sb_to_bill" string="Received, not fully billed"
+                        domain="[('state', '=', 'purchase'), ('sb_receipt_status', '!=', 'none'), ('sb_bill_status', '!=', 'full')]"/>
+                <filter name="sb_late" string="Late" domain="[('state', '=', 'purchase'), ('sb_receipt_status', 'in', ('none', 'partial')),
+                        ('date_planned', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_sb_rfq" model="ir.actions.act_window">
+        <field name="name">Requests for Quotation</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="sb_purchase_order_list"/>
+        <field name="search_view_id" ref="purchase.purchase_order_view_search"/>
+        <field name="domain">[('state', 'in', ('draft', 'sent', 'to approve', 'cancel'))]</field>
+        <field name="context">{'quotation_only': True}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Ask suppliers for prices</p>
+            <p>Confirm the best one: it becomes a purchase order the store receives against.</p></field>
+    </record>
+    <record id="action_sb_purchase_orders" model="ir.actions.act_window">
+        <field name="name">Purchase Orders</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="sb_purchase_order_list"/>
+        <field name="search_view_id" ref="purchase.purchase_order_view_search"/>
+        <field name="domain">[('state', '=', 'purchase')]</field>
+        <field name="context">{'search_default_sb_to_receive': 1}</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">No purchase orders</p>
+            <p>Confirmed requests for quotation appear here, with what is received, billed and paid.</p></field>
+    </record>
+    <record id="action_sb_vendor_prices" model="ir.actions.act_window">
+        <field name="name">Vendor Prices</field>
+        <field name="res_model">product.supplierinfo</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_sb_po_grns" model="ir.actions.act_window">
+        <field name="name">Goods Received (GRN)</field>
+        <field name="res_model">sb.stock.voucher</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('voucher_type', '=', 'grn')]</field>
+        <field name="context">{'default_voucher_type': 'grn'}</field>
+    </record>
+</odoo>

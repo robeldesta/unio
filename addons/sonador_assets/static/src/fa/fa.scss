@@ -1,0 +1,11 @@
+.o_fa {
+    .o_fa_wrap { overflow-x: auto; }
+    .o_fa_click { cursor: pointer; }
+    tr.o_fa_click:hover td { background: rgba(13, 110, 253, .04); }
+    .o_fa_st {
+        display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .75rem; background: #eef1f4; color: #495057;
+        &.running { background: #e3f4ea; color: #1e7b45; } &.draft { background: #fff4d6; color: #8a6200; }
+        &.done { background: #e5efff; color: #1d55b8; } &.disposed { background: #fde8e8; color: #b42318; }
+        &.expensed { background: #f1ecf9; color: #6a3fa0; }
+    }
+}

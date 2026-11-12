@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_requests_root" name="Requests" sequence="22" web_icon="sonador_requests,static/description/icon.png" action="action_requests_mine"/>
+    <menuitem id="menu_requests_mine" name="My requests" parent="menu_requests_root" action="action_requests_mine" sequence="1"/>
+    <menuitem id="menu_requests_waiting" name="Waiting for me" parent="menu_requests_root" action="action_requests_waiting" sequence="2"/>
+    <menuitem id="menu_requests_kinds" name="Requests" parent="menu_requests_root" sequence="5"/>
+    <menuitem id="menu_requests_payment" name="Payment requests" parent="menu_requests_kinds" action="action_payment_requests" sequence="1"/>
+    <menuitem id="menu_requests_petty" name="Petty cash requests" parent="menu_requests_kinds" action="action_petty_requests" sequence="2"/>
+    <menuitem id="menu_requests_perdiem" name="Driver per diem" parent="menu_requests_kinds" action="action_perdiem_requests" sequence="3"/>
+    <menuitem id="menu_requests_purchase" name="Purchase requests" parent="menu_requests_kinds" action="action_purchase_requests" sequence="4"/>
+    <menuitem id="menu_requests_to_pay" name="To pay" parent="menu_requests_root" action="action_requests_to_pay" sequence="8"
+              groups="group_request_cashier,group_request_finance,group_request_admin"/>
+    <menuitem id="menu_requests_config" name="Configuration" parent="menu_requests_root" sequence="90" groups="group_request_admin,group_request_finance"/>
+    <menuitem id="menu_requests_policy" name="Approval rules" parent="menu_requests_config" action="action_request_policy" sequence="1" groups="group_request_admin"/>
+    <menuitem id="menu_requests_category" name="Categories" parent="menu_requests_config" action="action_request_category" sequence="2"/>
+</odoo>

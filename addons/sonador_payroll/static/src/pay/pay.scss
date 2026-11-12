@@ -1,0 +1,66 @@
+.o_py {
+    .o_py_state { font-size: .72rem; font-weight: 700; padding: .12rem .55rem; border-radius: 999px; white-space: nowrap;
+        &.draft { background: rgba($sb-amber, .2); color: darken($sb-amber, 25%); } &.posted { background: rgba($sb-steel, .18); color: $sb-navy; }
+        &.paid { background: rgba($sb-good, .14); color: $sb-good; } }
+    .o_pf_click { cursor: pointer; }
+    .o_pf_check { flex-direction: row !important; align-items: center; gap: .4rem !important; margin-top: 1.4rem !important; }
+    .o_py_gridwrap { overflow: auto; }
+    .o_py_grid { font-size: .8rem; white-space: nowrap;
+        td, th { padding: .35rem .45rem; }
+        .sticky { position: sticky; left: 0; background: #fff; z-index: 1; min-width: 12rem; white-space: normal; }
+        thead .sticky { background: $sb-band; }
+        tr.dirty td { background: rgba($sb-amber, .1); } }
+    .o_py_in { width: 4.2rem; border: 1px solid $sb-line; border-radius: 6px; padding: .1rem .3rem; text-align: right; &.w { width: 6.5rem; } }
+    .o_py_tot td { font-weight: 700; background: $sb-band; border-top: 2px solid $sb-navy; }
+}
+.o_py .o_py_gridwrap .o_pp_table select, .o_py .o_py_gridwrap .o_pp_table input.form-control { min-width: 11rem; }
+
+.o_py {
+    .o_py_depts { padding: 0 0 .5rem; }
+    .o_py_chip {
+        border: 1px solid $sb-line; background: #fff; color: $sb-navy; border-radius: 999px; padding: .15rem .7rem; font-size: .8rem;
+        &.on { background: $sb-navy; border-color: $sb-navy; color: #fff; }
+    }
+    .o_py_files {
+        display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 0 0 .6rem;
+        .o_py_files_lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: #7a8792; margin-right: .2rem; }
+        .o_py_files_sep { width: 1px; align-self: stretch; background: $sb-line; margin: 0 .3rem; }
+    }
+    td.o_py_hand { background: #fff6d9; }
+    .o_py_imp { border-left: 3px solid $sb-good; }
+}
+
+// "mark as leaving" is an action, not a status: shown only on the row under the mouse (always when the row is leaving)
+.o_py_grid .o_py_leave { visibility: hidden; color: $text-muted; }
+.o_py_grid tr:hover .o_py_leave, .o_py_grid .o_py_leave.o_on, .o_py_grid .o_py_leave:focus { visibility: visible; }
+
+.o_py {
+    .o_py_filter { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 0 .6rem; }
+    .o_py_search { position: relative; display: flex; align-items: center;
+        i { position: absolute; left: .6rem; color: #7a8792; font-size: .8rem; }
+        input { border: 1px solid $sb-line; border-radius: 8px; padding: .3rem .6rem .3rem 1.8rem; width: 14rem; font-size: .85rem; background: #fff; }
+        input:focus { outline: none; border-color: $sb-navy; box-shadow: 0 0 0 3px rgba($sb-navy,.12); } }
+    .o_py_filter .o_py_chip small { opacity: .6; margin-left: .15rem; }
+}
+
+.o_py {
+    .o_py_count { display: inline-block; min-width: 1.2rem; margin-left: .3rem; padding: 0 .35rem; border-radius: 999px; background: $sb-amber;
+        color: #fff; font-size: .7rem; font-weight: 700; line-height: 1.2rem; text-align: center; }
+    .o_py_loans { display: grid; grid-template-columns: repeat(auto-fill, minmax(30rem, 1fr)); gap: .8rem;
+        @media (max-width: 640px) { grid-template-columns: 1fr; } }
+    .o_py_loan { padding: .9rem 1rem; display: flex; flex-direction: column; gap: .7rem; border-left: 4px solid $sb-line;
+        &.st-hr, &.st-gm { border-left-color: $sb-amber; } &.st-open { border-left-color: $sb-steel; } &.st-done { border-left-color: $sb-good; }
+        &.st-refused { opacity: .7; } }
+    .o_py_loan_head { display: flex; align-items: flex-start; gap: .5rem; }
+    .o_py_lstate { font-size: .72rem; font-weight: 700; padding: .12rem .55rem; border-radius: 999px; white-space: nowrap; background: rgba($sb-steel, .15); color: $sb-navy;
+        &.st-hr, &.st-gm { background: rgba($sb-amber, .2); color: darken($sb-amber, 25%); } &.st-done { background: rgba($sb-good, .14); color: $sb-good; }
+        &.st-refused { background: rgba(192, 57, 43, .12); color: #c0392b; } }
+    .o_py_loan_body { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; }
+    .o_py_fig { display: flex; flex-direction: column; min-width: 6.5rem;
+        span { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: #7a8792; }
+        b { font-size: 1.05rem; font-variant-numeric: tabular-nums; color: $sb-navy; }
+        input { max-width: 9rem; } }
+    .o_py_bar { height: 4px; border-radius: 4px; background: $sb-line; margin-top: .25rem; i { display: block; height: 100%; border-radius: 4px; background: $sb-good; } }
+    .o_py_rule { font-size: .82rem; background: $sb-band; border-radius: 8px; padding: .45rem .7rem; }
+    .o_py_loan_foot { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+}

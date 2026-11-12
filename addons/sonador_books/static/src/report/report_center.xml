@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.ReportWorkspace">
+        <div class="o_sb_ws o_action h-100" t-ref="root">
+          <div class="o_sb_ws_inner">
+            <!-- left: the report list never goes away -->
+            <aside t-attf-class="o_sb_ws_side {{ state.collapsed ? 'collapsed' : '' }}" t-ref="list"
+                   t-on-focusin="() => this.state.listFocused = true" t-on-focusout="() => this.state.listFocused = false"
+                   t-on-mouseenter="() => this.state.listFocused = true" t-on-mouseleave="() => this.state.listFocused = false">
+                <t t-if="state.collapsed">
+                    <button class="o_sb_ws_railbtn" t-on-click="toggleCollapsed" title="Show the report list"><i class="fa fa-angle-double-right"/></button>
+                    <button t-foreach="state.categories" t-as="c" t-key="c.key" class="o_sb_ws_railbtn"
+                            t-att-title="c.name" t-on-click="() => { this.toggleCollapsed(); this.selectCategory(c.key); }">
+                        <i t-attf-class="fa {{ icon(c.key) }}"/>
+                    </button>
+                </t>
+                <t t-else="">
+                    <div class="o_sb_ws_sidehead d-flex align-items-center gap-2">
+                        <div class="o_sb_search flex-grow-1">
+                            <i class="fa fa-search"/>
+                            <input t-ref="search" class="form-control form-control-sm" placeholder="Find a report   /"
+                                   t-att-value="state.search" t-on-input="onSearch"/>
+                        </div>
+                        <button class="btn btn-sm btn-light border" t-on-click="toggleCollapsed" title="Hide the list"><i class="fa fa-angle-double-left"/></button>
+                    </div>
+                    <div class="o_sb_ws_kind d-flex">
+                        <button t-attf-class="flex-fill {{ state.tab === 'reports' ? 'active' : '' }}" t-on-click="() => { this.state.tab = 'reports'; }">Reports</button>
+                        <button t-attf-class="flex-fill {{ state.tab === 'forms' ? 'active' : '' }}" t-on-click="() => { this.state.tab = 'forms'; }">Forms</button>
+                    </div>
+                    <div class="o_sb_ws_list">
+                        <t t-if="state.search.trim()">
+                            <div class="o_sb_ws_group">Results</div>
+                            <t t-foreach="searchResults" t-as="r" t-key="'s' + r.key"><t t-call="sonador_books.WsRow"/></t>
+                            <div t-if="!searchResults.length" class="px-3 py-2 small text-muted">No report matches.</div>
+                        </t>
+                        <t t-else="">
+                            <t t-if="favReports.length and state.tab === 'reports'">
+                                <div class="o_sb_ws_group"><i class="fa fa-star text-warning me-1"/>Favourites</div>
+                                <t t-foreach="favReports" t-as="r" t-key="'f' + r.key"><t t-call="sonador_books.WsRow"/></t>
+                            </t>
+                            <t t-foreach="state.categories" t-as="c" t-key="c.key">
+                                <div t-if="listFor(c.key).length" t-attf-class="o_sb_ws_cat {{ c.key === state.category ? 'open' : '' }}"
+                                     t-on-click="() => this.selectCategory(c.key)">
+                                    <i t-attf-class="fa fa-fw {{ icon(c.key) }} me-2"/>
+                                    <span class="me-auto" t-esc="c.name"/>
+                                    <span class="o_sb_ws_count" t-esc="count(c)"/>
+                                    <i t-attf-class="fa fa-angle-{{ c.key === state.category ? 'down' : 'right' }} ms-2 text-muted"/>
+                                </div>
+                                <t t-if="c.key === state.category">
+                                    <t t-foreach="listFor(c.key)" t-as="r" t-key="r.key"><t t-call="sonador_books.WsRow"/></t>
+                                </t>
+                            </t>
+                        </t>
+                    </div>
+                    <div class="o_sb_ws_hint">↑↓ choose · Enter open · Ctrl+click: background tab</div>
+                </t>
+            </aside>
+
+            <!-- right: tabs -->
+            <section class="o_sb_ws_main">
+                <div class="o_sb_ws_tabs">
+                    <button class="o_sb_ws_back" t-on-click="back" t-att-disabled="!canGoBack" title="Back (Alt+←)"><i class="fa fa-arrow-left"/></button>
+                    <div t-attf-class="o_sb_ws_tab o_sb_ws_tab_home {{ state.active === 'home' ? 'active' : '' }}" t-on-click="goHome" title="Report Center">
+                        <i class="fa fa-th-large me-1"/>Report Center
+                    </div>
+                    <div t-foreach="state.tabs" t-as="t" t-key="t.id" t-attf-class="o_sb_ws_tab {{ state.active === t.id ? 'active' : '' }}"
+                         t-on-click="() => this.activate(t.id)" t-on-auxclick.prevent="(ev) => ev.button === 1 and this.closeTab(t.id, ev)" t-att-title="t.crumbs.map((c) => c.label).join(' › ')">
+                        <i t-if="t.parent" class="fa fa-level-down me-1 text-muted"/>
+                        <span class="o_sb_ws_tabtitle" t-esc="t.crumbs[t.crumbs.length - 1].label"/>
+                        <i class="fa fa-times o_sb_ws_tabx" t-on-click="(ev) => this.closeTab(t.id, ev)" title="Close (Alt+W)"/>
+                    </div>
+                    <button t-if="state.tabs.length &gt; 1" class="o_sb_ws_closeall" t-on-click="closeAll" title="Close all tabs">Close all</button>
+                </div>
+                <div class="o_sb_ws_crumbs">
+                    <t t-foreach="odooCrumbs" t-as="b" t-key="b_index">
+                        <a href="#" t-on-click.prevent="() => b.onSelected()" t-esc="b.name"/><i class="fa fa-angle-right mx-2 text-muted"/>
+                    </t>
+                    <t t-if="state.active === 'home'">
+                        <span class="fw-semibold">Report Center</span><i class="fa fa-angle-right mx-2 text-muted"/><span t-esc="currentCategory.name"/>
+                    </t>
+                    <t t-elif="activeTab">
+                        <t t-foreach="activeTab.crumbs" t-as="c" t-key="c_index">
+                            <a t-if="!c_last" href="#" t-on-click.prevent="() => this.crumbClick(c)" t-esc="c.label"/>
+                            <span t-else="" class="fw-semibold" t-esc="c.label"/>
+                            <i t-if="!c_last" class="fa fa-angle-right mx-2 text-muted"/>
+                        </t>
+                    </t>
+                </div>
+                <div class="o_sb_ws_body">
+                    <!-- home: report cards of the chosen category -->
+                    <div t-if="state.active === 'home'" class="o_sb_ws_home">
+                        <div class="d-flex flex-wrap align-items-center gap-1 mb-3">
+                            <button class="btn btn-sm btn-primary" t-on-click="() => this.openEntry(selectedReport)" t-att-disabled="!selectedReport"><i class="fa fa-eye me-1"/>Open</button>
+                            <button class="btn btn-sm btn-light border" t-on-click="() => this.sendTo('pdf', true)" t-att-disabled="!selectedReport"><i class="fa fa-print me-1"/>Print</button>
+                            <button class="btn btn-sm btn-light border" t-on-click="() => this.sendTo('xlsx')" t-att-disabled="!selectedReport"><i class="fa fa-file-excel-o me-1"/>Excel</button>
+                            <button class="btn btn-sm btn-light border" t-on-click="() => this.sendTo('pdf')" t-att-disabled="!selectedReport"><i class="fa fa-file-pdf-o me-1"/>PDF</button>
+                            <button class="btn btn-sm btn-outline-danger" t-att-disabled="!(selectedReport and selectedReport.custom and selectedReport.mine)" t-on-click="remove"><i class="fa fa-trash me-1"/>Delete</button>
+                            <span class="ms-auto small text-muted">Double-click or Enter opens a report in a tab. The list stays here.</span>
+                        </div>
+                        <t t-if="recentReports.length">
+                            <div class="o_sb_rc_label"><i class="fa fa-history me-1"/>Recently used</div>
+                            <div class="o_sb_rc_strip mb-3">
+                                <t t-foreach="recentReports" t-as="r" t-key="'r' + r.key"><t t-call="sonador_books.ReportCard"/></t>
+                            </div>
+                        </t>
+                        <div class="o_sb_rc_label"><i t-attf-class="fa {{ icon(currentCategory.key) }} me-1"/><t t-esc="currentCategory.name"/>: <t t-esc="currentCategory.title"/></div>
+                        <div class="o_sb_rc_grid">
+                            <t t-foreach="listFor(state.category)" t-as="r" t-key="r.key"><t t-call="sonador_books.ReportCard"/></t>
+                        </div>
+                    </div>
+                    <!-- every open report stays mounted: filters, expanded rows and scroll are kept -->
+                    <t t-foreach="state.tabs" t-as="t" t-key="t.id">
+                        <div t-attf-class="o_sb_ws_pane {{ state.active === t.id ? '' : 'd-none' }}">
+                            <ReportViewer ctx="t.ctx" saved="savedFor(t)" active="state.active === t.id"
+                                          onOpenReport="(o) => this.openFromTab(t, o)" onState="(st) => this.saveTabState(t, st)"
+                                          onBack.bind="back" isListFocused.bind="isListFocused"/>
+                        </div>
+                    </t>
+                </div>
+            </section>
+          </div>
+        </div>
+    </t>
+
+    <t t-name="sonador_books.WsRow">
+        <div t-attf-class="o_sb_ws_row {{ r.key === state.selected ? 'selected' : '' }} {{ r.priority !== 1 ? 'coming' : '' }} {{ activeTab and activeTab.catalogKey === r.key ? 'open' : '' }}"
+             t-on-click="(ev) => (ev.ctrlKey or ev.metaKey) ? this.openEntry(r, ev) : this.select(r)" t-on-dblclick="(ev) => this.openEntry(r, ev)"
+             t-on-auxclick.prevent="(ev) => ev.button === 1 and this.openEntry(r, ev)" t-att-title="r.description">
+            <i t-attf-class="fa fa-fw {{ r.custom ? 'fa-star text-warning' : (r.form ? 'fa-file-text-o' : 'fa-file-o') }} me-2 text-muted"/>
+            <span class="flex-grow-1" t-esc="r.name"/>
+            <span t-if="r.priority !== 1" class="badge text-bg-light">coming</span>
+            <div t-if="r.key === state.selected" class="o_sb_ws_rowdesc" t-esc="r.description"/>
+        </div>
+    </t>
+
+    <t t-name="sonador_books.ReportCard">
+        <div t-attf-class="o_sb_rc_card {{ r.key === state.selected ? 'o_sb_rc_sel' : '' }} {{ r.priority !== 1 ? 'o_sb_rc_coming' : '' }}"
+             t-on-click="(ev) => (ev.ctrlKey or ev.metaKey) ? this.openEntry(r, ev) : this.select(r)" t-on-dblclick="(ev) => this.openEntry(r, ev)">
+            <div class="d-flex align-items-start gap-2">
+                <div class="o_sb_rc_icon"><i t-attf-class="fa {{ r.custom ? 'fa-star' : (r.form ? 'fa-file-text-o' : icon(r.category)) }}"/></div>
+                <div class="flex-grow-1 min-w-0">
+                    <div class="o_sb_rc_name"><t t-esc="r.name"/><span t-if="r.priority !== 1" class="badge text-bg-light ms-1">coming</span></div>
+                    <div class="o_sb_rc_desc" t-esc="r.description"/>
+                </div>
+                <i t-if="r.priority === 1" t-attf-class="fa {{ isFav(r) ? 'fa-star text-warning' : 'fa-star-o' }} o_sb_rc_fav" role="button"
+                   t-on-click="(ev) => this.toggleFav(r, ev)" title="Favourite"/>
+            </div>
+            <div t-if="r.priority === 1" class="o_sb_rc_actions">
+                <a href="#" t-on-click.prevent.stop="(ev) => this.openEntry(r, ev)">Open</a>
+                <a href="#" t-on-click.prevent.stop="() => this.sendTo('pdf', true, r)">Print</a>
+                <a href="#" t-on-click.prevent.stop="() => this.sendTo('xlsx', false, r)">Excel</a>
+            </div>
+        </div>
+    </t>
+</templates>

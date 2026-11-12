@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- the full-screen wait: the two circles of the Unio logo, swapping -->
+    <t t-inherit="web.BlockUI" t-inherit-mode="extension">
+        <xpath expr="//img" position="attributes">
+            <attribute name="src">/sonador_unio_brand/static/img/unio_loader.svg</attribute>
+            <attribute name="class">o_unio_loader</attribute>
+        </xpath>
+    </t>
+    <!-- the small "busy" sign at the top -->
+    <t t-inherit="web.LoadingIndicator" t-inherit-mode="extension">
+        <xpath expr="//span" position="replace">
+            <span class="o_loading_indicator o_unio_loading" t-att-class="transition.className" role="status" aria-label="Loading">
+                <img src="/sonador_unio_brand/static/img/unio_loader.svg" alt=""/>
+                <t t-if="env.debug" t-esc="' ' + state.count"/>
+            </span>
+        </xpath>
+    </t>
+</templates>

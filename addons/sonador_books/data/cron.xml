@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="cron_sb_backup" model="ir.cron">
+        <field name="name">Accounting: nightly backup</field>
+        <field name="model_id" ref="model_sb_maintenance"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_backup()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(DateTime.now().replace(hour=21, minute=0, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="cron_sb_fx_rates" model="ir.cron">
+        <field name="name">Accounting: daily exchange rates</field>
+        <field name="model_id" ref="model_sb_fx"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_rates()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(DateTime.now().replace(hour=3, minute=0, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="active" eval="True"/>
+    </record>
+    <record id="cron_sb_lock_exception_log" model="ir.cron">
+        <field name="name">Accounting: log lock date exceptions that ran out</field>
+        <field name="model_id" ref="account.model_account_lock_exception"/>
+        <field name="state">code</field>
+        <field name="code">model._sb_log_expired()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

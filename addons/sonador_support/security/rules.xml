@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_ticket_own" model="ir.rule">
+        <field name="name">Support: my own problems</field>
+        <field name="model_id" ref="model_sb_support_ticket"/>
+        <field name="domain_force">[('company_id', 'in', company_ids), ('reporter_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+    <record id="rule_ticket_agent" model="ir.rule">
+        <field name="name">Support: IT sees all of the company</field>
+        <field name="model_id" ref="model_sb_support_ticket"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('group_agent'))]"/>
+    </record>
+</odoo>

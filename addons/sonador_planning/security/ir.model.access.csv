@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cat_user,category,model_sb_plan_category,base.group_user,1,0,0,0
+access_cat_hr,category hr,model_sb_plan_category,sonador_books.group_sb_hr,1,1,1,1
+access_plan_hr,plan hr,model_sb_plan,sonador_books.group_sb_hr,1,1,1,1
+access_task_hr,task hr,model_sb_plan_task,sonador_books.group_sb_hr,1,1,1,1
+access_checkin_hr,checkin hr,model_sb_plan_checkin,sonador_books.group_sb_hr,1,1,1,1
+access_week_hr,week hr,model_sb_plan_week,sonador_books.group_sb_hr,1,1,1,1
+access_role_user,role,model_sb_plan_role,base.group_user,1,0,0,0
+access_role_hr,role hr,model_sb_plan_role,sonador_books.group_sb_hr,1,1,1,1
+access_role_item_user,role item,model_sb_plan_role_item,base.group_user,1,0,0,0
+access_role_item_hr,role item hr,model_sb_plan_role_item,sonador_books.group_sb_hr,1,1,1,1
+access_indicator_user,indicator,model_sb_plan_indicator,base.group_user,1,0,0,0
+access_indicator_hr,indicator hr,model_sb_plan_indicator,sonador_books.group_sb_hr,1,1,1,1
+access_change_hr,change hr,model_sb_plan_change,sonador_books.group_sb_hr,1,1,1,1
+access_plan_kpi_user,plan kpi,model_sb_plan_kpi,base.group_user,1,0,0,0
+access_plan_kpi_hr,plan kpi hr,model_sb_plan_kpi,sonador_books.group_sb_hr,1,1,1,1

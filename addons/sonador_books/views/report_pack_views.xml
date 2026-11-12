@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sb_report_pack_list" model="ir.ui.view">
+        <field name="name">sb.report.pack.list</field>
+        <field name="model">sb.report.pack</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="period"/>
+                <field name="schedule"/>
+                <field name="last_sent"/>
+            </list>
+        </field>
+    </record>
+    <record id="sb_report_pack_form" model="ir.ui.view">
+        <field name="name">sb.report.pack.form</field>
+        <field name="model">sb.report.pack</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_print_pdf" type="object" string="Print PDF" class="btn-primary"/>
+                    <button name="action_excel" type="object" string="Excel workbook"/>
+                    <button name="action_send" type="object" string="Send now" confirm="Send this pack now to its recipients?" confirm-label="Send now"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" placeholder="e.g. Monthly management pack"/></h1></div>
+                    <p class="text-muted">The reports below, for one period, in one PDF (with a contents page) or one Excel workbook
+                        (a sheet per report). Send it by email or Telegram by hand, or every month on a set day.</p>
+                    <group>
+                        <group>
+                            <field name="description"/>
+                            <field name="period"/>
+                            <field name="fmt"/>
+                            <field name="company_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="schedule"/>
+                            <field name="send_day" invisible="schedule != 'monthly'"/>
+                            <field name="partner_ids" widget="many2many_tags"/>
+                            <field name="telegram_chat"/>
+                            <field name="last_sent"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="report_key"/>
+                            <field name="title"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_sb_report_pack" model="ir.actions.act_window">
+        <field name="name">Report Packs</field>
+        <field name="res_model">sb.report.pack</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="cron_sb_report_pack" model="ir.cron">
+        <field name="name">Accounting: send scheduled report packs</field>
+        <field name="model_id" ref="model_sb_report_pack"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

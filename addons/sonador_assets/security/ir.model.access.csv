@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_asset_category_user,sb_asset_category,model_sb_asset_category,base.group_user,1,0,0,0
+access_sb_asset_category_acc,sb_asset_category accountant,model_sb_asset_category,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_asset_user,sb_asset,model_sb_asset,base.group_user,1,0,0,0
+access_sb_asset_acc,sb_asset accountant,model_sb_asset,sonador_books.group_sb_accountant,1,1,1,1
+access_sb_asset_dep_user,sb_asset_dep,model_sb_asset_dep,base.group_user,1,0,0,0
+access_sb_asset_dep_acc,sb_asset_dep accountant,model_sb_asset_dep,sonador_books.group_sb_accountant,1,1,1,1

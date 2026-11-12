@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sonador_books.SbVoucherListView" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//t[@t-component='props.Renderer']" position="before">
+            <div t-if="ledger.moves.length" class="alert alert-info mx-3 my-2 py-2 small o_sb_ledger_hits">
+                <i class="fa fa-book me-1"/>
+                <b>Also found in the ledger</b> (entries brought over without a voucher):
+                <t t-foreach="ledger.moves" t-as="m" t-key="m.id">
+                    <a href="#" class="ms-2 text-nowrap" t-on-click.prevent="() => this.openEntry(m)">
+                        <t t-esc="m.name"/> <span class="text-muted">(<t t-esc="m.date"/>, <t t-esc="m.amount"/>)</span>
+                    </a>
+                </t>
+            </div>
+        </xpath>
+    </t>
+</templates>

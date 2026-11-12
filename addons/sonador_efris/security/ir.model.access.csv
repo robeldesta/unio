@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sb_efris_log_user,sb.efris.log,model_sb_efris_log,base.group_user,1,0,0,0
+access_sb_efris_log_acc,sb.efris.log acc,model_sb_efris_log,sonador_books.group_sb_accountant,1,1,1,0

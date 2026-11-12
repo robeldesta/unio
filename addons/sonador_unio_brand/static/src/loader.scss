@@ -1,0 +1,14 @@
+// Unio loading animation
+.o_blockUI .o_spinner img.o_unio_loader,
+.o_blockUI .o_spinner img {
+    width: 72px;
+    height: 72px;
+}
+.o_loading_indicator.o_unio_loading {
+    background: #fff !important;
+    border-radius: 14px 0 0 0;
+    box-shadow: 0 0 12px rgba(27, 34, 64, .12) !important;
+    padding: 6px 8px !important;
+    color: inherit;
+    img { width: 28px; height: 28px; display: inline-block; vertical-align: middle; }
+}

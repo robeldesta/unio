@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="sonador_exit.App">
+    <div class="o_ex o_action h-100 overflow-auto">
+        <div class="o_ex_top"><div class="o_ex_inner d-flex flex-wrap align-items-center gap-2">
+            <div class="me-auto"><div class="o_ex_kicker">People</div><h1 class="o_ex_title">Leaving and clearance</h1></div>
+            <t t-if="state.d">
+                <button t-if="state.d.hr" class="btn btn-primary" t-on-click="() => this.newExit(false)"><i class="fa fa-sign-out me-1"/>Start a leaving</button>
+                <button t-elif="state.d.me" class="btn btn-light border" t-on-click="() => this.newExit(true)">I am resigning</button>
+            </t>
+        </div>
+        <div class="o_ex_inner o_ex_tabs" t-if="state.d and state.d.hr">
+            <button t-attf-class="o_ex_tab {{ state.tab === 'list' ? 'on' : '' }}" t-on-click="() => this.state.tab = 'list'">Leavings</button>
+            <button t-attf-class="o_ex_tab {{ state.tab === 'items' ? 'on' : '' }}" t-on-click="() => this.state.tab = 'items'">Items people hold</button>
+        </div></div>
+
+        <div class="o_ex_inner o_ex_body" t-if="state.d and state.tab === 'list'">
+            <div class="o_ex_list">
+                <div t-if="!state.d.rows.length" class="o_ex_empty">No leavings.</div>
+                <div t-foreach="state.d.rows" t-as="r" t-key="r.id" t-attf-class="o_ex_row {{ state.x and state.x.id === r.id ? 'sel' : '' }}" t-on-click="() => this.open(r.id)">
+                    <div class="flex-grow-1"><b t-esc="r.name"/><div class="o_ex_meta"><t t-esc="r.department"/> · leaving <t t-esc="r.last_day"/> · <t t-esc="r.reason_label"/></div>
+                        <div class="o_ex_bar"><div t-attf-style="width: {{ r.total ? Math.round(100 * r.cleared / r.total) : 0 }}%"/></div></div>
+                    <div class="text-end"><span t-attf-class="o_ex_state {{ r.state }}" t-esc="r.state_label"/>
+                        <div t-if="r.waiting_me" class="small text-danger fw-bold">waits for you</div>
+                        <div class="o_ex_meta"><t t-esc="r.cleared"/>/<t t-esc="r.total"/> cleared</div></div>
+                </div>
+            </div>
+            <div class="o_ex_detail">
+                <t t-if="state.form">
+                    <t t-set="f" t-value="state.form"/>
+                    <h2 t-esc="f.self ? 'I am resigning' : 'Start a leaving'"/>
+                    <label t-if="!f.self">Who is leaving<select class="form-select" t-model="f.employee_id"><option value="">Choose…</option>
+                        <option t-foreach="state.d.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></label>
+                    <label>Why<select class="form-select" t-model="f.reason"><option t-foreach="state.d.reasons" t-as="r" t-key="r[0]" t-att-value="r[0]" t-esc="r[1]"/></select></label>
+                    <label>Last working day<input type="date" class="form-control" t-model="f.last_day"/></label>
+                    <label>Note<textarea class="form-control" rows="2" t-model="f.note" placeholder="e.g. resignation letter received on …"/></label>
+                    <div class="o_ex_hint">When sent, the vehicle, IT equipment and money owed each go to their department head to clear, then HR, then the general manager.</div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-primary" t-att-disabled="state.busy or !f.last_day or !(f.employee_id or f.self)" t-on-click="() => this.start(true)"><i class="fa fa-paper-plane me-1"/>Send for clearance</button>
+                        <button class="btn btn-light border" t-att-disabled="state.busy or !f.last_day" t-on-click="() => this.start(false)">Save, send later</button>
+                    </div>
+                </t>
+                <t t-elif="state.x">
+                    <t t-set="x" t-value="state.x"/>
+                    <div class="o_ex_meta"><t t-esc="x.department"/><t t-if="x.job"> · <t t-esc="x.job"/></t> · <t t-esc="x.reason_label"/></div>
+                    <h2><t t-esc="x.name"/>, leaving <t t-esc="x.last_day"/></h2>
+                    <div class="d-flex align-items-center gap-2 mb-2"><span t-attf-class="o_ex_state {{ x.state }}" t-esc="x.state_label"/>
+                        <span class="o_ex_meta"><t t-esc="x.cleared"/> of <t t-esc="x.total"/> cleared<t t-if="x.owed"> · owes <b t-esc="money(x.owed)"/></t></span></div>
+                    <p t-if="x.note" class="o_ex_note" t-esc="x.note"/>
+                    <div t-foreach="areas" t-as="a" t-key="a[0]" class="o_ex_area">
+                        <div class="o_ex_area_head" t-esc="a[1]"/>
+                        <div t-foreach="areaLines(a[0])" t-as="l" t-key="l.id" t-attf-class="o_ex_line {{ l.state }}">
+                            <div class="d-flex gap-2 align-items-start">
+                                <i t-attf-class="fa mt-1 {{ l.state === 'cleared' ? 'fa-check-circle text-success' : l.state === 'issue' ? 'fa-exclamation-circle text-danger' : 'fa-circle-o text-muted' }}"/>
+                                <div class="flex-grow-1"><b t-esc="l.name"/><div class="o_ex_meta" t-if="l.detail" t-esc="l.detail"/>
+                                    <div class="o_ex_meta">Clears it: <t t-esc="l.approver"/><t t-if="l.by"> · done by <t t-esc="l.by"/></t></div>
+                                    <div t-if="l.note" class="o_ex_meta"><i t-esc="l.note"/><t t-if="l.amount"> · owes <b t-esc="money(l.amount)"/></t></div></div>
+                            </div>
+                            <div t-if="l.can" class="o_ex_line_act">
+                                <input class="form-control form-control-sm" placeholder="Note (e.g. laptop returned, keys handed to Dawit)" t-att-value="state.notes[l.id] || ''" t-on-input="(ev) => this.state.notes[l.id] = ev.target.value"/>
+                                <input class="form-control form-control-sm" style="max-width:8rem" type="number" placeholder="Owes" t-att-value="state.amounts[l.id] || ''" t-on-input="(ev) => this.state.amounts[l.id] = ev.target.value"/>
+                                <button class="btn btn-success btn-sm" t-on-click="() => this.clear(l, true)"><i class="fa fa-check me-1"/>Cleared</button>
+                                <button class="btn btn-light border btn-sm" t-on-click="() => this.clear(l, false)">Not cleared</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_ex_steps">
+                        <span t-attf-class="{{ ['hr','gm','done','left'].includes(x.state) ? 'ok' : '' }}">Clearance</span>
+                        <span t-attf-class="{{ ['gm','done','left'].includes(x.state) ? 'ok' : '' }}">HR<t t-if="x.hr_by">: <t t-esc="x.hr_by"/></t></span>
+                        <span t-attf-class="{{ ['done','left'].includes(x.state) ? 'ok' : '' }}">General manager<t t-if="x.gm_by">: <t t-esc="x.gm_by"/></t><t t-elif="x.gm"> (<t t-esc="x.gm"/>)</t></span>
+                        <span t-attf-class="{{ x.state === 'left' ? 'ok' : '' }}">Final payroll, leaves</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button t-if="x.can_send" class="btn btn-primary" t-on-click="() => this.act('send')"><i class="fa fa-paper-plane me-1"/>Send for clearance</button>
+                        <span t-if="x.can_hr" class="d-inline-flex align-items-center gap-2 o_ex_months" title="Months of salary paid on leaving by agreement; the payroll of the last day pays it. 0: none.">
+                            Separation payment
+                            <input type="number" min="0" step="0.5" class="form-control form-control-sm" style="width:5rem" placeholder="0"
+                                   t-att-value="state.notes.months || ''" t-on-input="(ev) => this.state.notes.months = ev.target.value"/>
+                            months of salary</span>
+                        <button t-if="x.can_hr" class="btn btn-success" t-on-click="() => this.act('hr')"><i class="fa fa-check me-1"/>HR approves</button>
+                        <span t-if="!x.can_hr and x.pay_months" class="badge text-bg-light border align-self-center">Separation payment: <t t-esc="x.pay_months"/> months of salary (HR: <t t-esc="x.hr_by"/>)</span>
+                        <button t-if="x.can_gm" class="btn btn-success" t-on-click="() => this.act('gm')"><i class="fa fa-check me-1"/>Approve the leaving</button>
+                        <t t-if="x.can_hr or x.can_gm">
+                            <input class="form-control form-control-sm" style="max-width:16rem" placeholder="Why, to send back" t-att-value="state.notes.main || ''" t-on-input="(ev) => this.state.notes.main = ev.target.value"/>
+                            <button class="btn btn-light border btn-sm" t-on-click="() => this.act('back')">Send back to clearance</button></t>
+                        <button t-if="x.can_cancel" class="btn btn-link text-danger btn-sm ms-auto" t-on-click="() => this.act('cancel')">Cancel: they stay</button>
+                    </div>
+                </t>
+                <div t-else="" class="o_ex_empty">Choose a leaving, or start one.</div>
+            </div>
+        </div>
+
+        <div class="o_ex_inner o_ex_body1" t-if="state.d and state.tab === 'items'">
+            <div class="o_ex_card">
+                <div class="d-flex gap-2 align-items-center mb-2"><b class="me-2">Items a person holds</b>
+                    <select class="form-select w-auto" t-model="state.itemEmp" t-on-change="loadItems"><option value="">Choose a person…</option>
+                        <option t-foreach="state.d.people" t-as="p" t-key="p.id" t-att-value="p.id" t-esc="p.name"/></select></div>
+                <div class="o_ex_hint">Laptops, phones, SIM cards, keys, tools, vehicles: what is listed here comes up in their clearance. Vehicles where they are the driver, and fixed assets they hold, come up by themselves.</div>
+                <t t-if="state.items">
+                    <table class="table table-sm mt-2">
+                        <thead><tr><th>Kind</th><th>Item</th><th>Serial / number / plate</th><th>Given</th><th>Returned</th><th/></tr></thead>
+                        <tbody>
+                            <tr t-foreach="state.items.items" t-as="it" t-key="it.id"><td t-esc="it.kind_label"/><td t-esc="it.name"/><td t-esc="it.serial"/><td t-esc="it.issued"/><td t-esc="it.returned"/>
+                                <td><button t-if="!it.returned" class="btn btn-link btn-sm" t-on-click="() => this.returned(it)">Returned today</button></td></tr>
+                            <tr t-if="state.item">
+                                <td><select class="form-select form-select-sm" t-model="state.item.kind"><option t-foreach="state.d.kinds" t-as="k" t-key="k[0]" t-att-value="k[0]" t-esc="k[1]"/></select></td>
+                                <td><input class="form-control form-control-sm" t-model="state.item.name" placeholder="e.g. HP laptop"/></td>
+                                <td><input class="form-control form-control-sm" t-model="state.item.serial"/></td>
+                                <td><input type="date" class="form-control form-control-sm" t-model="state.item.issued_on"/></td><td/>
+                                <td><button class="btn btn-primary btn-sm" t-att-disabled="!state.item.name" t-on-click="() => this.saveItem()">Add</button></td></tr>
+                        </tbody>
+                    </table>
+                </t>
+            </div>
+        </div>
+    </div>
+</t>
+</templates>
