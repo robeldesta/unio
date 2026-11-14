@@ -1,5 +1,9 @@
+import logging
+
 from odoo import api, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class StockVoucher(models.Model):
@@ -53,8 +57,12 @@ class ResCompany(models.Model):
         """Odoo's Ethiopian chart sets the company's default expense account to 2301 Goods in Transit, a current asset:
         every item with no expense account of its own then 'expenses' to an asset. Use the company's issue account."""
         for company in self.sudo().search([]):
-            current = company.expense_account_id if 'expense_account_id' in company._fields else False
-            if current and current.account_type not in ('expense', 'expense_direct_cost', 'expense_depreciation') \
-                    and company.sb_giv_account_id:
-                company.expense_account_id = company.sb_giv_account_id
+            try:
+                with self.env.cr.savepoint():   # never stops the update: a company it cannot fix is logged and left
+                    current = company.expense_account_id if 'expense_account_id' in company._fields else False
+                    if current and current.account_type not in ('expense', 'expense_direct_cost', 'expense_depreciation') \
+                            and company.sb_giv_account_id:
+                        company.expense_account_id = company.sb_giv_account_id
+            except Exception as e:
+                _logger.warning('UNIO SETUP: default expense account not changed for %s: %s: %s', company.name, type(e).__name__, e)
         return True

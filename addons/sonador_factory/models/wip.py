@@ -6,8 +6,12 @@ The floor's "Finish and post" receives the finished goods on an FPRR:
 Materials leave stock once, on the GIV. Each order's FPRR takes its own GIVs only, so orders running at the same time
 never mix their costs. A company with Production gets this set up (WIP account, cost from WIP, raw materials issued to
 WIP) at install and at every update, without changing what a company already chose."""
+import logging
+
 from odoo import Command, api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 OPEN_ORDER = [('state', 'not in', ('done', 'cancel'))]
 
@@ -17,32 +21,46 @@ class ResCompany(models.Model):
 
     @api.model
     def _sb_setup_production(self):
+        # each company on its own: a company this cannot set up is logged with the reason and left as it was, and never
+        # stops the module update (it runs at every update)
         Account = self.env['account.account'].sudo()
         for company in self.sudo().search([]):
-            A = Account.with_company(company)
-            wip = company.account_production_wip_account_id or A._sb_find('241100', company)[:1]
-            vals = {}
-            if wip and not company.account_production_wip_account_id:
-                vals['account_production_wip_account_id'] = wip.id
-            if company.sb_fprr_cost_source != 'wip':
-                vals['sb_fprr_cost_source'] = 'wip'
-            if vals:
-                company.write(vals)
-            rm = self.env['product.category'].sudo().with_company(company).search([('name', 'ilike', 'Raw Materials')], limit=1)
-            if wip and rm and not rm.sb_issue_account_id:
-                rm.sb_issue_account_id = wip
+            try:
+                with self.env.cr.savepoint():
+                    A = Account.with_company(company)
+                    wip = company.account_production_wip_account_id or A._sb_find('241100', company)[:1]
+                    vals = {}
+                    if wip and not company.account_production_wip_account_id:
+                        vals['account_production_wip_account_id'] = wip.id
+                    if company.sb_fprr_cost_source != 'wip':
+                        vals['sb_fprr_cost_source'] = 'wip'
+                    if vals:
+                        company.write(vals)
+                    rm = self.env['product.category'].sudo().with_company(company).search([('name', 'ilike', 'Raw Materials')], limit=1)
+                    if wip and rm and not rm.sb_issue_account_id:
+                        rm.sb_issue_account_id = wip
+            except Exception as e:
+                _logger.warning('UNIO SETUP: production set-up skipped for %s: %s: %s', company.name, type(e).__name__, e)
         # waste reasons: the first defaults were a converting plant's (wind, seal, broke). Generic names, only where the
         # company still has the old default name (a reason it renamed itself is kept)
         for xmlid, (old, new) in {'waste_0': ('Rejects (bad wind, cut or seal)', 'Rejects'),
                                   'waste_1': ('Trim and edge (kg)', 'Offcuts and trim (kg)'),
                                   'waste_3': ('Damaged in packing', 'Damaged in handling'),
                                   'waste_4': ('Broke / reusable (kg)', 'Reusable scrap (kg)')}.items():
-            r = self.env.ref('sonador_factory.' + xmlid, raise_if_not_found=False)
-            if r and r.name == old:
-                r.sudo().name = new
-        seq = self.env.ref('sonador_factory.seq_order', raise_if_not_found=False)
-        if seq and (seq.prefix or '').startswith('PO/'):
-            seq.sudo().prefix = 'MO/' + seq.prefix[3:]   # purchase orders are PO/; orders already numbered keep theirs
+            try:
+                with self.env.cr.savepoint():
+                    r = self.env.ref('sonador_factory.' + xmlid, raise_if_not_found=False)
+                    if r and r.name == old:
+                        r.sudo().name = new
+            except Exception as e:
+                _logger.warning('UNIO SETUP: waste reason %s not renamed: %s: %s', xmlid, type(e).__name__, e)
+        try:
+            with self.env.cr.savepoint():
+                seq = self.env.ref('sonador_factory.seq_order', raise_if_not_found=False)
+                if seq and (seq.prefix or '').startswith('PO/'):
+                    seq.sudo().prefix = 'MO/' + seq.prefix[3:]   # purchase orders are PO/; orders already numbered keep theirs
+        except Exception as e:
+            _logger.warning('UNIO SETUP: production order numbering not changed: %s: %s', type(e).__name__, e)
         return True
 
 
