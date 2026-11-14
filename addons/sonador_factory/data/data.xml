@@ -12,9 +12,9 @@
     <record id="down_5" model="sb.mfg.reason"><field name="name">Quality hold</field><field name="kind">downtime</field><field name="sequence">5</field><field name="planned" eval="False"/></record>
     <record id="down_6" model="sb.mfg.reason"><field name="name">Planned maintenance</field><field name="kind">downtime</field><field name="sequence">6</field><field name="planned" eval="True"/></record>
     <record id="down_7" model="sb.mfg.reason"><field name="name">Meal break</field><field name="kind">downtime</field><field name="sequence">7</field><field name="planned" eval="True"/></record>
-    <record id="waste_0" model="sb.mfg.reason"><field name="name">Rejects (bad wind, cut or seal)</field><field name="kind">waste</field><field name="sequence">0</field></record>
-    <record id="waste_1" model="sb.mfg.reason"><field name="name">Trim and edge (kg)</field><field name="kind">waste</field><field name="sequence">1</field></record>
+    <record id="waste_0" model="sb.mfg.reason"><field name="name">Rejects</field><field name="kind">waste</field><field name="sequence">0</field></record>
+    <record id="waste_1" model="sb.mfg.reason"><field name="name">Offcuts and trim (kg)</field><field name="kind">waste</field><field name="sequence">1</field></record>
     <record id="waste_2" model="sb.mfg.reason"><field name="name">Start-up waste</field><field name="kind">waste</field><field name="sequence">2</field></record>
-    <record id="waste_3" model="sb.mfg.reason"><field name="name">Damaged in packing</field><field name="kind">waste</field><field name="sequence">3</field></record>
-    <record id="waste_4" model="sb.mfg.reason"><field name="name">Broke / reusable (kg)</field><field name="kind">waste</field><field name="sequence">4</field></record>
+    <record id="waste_3" model="sb.mfg.reason"><field name="name">Damaged in handling</field><field name="kind">waste</field><field name="sequence">3</field></record>
+    <record id="waste_4" model="sb.mfg.reason"><field name="name">Reusable scrap (kg)</field><field name="kind">waste</field><field name="sequence">4</field></record>
 </odoo>

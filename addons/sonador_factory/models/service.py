@@ -195,16 +195,34 @@ class SbFactory(models.AbstractModel):
                 'unit_cost_est': round((material + labour + overhead) / good, 4) if good else None}
 
     @api.model
+    def ec(self, day):
+        """A day as the Ethiopian date the shift records show (Hidar 3, 2019), for the shift form."""
+        self._require()
+        try:
+            return format_ethiopian(fields.Date.to_date(day)) if day else ''
+        except Exception:
+            return ''
+
+    def _posted_cost(self, v):
+        """{'value', 'unit_cost'} of the voucher an order was finished on: an FPRR (now), or a Build (before)."""
+        if v.voucher_type == 'fprr':
+            lines = v.line_ids.filtered('product_id')
+            value, qty = sum(lines.mapped('value')), sum(lines.mapped('quantity'))
+            return {'value': value, 'unit_cost': round(value / qty, 4) if qty else 0.0}
+        return {'value': v.build_value, 'unit_cost': v.build_unit_cost}
+
+    @api.model
     def order(self, order_id):
         self._require()
         o = self._O().browse(int(order_id))
         onhand = self._onhand(o.material_ids.product_id)
+        issued = o._sb_issued()   # what the store issued for this order on its GIVs (what the cost comes from)
         return dict(self._card(o, onhand), line=o.line_id.name or '', bom=o.bom_id.display_name or '', note=o.note or '',
                     partner_id=o.partner_id.id or False, started=o.started_at and fields.Datetime.to_string(o.started_at) or '',
-                    voucher=o.voucher_id and {'id': o.voucher_id.id, 'name': o.voucher_id.name, 'value': o.voucher_id.build_value,
-                                              'unit_cost': o.voucher_id.build_unit_cost} or False,
+                    voucher=o.voucher_id and dict({'id': o.voucher_id.id, 'name': o.voucher_id.name}, **self._posted_cost(o.voucher_id)) or False,
                     materials=[{'id': m.id, 'product': m.product_id.display_name, 'uom': m.uom_name, 'required': m.qty_required,
                                 'consumed': m.qty_consumed, 'lots': m.lots or '', 'onhand': onhand.get(m.product_id.id, 0),
+                                'issued': issued.get(m.product_id, 0.0),
                                 'expected': round(m.qty_required * (o.qty_good / o.qty_planned), 4) if o.qty_planned else 0}
                                for m in o.material_ids],
                     entries=[{'id': e.id, 'date': _s(e.date), 'ec': format_ethiopian(e.date), 'shift': e.shift_id.name or '',
@@ -377,8 +395,9 @@ class SbFactory(models.AbstractModel):
         need = defaultdict(float)
         users = defaultdict(list)
         for o in orders:
+            issued = o._sb_issued()  # materials leave stock on the order's GIVs: those are no longer needed from stock
             for m in o.material_ids:
-                rest = max(m.qty_required - m.qty_consumed, 0)
+                rest = max(m.qty_required - issued.get(m.product_id, 0.0), 0)
                 if rest:
                     need[m.product_id] += rest
                     users[m.product_id].append('%s (%s)' % (o.name, format_ethiopian(o.date_planned) if o.date_planned else 'not planned'))
@@ -461,10 +480,24 @@ class SbFactory(models.AbstractModel):
         while d <= dt:
             days.append({'date': _s(d), 'label': format_ethiopian(d).rsplit(',', 1)[0], 'good': per_day.get(d, 0)})
             d += timedelta(days=1)
-        vdom = [('company_id', '=', self.env.company.id), ('voucher_type', '=', 'build'), ('state', '=', 'posted'),
+        vdom = [('company_id', '=', self.env.company.id), ('voucher_type', 'in', ('build', 'fprr')), ('state', '=', 'posted'),
                 ('date', '>=', df), ('date', '<=', dt)]
         costs = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0, 0.0])
         for v in self.env['sb.stock.voucher'].sudo().search(vdom):
+            if v.voucher_type == 'fprr':
+                # from work in progress: materials = the GIVs it took, labour and overhead as entered
+                lines = v.line_ids.filtered('product_id')
+                total = sum(lines.mapped('value'))
+                labour, overhead = v.sb_labour_total or 0.0, v.sb_overhead_total or 0.0
+                for l in lines:
+                    share = (l.value / total) if total else 0.0
+                    c = costs[l.product_id.display_name]
+                    c[0] += l.quantity
+                    c[1] += (total - labour - overhead) * share
+                    c[2] += labour * share
+                    c[3] += overhead * share
+                    c[4] += l.value
+                continue
             c = costs[v.build_product_id.display_name]
             c[0] += v.build_qty
             c[1] += v.material_value

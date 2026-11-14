@@ -51,7 +51,7 @@ T.add("receipt", {
 T.add("bill", {
     name: "Record a purchase voucher", app: "Accounting", minutes: 2, sequence: 12,
     steps: [
-        { action: "sonador_books.action_sb_bill", clear: true, title: "Bills", body: "What you owe suppliers. Enter a purchase voucher when the supplier's invoice arrives." },
+        { action: "sonador_books.action_sb_bill", clear: true, title: "Purchase vouchers", body: "What you owe suppliers. Enter a purchase voucher when the supplier's invoice arrives." },
         { ...NEW, title: "New purchase voucher", body: "Click New." },
         { sel: f("partner_id"), advance: "input", title: "The supplier", body: "Pick the supplier." },
         { ...addLine("line_ids"), title: "What you bought", body: "One line per item or expense, with the amount. Withholding is worked out where it applies." },
@@ -110,6 +110,17 @@ T.add("count", {
         { action: "sonador_inventory.action_sb_stock_count", clear: true, title: "Stock counts", body: "Count what is on the shelf; Unio posts the difference." },
         { ...NEW, title: "New count", body: "Click New." },
         { title: "Count and post", body: "Load the items, type what you counted, and post. Shortages and surpluses go to the books at cost." },
+    ],
+});
+
+T.add("shift", {
+    name: "Record a shift", app: "Production", minutes: 1, sequence: 45,
+    steps: [
+        { action: "sonador_factory.action_board", clear: true, title: "The production board", body: "Every machine or line, by day. Each card is a production order; a red \"short\" means materials are missing." },
+        { sel: ".o_fc_card", advance: "click", title: "Open the order", body: "Click the order you are running." },
+        { sel: ".o_fc_recgrid label.big input", advance: "input", title: "Good output", body: "How many good pieces this shift made." },
+        { sel: ".o_fc_losses", title: "Waste and stops", body: "Rejects with their reason, and every stop with its minutes. Planned stops, like a meal break, do not count against the line." },
+        { sel: ".o_fc_rec .btn-primary", advance: "click", title: "Save the shift", body: "The order now shows its output, rejects and time. When it is done, your production manager finishes it and posts it to stock and the books." },
     ],
 });
 

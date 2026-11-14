@@ -31,6 +31,15 @@ class ResCompany(models.Model):
             rm = self.env['product.category'].sudo().with_company(company).search([('name', 'ilike', 'Raw Materials')], limit=1)
             if wip and rm and not rm.sb_issue_account_id:
                 rm.sb_issue_account_id = wip
+        # waste reasons: the first defaults were a converting plant's (wind, seal, broke). Generic names, only where the
+        # company still has the old default name (a reason it renamed itself is kept)
+        for xmlid, (old, new) in {'waste_0': ('Rejects (bad wind, cut or seal)', 'Rejects'),
+                                  'waste_1': ('Trim and edge (kg)', 'Offcuts and trim (kg)'),
+                                  'waste_3': ('Damaged in packing', 'Damaged in handling'),
+                                  'waste_4': ('Broke / reusable (kg)', 'Reusable scrap (kg)')}.items():
+            r = self.env.ref('sonador_factory.' + xmlid, raise_if_not_found=False)
+            if r and r.name == old:
+                r.sudo().name = new
         seq = self.env.ref('sonador_factory.seq_order', raise_if_not_found=False)
         if seq and (seq.prefix or '').startswith('PO/'):
             seq.sudo().prefix = 'MO/' + seq.prefix[3:]   # purchase orders are PO/; orders already numbered keep theirs

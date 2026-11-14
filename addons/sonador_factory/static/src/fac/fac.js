@@ -1,6 +1,7 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { SbChart } from "@sonador_books/common/chart";
 
 const STATE = { draft: "Not scheduled", planned: "Planned", running: "Running", paused: "Paused", done: "Done", cancel: "Cancelled" };
@@ -15,6 +16,7 @@ export class FactoryApp extends Component {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.action = useService("action");
+        this.dialog = useService("dialog");
         const p = (this.props.action && this.props.action.params) || {};
         const today = new Date();
         const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -141,9 +143,18 @@ export class FactoryApp extends Component {
             this.state.ord = await this.orm.call("sb.factory", "set_state", [this.state.ord.id, action, false]);
         } catch (e) {
             if (action === "start" && e.data && /Start anyway/.test(e.data.message || "")) {
-                if (window.confirm(e.data.message + "\n\nStart now?")) {
-                    this.state.ord = await this.orm.call("sb.factory", "set_state", [this.state.ord.id, action, true]);
-                }
+                // Unio's own dialog, not the browser's confirm box
+                const id = this.state.ord.id;
+                this.dialog.add(ConfirmationDialog, {
+                    title: "Materials are short",
+                    body: (e.data.message || "").split(". Start anyway")[0] + ". Start anyway if the materials are already on the floor.",
+                    confirmLabel: "Start anyway",
+                    cancelLabel: "Not now",
+                    confirm: async () => {
+                        this.state.ord = await this.orm.call("sb.factory", "set_state", [id, action, true]);
+                    },
+                    cancel: () => {},
+                });
                 return;
             }
             throw e;
@@ -153,11 +164,16 @@ export class FactoryApp extends Component {
         const shifts = this.ctx.shifts;
         const hour = new Date().getHours();
         const cur = shifts.find((s) => (s.from < s.to ? hour >= s.from && hour < s.to : hour >= s.from || hour < s.to)) || shifts[0];
-        this.state.rec = { date: this.ctx.today, shift_id: cur ? cur.id : "", employee_id: "", minutes_run: "", good_qty: "", note: "",
+        this.state.rec = { date: this.ctx.today, ec: this.ctx.today_ec, shift_id: cur ? cur.id : "", employee_id: "", minutes_run: "", good_qty: "", note: "",
             waste: [{ reason_id: "", qty: "", in_kg: false }], down: [{ reason_id: "", minutes: "" }] };
     }
     setR(k, v) {
         this.state.rec[k] = v;
+    }
+    /** The shift day, and the same day in the Ethiopian calendar under it (the shift records show that). */
+    async setRecDate(v) {
+        this.state.rec.date = v;
+        this.state.rec.ec = v ? await this.orm.call("sb.factory", "ec", [v]) : "";
     }
     setRow(row, k, v) {
         row[k] = v;
@@ -215,17 +231,21 @@ export class FactoryApp extends Component {
     async finish() {
         const o = this.state.ord;
         const noUse = o.materials.length && !o.materials.some((m) => m.consumed);
-        let useExpected = false;
-        if (noUse) {
-            if (!window.confirm("No material use is entered. Post the recipe quantities for the output made?")) {
-                return;
-            }
-            useExpected = true;
-        } else if (!window.confirm(`Finish ${o.name} and post ${this.n(o.good)} ${o.uom} to stock and the books?`)) {
-            return;
-        }
-        this.state.ord = await this.orm.call("sb.factory", "finish", [o.id, useExpected]);
-        this.notification.add(`${o.name} finished: ${this.state.ord.voucher.name} posted.`, { type: "success" });
+        // the cost comes from what the store issued for the order (its GIVs) plus labour and overhead; the material use
+        // entered here is a record for the usage report (the recipe quantities when none is entered)
+        const useExpected = !!noUse;
+        this.dialog.add(ConfirmationDialog, {
+            title: `Finish ${o.name}`,
+            body: `Receive ${this.n(o.good)} ${o.uom} into stock, at the cost of the materials the store issued for it plus ` +
+                  `labour and overhead. The order is then closed.`,
+            confirmLabel: "Finish and post",
+            cancelLabel: "Not yet",
+            confirm: async () => {
+                this.state.ord = await this.orm.call("sb.factory", "finish", [o.id, useExpected]);
+                this.notification.add(`${o.name} finished: ${this.state.ord.voucher.name} posted.`, { type: "success" });
+            },
+            cancel: () => {},
+        });
     }
     openVoucher() {
         this.action.doAction({ type: "ir.actions.act_window", res_model: "sb.stock.voucher", res_id: this.state.ord.voucher.id, views: [[false, "form"]] });

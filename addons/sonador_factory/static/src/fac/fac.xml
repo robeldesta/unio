@@ -69,7 +69,7 @@
             <div class="d-flex"><b class="me-auto" t-esc="o.product"/><i t-if="o.priority" class="fa fa-bolt text-danger" title="Urgent"/></div>
             <div class="small"><t t-esc="n(o.qty)"/> <t t-esc="o.uom"/><t t-if="o.shift"> · <t t-esc="o.shift"/></t></div>
             <div t-if="o.good" class="o_fc_bar"><div t-att-style="'width:' + Math.min(o.pct, 100) + '%'"/></div>
-            <div class="d-flex small text-muted"><span class="me-auto" t-esc="o.name"/><span t-if="o.short.length" class="o_pp_badtxt" t-att-title="'Short: ' + o.short.join(', ')"><i class="fa fa-exclamation-triangle"/> short</span>
+            <div class="d-flex gap-1 small text-muted"><span class="me-auto text-truncate min-w-0" t-esc="o.name" t-att-title="o.name"/><span t-if="o.short.length" class="o_pp_badtxt" t-att-title="'Short: ' + o.short.join(', ')"><i class="fa fa-exclamation-triangle"/> short</span>
                 <span t-elif="o.good"><t t-esc="o.pct"/>%</span></div>
             <div t-if="o.customer" class="small text-muted text-truncate" t-esc="o.customer"/>
         </div>
@@ -114,13 +114,17 @@
                         <button t-if="O.state === 'running'" class="pause" t-on-click="() => this.act('pause')"><i class="fa fa-pause"/> Pause</button>
                         <button t-if="(O.state === 'running' or O.state === 'paused') and O.can_manage" class="finish" t-on-click="finish"><i class="fa fa-flag-checkered"/> Finish and post</button>
                         <button t-if="O.voucher" class="ghost" t-on-click="openVoucher"><i class="fa fa-file-text-o"/> <t t-esc="O.voucher.name"/></button>
+                        <span t-if="(O.state === 'running' or O.state === 'paused') and !O.can_manage" class="small text-muted align-self-center">
+                            Record each shift here; your production manager finishes the order and posts it.</span>
                     </div>
                     <t t-set="S" t-value="O.summary"/>
                     <div class="o_fc_kpis">
                         <div><span>Good output</span><b><t t-esc="n(S.good)"/> <small>/ <t t-esc="n(O.qty)"/></small></b><div class="o_fc_bar"><div t-att-style="'width:' + Math.min(O.pct, 100) + '%'"/></div></div>
                         <div><span>Rejects</span><b t-att-class="S.waste ? 'o_pp_badtxt' : ''"><t t-esc="n(S.waste)"/></b><small t-if="S.waste_kg"><t t-esc="n(S.waste_kg, 1)"/> kg trim / broke</small></div>
-                        <div><span>OEE</span><b t-esc="S.oee === null ? '–' : S.oee + '%'"/><small>A <t t-esc="S.availability === null ? '–' : S.availability"/> · P <t t-esc="S.performance === null ? '–' : S.performance"/> · Q <t t-esc="S.quality === null ? '–' : S.quality"/></small></div>
-                        <div><span>Yield (kg)</span><b t-esc="S.yield === null ? '–' : S.yield + '%'"/><small t-if="S.kg_in"><t t-esc="n(S.kg_out, 1)"/> out of <t t-esc="n(S.kg_in, 1)"/> kg</small></div>
+                        <div title="How well the line ran: share of time running × speed against its rated speed × share of output that is good (OEE)">
+                            <span>Efficiency</span><b t-esc="S.oee === null ? '–' : S.oee + '%'"/>
+                            <small>running <t t-esc="S.availability === null ? '–' : S.availability + '%'"/> · speed <t t-esc="S.performance === null ? '–' : S.performance + '%'"/> · good <t t-esc="S.quality === null ? '–' : S.quality + '%'"/></small></div>
+                        <div t-if="S.kg_in"><span>Yield (kg)</span><b t-esc="S.yield === null ? '–' : S.yield + '%'"/><small t-if="S.kg_in"><t t-esc="n(S.kg_out, 1)"/> out of <t t-esc="n(S.kg_in, 1)"/> kg</small></div>
                         <div><span>Running / stopped</span><b><t t-esc="n(S.run / 60, 1)"/> h</b><small><t t-esc="n(S.down)"/> min stopped</small></div>
                         <div><span>Cost per unit</span><b t-esc="O.voucher ? n(O.voucher.unit_cost, 2) : (S.unit_cost_est === null ? '–' : '≈ ' + n(S.unit_cost_est, 2))"/><small t-esc="O.voucher ? 'posted' : 'estimate'"/></div>
                     </div>
@@ -131,7 +135,8 @@
                         <t t-set="R" t-value="state.rec"/>
                         <div class="p-3">
                             <div class="o_fc_recgrid">
-                                <label>Day<input type="date" class="form-control" t-att-value="R.date" t-on-change="(ev) => this.setR('date', ev.target.value)"/></label>
+                                <label>Day<input type="date" class="form-control" t-att-value="R.date" t-on-change="(ev) => this.setRecDate(ev.target.value)"/>
+                                    <small class="text-muted" t-esc="R.ec"/></label>
                                 <label>Shift<select class="form-select" t-on-change="(ev) => this.setR('shift_id', ev.target.value)">
                                     <option t-foreach="ctx.shifts" t-as="s" t-key="s.id" t-att-value="s.id" t-att-selected="s.id == R.shift_id" t-esc="s.name"/></select></label>
                                 <label>Supervisor / operator<select class="form-select" t-on-change="(ev) => this.setR('employee_id', ev.target.value)"><option value="">—</option>
@@ -180,14 +185,15 @@
                     <div class="o_pp_card mb-3">
                         <div class="o_pp_card_head"><i class="fa fa-cubes"/>Materials<span class="small text-muted ms-2" t-esc="O.bom"/>
                             <button t-if="O.state !== 'done' and O.good" class="btn btn-link btn-sm ms-auto p-0" t-on-click="fillExpected">Fill recipe quantities for the output</button></div>
-                        <table class="o_pp_table"><thead><tr><th>Material</th><th class="text-end">For the order</th><th class="text-end">For the output so far</th><th class="text-end">In stock</th><th style="width:9rem">Used</th><th style="width:12rem">Lots / roll numbers</th></tr></thead>
+                        <table class="o_pp_table"><thead><tr><th>Material</th><th class="text-end">For the order</th><th class="text-end">For the output so far</th><th class="text-end">In stock</th><th class="text-end" title="Issued for this order on its GIVs: the cost of the order comes from these">Issued by the store</th><th style="width:9rem" title="What the floor used, for the usage report (the cost comes from what the store issued)">Used (record)</th><th style="width:12rem">Lots / roll numbers</th></tr></thead>
                             <tbody><tr t-foreach="O.materials" t-as="m" t-key="m.id">
                                 <td><b t-esc="m.product"/></td><td class="text-end"><t t-esc="n(m.required, 2)"/> <t t-esc="m.uom"/></td>
                                 <td class="text-end" t-esc="n(m.expected, 2)"/>
-                                <td t-att-class="'text-end ' + (m.onhand &lt; m.required - m.consumed ? 'o_pp_badtxt' : '')" t-esc="n(m.onhand, 2)"/>
+                                <td t-att-class="'text-end ' + (m.onhand &lt; m.required - m.issued ? 'o_pp_badtxt' : '')" t-esc="n(m.onhand, 2)"/>
+                                <td class="text-end" t-att-class="'text-end ' + (m.issued &lt; m.required ? 'text-muted' : '')"><t t-esc="n(m.issued, 2)"/></td>
                                 <td><input t-if="O.state !== 'done'" type="number" class="form-control form-control-sm" t-att-value="state.mats[m_index].consumed" t-on-change="(ev) => this.setM(m_index, 'consumed', ev.target.value)"/><t t-else="" t-esc="n(m.consumed, 2)"/></td>
                                 <td><input t-if="O.state !== 'done'" class="form-control form-control-sm" placeholder="e.g. JR-2231, JR-2232" t-att-value="state.mats[m_index].lots" t-on-change="(ev) => this.setM(m_index, 'lots', ev.target.value)"/><t t-else="" t-esc="m.lots"/></td>
-                            </tr><tr t-if="!O.materials.length"><td colspan="6" class="o_pp_empty">The product has no recipe: add one under Accounting › Inventory › Recipes.</td></tr></tbody></table>
+                            </tr><tr t-if="!O.materials.length"><td colspan="7" class="o_pp_empty">The product has no recipe: add one in Production › Recipes.</td></tr></tbody></table>
                         <div t-if="O.state !== 'done' and O.materials.length" class="o_pp_panel_foot"><button class="btn btn-light border btn-sm" t-on-click="saveMats">Save material use</button></div>
                     </div>
 
