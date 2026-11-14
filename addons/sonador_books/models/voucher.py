@@ -478,13 +478,18 @@ class SbVoucher(models.Model):
         # what the items withhold: the amount entered is net of it only when withholding is ticked (not ticked, the full
         # amount is paid and nothing of it is an advance: a 10,000 bill paid 11,500 with its VAT is no 3,000 advance)
         items_wht = cur.round((over or whole) * rate / 100.0) if self.withholding else 0.0
-        advance = self._sb_wht_unapplied(items_wht)
+        advance = self._sb_wht_advance_base(self._sb_wht_unapplied(items_wht))
         if not advance:
             return over, whole, 0.0, items_wht
         whole += advance
         if advance > threshold:
             over += advance
         return over, whole, (advance if advance > threshold or not over else 0.0), items_wht
+
+    def _sb_wht_advance_base(self, advance):
+        """The money paid beyond the items, as withholding counts it: before VAT. Plain advances carry no VAT here;
+        Purchase takes the VAT out of a payment against an order (its purchase vouchers' VAT, the goods' VAT)."""
+        return advance
 
     def _sb_wht_unapplied(self, items_wht):
         """Receipt / payment: the amount entered beyond what the items applied and the lines need after their own
@@ -1033,13 +1038,16 @@ class SbVoucher(models.Model):
             add(line.account_id, line.amount if sign < 0 else 0.0, line.amount if sign > 0 else 0.0,
                 line.name, line.partner_id or partner)
         if self.amount_unapplied > 0:
-            for account, amount, label in self._sb_unapplied_split(self.amount_unapplied, sign):
-                add(account, amount if sign < 0 else 0.0, amount if sign > 0 else 0.0, label, partner)
+            for item in self._sb_unapplied_split(self.amount_unapplied, sign):
+                account, amount, label = item[:3]
+                extra = item[3] if len(item) > 3 else None   # e.g. {'tax_ids': ...}: Odoo adds the VAT lines, as on GL lines
+                add(account, amount if sign < 0 else 0.0, amount if sign > 0 else 0.0, label, partner, extra)
         return lines
 
     def _sb_unapplied_split(self, amount, sign):
-        """[(account, amount, label)] for the money not applied to any item or line: an advance. Purchase splits a
-        payment against an order into goods already received, VAT and advance."""
+        """[(account, amount, label[, extra])] for the money not applied to any item or line: an advance. Purchase splits a
+        payment against an order into its open purchase vouchers and goods paid ahead with their taxes (extra =
+        {'tax_ids': ...}: Odoo adds the VAT lines with their tax grids, so the VAT return declares them)."""
         advance = (self.company_id.sb_customer_advance_account_id if sign > 0
                    else self.company_id.sb_vendor_advance_account_id)
         return [(advance, amount, self.env._('Advance %s', self.reference or ''))]
